@@ -1,0 +1,13 @@
+version: '3.8'
+
+name: hotel-management
+
+services:
+  hrgsms-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel_management_frontend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
