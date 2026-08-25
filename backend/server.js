@@ -49,6 +49,17 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
+// Fetch Rooms
+app.get('/api/rooms', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM Room');
+    res.json(rows);
+  } catch (error) {
+    console.error('Database query error:', error);
+    res.status(500).json({ error: 'Failed to fetch rooms' });
+  }
+});
+
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
