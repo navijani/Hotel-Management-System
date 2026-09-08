@@ -96,3 +96,57 @@ The backend currently exposes the following endpoints:
 ## 🔒 Security Note
 
 - Always keep your `.env` variables secure. A `.gitignore` file is included in the backend directory to prevent accidental commits of your database credentials to GitHub.
+
+## 💳 Payment Testing
+
+Use the sandbox payment cards below to simulate different payment outcomes during testing.
+
+> For the cardholder name, CVV, and expiry date, any valid test values will work.
+
+### Successful Payments
+
+<table>
+  <thead>
+    <tr>
+      <th>Card Type</th>
+      <th>Card Number</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Visa</td>
+      <td><code>4916217501611292</code></td>
+      <td><button onclick="navigator.clipboard.writeText('4916217501611292'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button></td>
+    </tr>
+    <tr>
+      <td>MasterCard</td>
+      <td><code>5307732125531191</code></td>
+      <td><button onclick="navigator.clipboard.writeText('5307732125531191'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button></td>
+    </tr>
+    <tr>
+      <td>AMEX</td>
+      <td><code>346781005510225</code></td>
+      <td><button onclick="navigator.clipboard.writeText('346781005510225'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button></td>
+    </tr>
+  </tbody>
+</table>
+
+### Decline Scenarios
+
+| Scenario | Card Type | Card Number | Copy |
+| --- | --- | --- | --- |
+| Insufficient Funds | Visa | <code>4024007194349121</code> | <button onclick="navigator.clipboard.writeText('4024007194349121'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Insufficient Funds | MasterCard | <code>5459051433777487</code> | <button onclick="navigator.clipboard.writeText('5459051433777487'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Insufficient Funds | AMEX | <code>370787711978928</code> | <button onclick="navigator.clipboard.writeText('370787711978928'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Limit Exceeded | Visa | <code>4929119799365646</code> | <button onclick="navigator.clipboard.writeText('4929119799365646'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Limit Exceeded | MasterCard | <code>5491182243178283</code> | <button onclick="navigator.clipboard.writeText('5491182243178283'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Limit Exceeded | AMEX | <code>340701811823469</code> | <button onclick="navigator.clipboard.writeText('340701811823469'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Do Not Honor | Visa | <code>4929768900837248</code> | <button onclick="navigator.clipboard.writeText('4929768900837248'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Do Not Honor | MasterCard | <code>5388172137367973</code> | <button onclick="navigator.clipboard.writeText('5388172137367973'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Do Not Honor | AMEX | <code>374664175202812</code> | <button onclick="navigator.clipboard.writeText('374664175202812'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Network Error | Visa | <code>4024007120869333</code> | <button onclick="navigator.clipboard.writeText('4024007120869333'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Network Error | MasterCard | <code>5237980565185003</code> | <button onclick="navigator.clipboard.writeText('5237980565185003'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+| Network Error | AMEX | <code>373433500205887</code> | <button onclick="navigator.clipboard.writeText('373433500205887'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
+
+Any test card that is not listed above will result in a failed payment.
