@@ -38,6 +38,11 @@ pool.getConnection()
     console.error('Error connecting to the database:', err.message);
   });
 
+// Root route so the backend shows a useful response in the browser
+app.get('/', (req, res) => {
+  res.status(200).send('Hotel Management backend is running. Use /api/test or open the frontend app on port 5173.');
+});
+
 // Basic route
 app.get('/api/test', async (req, res) => {
   try {

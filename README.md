@@ -63,6 +63,8 @@ cd "Hotel Management System"
    DB_PASSWORD=your_database_password
    DB_NAME=hotelmanegmentsystem
    PORT=5000
+   PAYHERE_MERCHANT_ID=xxxx
+   PAYHERE_MERCHANT_KEY=xxxx
    ```
 4. Start the backend development server:
    ```bash
