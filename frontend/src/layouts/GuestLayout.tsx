@@ -83,6 +83,17 @@ const GuestLayout: React.FC = () => {
     }
   };
 
+  const handleBookNow = () => {
+    const isSignedIn = window.sessionStorage.getItem('guestSignedIn') === 'true';
+
+    if (isSignedIn) {
+      navigate('/rooms');
+      return;
+    }
+
+    navigate('/?panel=auth&mode=signin');
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <CssBaseline />
@@ -156,7 +167,7 @@ const GuestLayout: React.FC = () => {
               </Button>
               <Button 
                 variant="contained"
-                onClick={() => navigate('/book')}
+                onClick={handleBookNow}
                 endIcon={<ArrowRightAlt sx={{ transition: 'transform 0.3s', ml: 0.5 }} />}
                 sx={{ 
                   background: 'linear-gradient(45deg, #1a1a1a 30%, #333333 90%)',

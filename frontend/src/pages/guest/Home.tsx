@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import WifiIcon from '@mui/icons-material/Wifi';
 import PoolIcon from '@mui/icons-material/Pool';
 import SpaIcon from '@mui/icons-material/Spa';
@@ -16,8 +16,31 @@ import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isSignedIn, setIsSignedIn] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.sessionStorage.getItem('guestSignedIn') === 'true';
+  });
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const panel = searchParams.get('panel');
+    const mode = searchParams.get('mode');
+
+    if (panel === 'auth') {
+      setAuthMode(mode === 'signup' ? 'signup' : 'signin');
+      setIsFlipped(true);
+      return;
+    }
+
+    setIsFlipped(false);
+  }, [searchParams]);
 
   const amenities = [
     { icon: <WifiIcon fontSize="large" color="primary" />, title: 'Free High-Speed Wi-Fi', description: 'Stay connected wherever you are in the hotel.' },
@@ -35,6 +58,42 @@ const Home: React.FC = () => {
       }
       setIsPlaying(!isPlaying);
     }
+  };
+
+  const openAuthPanel = (mode: 'signin' | 'signup' = 'signin') => {
+    setAuthMode(mode);
+    setIsFlipped(true);
+    setSearchParams({ panel: 'auth', mode });
+  };
+
+  const closeAuthPanel = () => {
+    setIsFlipped(false);
+    setSearchParams({});
+  };
+
+  const markSignedIn = () => {
+    window.sessionStorage.setItem('guestSignedIn', 'true');
+    setIsSignedIn(true);
+    closeAuthPanel();
+  };
+
+  const handleProtectedStay = () => {
+    if (isSignedIn) {
+      navigate('/rooms');
+      return;
+    }
+
+    openAuthPanel('signin');
+  };
+
+  const heroActionButtonSx = {
+    px: 3.5,
+    py: 2,
+    fontSize: '1.05rem',
+    fontWeight: 700,
+    borderRadius: '50px',
+    textTransform: 'none',
+    transition: 'all 0.3s ease-in-out',
   };
 
   return (
@@ -127,195 +186,341 @@ const Home: React.FC = () => {
         >
           <Box
             sx={{
-              p: { xs: 4, md: 8 },
-              borderRadius: 8,
-              bgcolor: 'rgba(15, 23, 42, 0.4)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
-              maxWidth: '900px',
-              animation: 'fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
-              opacity: 0,
+              perspective: '1800px',
               width: '100%',
-              position: 'relative'
+              maxWidth: '900px',
             }}
           >
-            {/* Promotional Tag */}
-            <Chip 
-              icon={<LocalOfferIcon sx={{ color: '#d4af37 !important' }} />} 
-              label="Summer Special: 20% Off All Suites" 
-              variant="outlined"
-              sx={{ 
-                mb: 3, 
-                color: '#d4af37', 
-                borderColor: 'rgba(212, 175, 55, 0.5)',
-                bgcolor: 'rgba(212, 175, 55, 0.1)',
-                fontWeight: 'bold',
-                animation: 'fadeInUp 1s ease-out forwards',
-                opacity: 0,
-                backdropFilter: 'blur(4px)'
-              }} 
-            />
+            <Box
+              sx={{
+                position: 'relative',
+                transformStyle: 'preserve-3d',
+                transition: 'transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                minHeight: { xs: '860px', md: '860px' },
+              }}
+            >
+              <Box
+                sx={{
+                  p: { xs: 4, md: 8 },
+                  borderRadius: 8,
+                  bgcolor: 'rgba(15, 23, 42, 0.4)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+                  width: '100%',
+                  position: 'absolute',
+                  inset: 0,
+                  backfaceVisibility: 'hidden',
+                  overflow: 'hidden'
+                }}
+              >
+                <Chip 
+                  icon={<LocalOfferIcon sx={{ color: '#d4af37 !important' }} />} 
+                  label="Summer Special: 20% Off All Suites" 
+                  variant="outlined"
+                  sx={{ 
+                    mb: 3, 
+                    color: '#d4af37', 
+                    borderColor: 'rgba(212, 175, 55, 0.5)',
+                    bgcolor: 'rgba(212, 175, 55, 0.1)',
+                    fontWeight: 'bold',
+                    animation: 'fadeInUp 1s ease-out forwards',
+                    opacity: 0,
+                    backdropFilter: 'blur(4px)'
+                  }} 
+                />
 
-            {/* Social Proof Badge */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, justifyContent: 'center', animation: 'fadeInUp 1s ease-out forwards', opacity: 0, animationDelay: '0.2s' }}>
-              <AvatarGroup total={2000} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: '0.8rem', borderColor: 'rgba(255,255,255,0.2)' } }}>
-                <Avatar alt="Guest" src="https://i.pravatar.cc/100?img=1" />
-                <Avatar alt="Guest" src="https://i.pravatar.cc/100?img=2" />
-                <Avatar alt="Guest" src="https://i.pravatar.cc/100?img=3" />
-              </AvatarGroup>
-              <Box sx={{ textAlign: 'left' }}>
-                <Rating value={5} readOnly size="small" sx={{ color: '#d4af37' }} />
-                <Typography variant="caption" sx={{ display: 'block', color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
-                  Loved by our guests
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, justifyContent: 'center', animation: 'fadeInUp 1s ease-out forwards', opacity: 0, animationDelay: '0.2s' }}>
+                  <AvatarGroup total={2000} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: '0.8rem', borderColor: 'rgba(255,255,255,0.2)' } }}>
+                    <Avatar alt="Guest" src="https://i.pravatar.cc/100?img=1" />
+                    <Avatar alt="Guest" src="https://i.pravatar.cc/100?img=2" />
+                    <Avatar alt="Guest" src="https://i.pravatar.cc/100?img=3" />
+                  </AvatarGroup>
+                  <Box sx={{ textAlign: 'left' }}>
+                    <Rating value={5} readOnly size="small" sx={{ color: '#d4af37' }} />
+                    <Typography variant="caption" sx={{ display: 'block', color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+                      Loved by our guests
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Typography 
+                  variant="overline"
+                  sx={{
+                    display: 'block',
+                    color: '#d4af37',
+                    fontSize: { xs: '1rem', md: '1.2rem' },
+                    fontWeight: 700,
+                    letterSpacing: 4,
+                    mb: 1,
+                    animation: 'fadeInUp 1s ease-out forwards',
+                    animationDelay: '0.4s',
+                    opacity: 0,
+                  }}
+                >
+                  Welcome To Paradise
                 </Typography>
+
+                <Typography 
+                  variant="h1" 
+                  gutterBottom 
+                  sx={{ 
+                    fontWeight: 900, 
+                    fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+                    fontFamily: '"Playfair Display", serif',
+                    lineHeight: 1.1,
+                    mb: 3,
+                    background: 'linear-gradient(to right, #ffffff, #d4af37)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: '0px 10px 20px rgba(0,0,0,0.3)',
+                    animation: 'fadeInUp 1s ease-out forwards',
+                    animationDelay: '0.6s',
+                    opacity: 0,
+                  }}
+                >
+                  Experience <br /> Ultimate Luxury
+                </Typography>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    mb: 4, 
+                    fontWeight: 300,
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    lineHeight: 1.8,
+                    maxWidth: '700px',
+                    mx: 'auto',
+                    fontSize: { xs: '1.05rem', md: '1.2rem' },
+                    animation: 'fadeInUp 1s ease-out forwards',
+                    animationDelay: '0.8s',
+                    opacity: 0,
+                  }}
+                >
+                  Discover the perfect blend of comfort, elegance, and world-class service at our premium hotel branches across Sri Lanka.
+                </Typography>
+
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: { xs: 2, md: 4 }, 
+                  justifyContent: 'center', 
+                  mb: 5,
+                  flexWrap: 'wrap',
+                  animation: 'fadeInUp 1s ease-out forwards',
+                  animationDelay: '1s',
+                  opacity: 0,
+                }}>
+                  {['Best Price Guarantee', 'Free Cancellation', 'No Prepayment'].map((text, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CheckCircleOutlineIcon sx={{ color: '#d4af37', fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, letterSpacing: 0.5 }}>
+                        {text}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    gap: 2, 
+                    justifyContent: 'center', 
+                    flexWrap: 'wrap',
+                    animation: 'fadeInUp 1s ease-out forwards',
+                    animationDelay: '1.2s',
+                    opacity: 0,
+                  }}
+                >
+                  <Button 
+                    variant="contained" 
+                    size="large" 
+                    onClick={handleProtectedStay}
+                    endIcon={<ArrowForwardIcon />}
+                    sx={{ 
+                      ...heroActionButtonSx,
+                      px: 6,
+                      background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
+                      color: '#1a1a1a',
+                      boxShadow: '0 8px 25px -8px #d4af37',
+                      animation: isSignedIn ? 'none' : 'pulseGlow 2s infinite',
+                      '&:hover': {
+                        transform: 'translateY(-4px) scale(1.02)',
+                        background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
+                        boxShadow: '0 12px 30px -8px #d4af37',
+                      }
+                    }}
+                  >
+                    Book Your Stay
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    size="large" 
+                    sx={{ 
+                      ...heroActionButtonSx,
+                      px: 6,
+                      color: 'white',
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      borderWidth: '2px',
+                      backdropFilter: 'blur(4px)',
+                      '&:hover': {
+                        borderWidth: '2px',
+                        borderColor: 'white',
+                        bgcolor: 'rgba(255,255,255,0.15)',
+                        transform: 'translateY(-4px)'
+                      }
+                    }}
+                    onClick={() => {
+                      const element = document.getElementById('amenities-section');
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    Explore More
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => openAuthPanel('signup')}
+                    sx={{ 
+                      ...heroActionButtonSx,
+                      px: 4,
+                      color: '#d4af37',
+                      borderColor: 'rgba(212, 175, 55, 0.6)',
+                      borderWidth: '2px',
+                      bgcolor: 'rgba(212, 175, 55, 0.08)',
+                      '&:hover': {
+                        borderWidth: '2px',
+                        borderColor: '#d4af37',
+                        bgcolor: 'rgba(212, 175, 55, 0.18)',
+                        transform: 'translateY(-4px)'
+                      }
+                    }}
+                  >
+                    Sign Up
+                  </Button>
+                </Box>
+              </Box>
+
+              <Box
+                sx={{
+                  p: { xs: 4, md: 8 },
+                  borderRadius: 8,
+                  bgcolor: 'rgba(15, 23, 42, 0.45)',
+                  backdropFilter: 'blur(18px)',
+                  WebkitBackdropFilter: 'blur(18px)',
+                  border: '1px solid rgba(212, 175, 55, 0.22)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
+                  width: '100%',
+                  position: 'absolute',
+                  inset: 0,
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Box sx={{ maxWidth: 620, width: '100%', textAlign: 'center' }}>
+                  <Chip
+                    label={authMode === 'signup' ? 'Create your guest account' : 'Welcome back, guest'}
+                    sx={{
+                      mb: 3,
+                      color: '#d4af37',
+                      borderColor: 'rgba(212, 175, 55, 0.5)',
+                      bgcolor: 'rgba(212, 175, 55, 0.12)',
+                      fontWeight: 'bold',
+                    }}
+                    variant="outlined"
+                  />
+
+                  <Typography
+                    variant="h2"
+                    sx={{
+                      fontWeight: 900,
+                      mb: 2,
+                      fontSize: { xs: '2.3rem', md: '3.5rem' },
+                      fontFamily: '"Playfair Display", serif',
+                      background: 'linear-gradient(to right, #ffffff, #d4af37)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    {authMode === 'signup' ? 'Sign up to begin your stay' : 'Sign in to continue your stay'}
+                  </Typography>
+
+                  <Typography
+                    sx={{
+                      color: 'rgba(255,255,255,0.82)',
+                      mb: 5,
+                      lineHeight: 1.9,
+                      fontSize: { xs: '1rem', md: '1.15rem' },
+                    }}
+                  >
+                    {authMode === 'signup'
+                      ? 'Create your guest profile to unlock room bookings, special offers, and a personalized hotel experience.'
+                      : 'Sign in to your guest account to continue with bookings, reservations, and your saved stay details.'}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      onClick={markSignedIn}
+                      sx={{
+                        ...heroActionButtonSx,
+                        px: 5,
+                        background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
+                        color: '#1a1a1a',
+                        boxShadow: '0 8px 25px -8px #d4af37',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
+                        },
+                      }}
+                    >
+                      {authMode === 'signup' ? 'Sign Up' : 'Sign In'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={() => openAuthPanel(authMode === 'signup' ? 'signin' : 'signup')}
+                      sx={{
+                        ...heroActionButtonSx,
+                        px: 4,
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.45)',
+                        borderWidth: '2px',
+                        '&:hover': {
+                          borderWidth: '2px',
+                          borderColor: 'white',
+                          bgcolor: 'rgba(255,255,255,0.12)',
+                        },
+                      }}
+                    >
+                      {authMode === 'signup' ? 'Sign In' : 'Sign Up'}
+                    </Button>
+                    <Button
+                      variant="text"
+                      onClick={closeAuthPanel}
+                      sx={{
+                        color: 'rgba(255,255,255,0.85)',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        alignSelf: 'center',
+                        '&:hover': {
+                          color: '#d4af37',
+                          bgcolor: 'transparent'
+                        }
+                      }}
+                    >
+                      Back to home
+                    </Button>
+                  </Box>
+                </Box>
               </Box>
             </Box>
 
-            <Typography 
-              variant="overline"
-              sx={{
-                display: 'block',
-                color: '#d4af37',
-                fontSize: { xs: '1rem', md: '1.2rem' },
-                fontWeight: 700,
-                letterSpacing: 4,
-                mb: 1,
-                animation: 'fadeInUp 1s ease-out forwards',
-                animationDelay: '0.4s',
-                opacity: 0,
-              }}
-            >
-              Welcome To Paradise
-            </Typography>
-
-            <Typography 
-              variant="h1" 
-              gutterBottom 
-              sx={{ 
-                fontWeight: 900, 
-                fontSize: { xs: '3.5rem', sm: '4.5rem', md: '5.5rem' },
-                fontFamily: '"Playfair Display", serif',
-                lineHeight: 1.1,
-                mb: 3,
-                background: 'linear-gradient(to right, #ffffff, #d4af37)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0px 10px 20px rgba(0,0,0,0.3)',
-                animation: 'fadeInUp 1s ease-out forwards',
-                animationDelay: '0.6s',
-                opacity: 0,
-              }}
-            >
-              Experience <br /> Ultimate Luxury
-            </Typography>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                mb: 4, 
-                fontWeight: 300,
-                color: 'rgba(255, 255, 255, 0.85)',
-                lineHeight: 1.8,
-                maxWidth: '700px',
-                mx: 'auto',
-                fontSize: { xs: '1.1rem', md: '1.3rem' },
-                animation: 'fadeInUp 1s ease-out forwards',
-                animationDelay: '0.8s',
-                opacity: 0,
-              }}
-            >
-              Discover the perfect blend of comfort, elegance, and world-class service at our premium hotel branches across Sri Lanka.
-            </Typography>
-
-            {/* Value Propositions */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: { xs: 2, md: 4 }, 
-              justifyContent: 'center', 
-              mb: 5,
-              flexWrap: 'wrap',
-              animation: 'fadeInUp 1s ease-out forwards',
-              animationDelay: '1s',
-              opacity: 0,
-            }}>
-              {['Best Price Guarantee', 'Free Cancellation', 'No Prepayment'].map((text, i) => (
-                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircleOutlineIcon sx={{ color: '#d4af37', fontSize: 20 }} />
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, letterSpacing: 0.5 }}>
-                    {text}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                gap: 3, 
-                justifyContent: 'center', 
-                flexWrap: 'wrap',
-                animation: 'fadeInUp 1s ease-out forwards',
-                animationDelay: '1.2s',
-                opacity: 0,
-              }}
-            >
-              <Button 
-                variant="contained" 
-                size="large" 
-                onClick={() => navigate('/rooms')}
-                endIcon={<ArrowForwardIcon />}
-                sx={{ 
-                  px: 6, 
-                  py: 2, 
-                  fontSize: '1.2rem', 
-                  fontWeight: 700,
-                  borderRadius: '50px',
-                  textTransform: 'none',
-                  background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
-                  color: '#1a1a1a',
-                  boxShadow: '0 8px 25px -8px #d4af37',
-                  animation: 'pulseGlow 2s infinite',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    transform: 'translateY(-4px) scale(1.02)',
-                    background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
-                    boxShadow: '0 12px 30px -8px #d4af37',
-                  }
-                }}
-              >
-                Book Your Stay
-              </Button>
-              <Button 
-                variant="outlined" 
-                size="large" 
-                sx={{ 
-                  px: 6, 
-                  py: 2, 
-                  fontSize: '1.2rem', 
-                  fontWeight: 600,
-                  borderRadius: '50px',
-                  textTransform: 'none',
-                  color: 'white',
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  borderWidth: '2px',
-                  backdropFilter: 'blur(4px)',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    borderWidth: '2px',
-                    borderColor: 'white',
-                    bgcolor: 'rgba(255,255,255,0.15)',
-                    transform: 'translateY(-4px)'
-                  }
-                }}
-                onClick={() => {
-                  const element = document.getElementById('amenities-section');
-                  element?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                Explore More
-              </Button>
-            </Box>
           </Box>
 
           {/* Quick Availability Search Bar */}
@@ -639,7 +844,7 @@ const Home: React.FC = () => {
                   <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
                     {offer.title}
                   </Typography>
-                  <Typography color="text.secondary" paragraph>
+                  <Typography color="text.secondary" sx={{ mb: 2 }}>
                     {offer.desc}
                   </Typography>
                   <Button variant="outlined" sx={{ alignSelf: 'flex-start', color: '#1a1a1a', borderColor: '#d4af37', '&:hover': { borderColor: '#1a1a1a', bgcolor: 'rgba(212, 175, 55, 0.1)' } }}>
@@ -691,7 +896,7 @@ const Home: React.FC = () => {
         <Typography variant="h3" gutterBottom sx={{ textAlign: 'center', fontWeight: 'bold', mb: 6 }}>
           Frequently Asked Questions
         </Typography>
-        <Grid container spacing={4} justifyContent="center">
+        <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
           <Grid size={{ xs: 12, md: 8 }}>
             {[
               { q: 'What is the check-in and check-out time?', a: 'Check-in is from 2:00 PM, and check-out is until 12:00 PM (noon). Early check-in or late check-out can be arranged based on availability.' },
