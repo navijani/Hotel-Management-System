@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 
@@ -18,6 +19,20 @@ import SystemRooms from './pages/system-admin/Rooms';
 import SystemUsers from './pages/system-admin/Users';
 import SystemBookings from './pages/system-admin/Bookings';
 import SystemSettings from './pages/system-admin/Settings';
+import AccessPortal from './pages/AccessPortal';
+import AdminLogin from './pages/AdminLogin';
+import CleaningStaff from './pages/staff/CleaningStaff';
+import BarKeepingStaff from './pages/staff/BarKeepingStaff';
+import TherapistStaff from './pages/staff/TherapistStaff';
+import WaiterStaff from './pages/staff/WaiterStaff';
+
+const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
+  sessionStorage.getItem('adminAuthenticated') === 'true' ? <>{children}</> : <Navigate to="/admin" replace />
+);
+
+const StaffGuard: React.FC<{ role: string; children: ReactNode }> = ({ role, children }) => (
+  sessionStorage.getItem('staffRole') === role ? <>{children}</> : <Navigate to="/portal" replace />
+);
 
 function App() {
   return (
@@ -31,21 +46,32 @@ function App() {
             <Route path="book" element={<Book />} />
           </Route>
 
-          {/* Admin Panel Routes */}
-          <Route path="/admin" element={<MainLayout />}>
+          {/* Shared entry point for administration and staff */}
+          <Route path="/portal" element={<AccessPortal />} />
+
+          {/* Administrator login and protected administration panels */}
+          <Route path="/admin" element={<AdminLogin />} />
+
+          <Route path="/admin/dashboard" element={<AdminGuard><MainLayout /></AdminGuard>}>
             <Route index element={<ReceptionDashboard />} />
             <Route path="service" element={<ServiceDashboard />} />
             <Route path="management" element={<ReportsDashboard />} />
           </Route>
           
           {/* System Admin Panel Routes */}
-          <Route path="/system-admin" element={<SystemAdminLayout />}>
+          <Route path="/system-admin" element={<AdminGuard><SystemAdminLayout /></AdminGuard>}>
             <Route index element={<SystemDashboard />} />
             <Route path="rooms" element={<SystemRooms />} />
             <Route path="users" element={<SystemUsers />} />
             <Route path="bookings" element={<SystemBookings />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
+
+          {/* Dedicated staff workspaces */}
+          <Route path="/staff/cleaning" element={<StaffGuard role="cleaning"><CleaningStaff /></StaffGuard>} />
+          <Route path="/staff/bar" element={<StaffGuard role="bar"><BarKeepingStaff /></StaffGuard>} />
+          <Route path="/staff/therapist" element={<StaffGuard role="therapist"><TherapistStaff /></StaffGuard>} />
+          <Route path="/staff/waiter" element={<StaffGuard role="waiter"><WaiterStaff /></StaffGuard>} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

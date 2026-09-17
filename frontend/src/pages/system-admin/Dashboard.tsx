@@ -1,6 +1,9 @@
-import React from 'react';
-import { Box, Typography, Grid, Paper, Card, CardContent } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Grid, Paper, Card, CardContent, Button, Chip, Stack, Alert } from '@mui/material';
 import { People, MeetingRoom, AttachMoney, TrendingUp } from '@mui/icons-material';
+import axios from 'axios';
+
+type StaffMember = { id: number; username: string; role: string; active: boolean; created_at: string };
 
 const StatCard = ({ title, value, icon, color }: { title: string, value: string, icon: React.ReactNode, color: string }) => (
   <Card sx={{ height: '100%', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
@@ -21,6 +24,31 @@ const StatCard = ({ title, value, icon, color }: { title: string, value: string,
 );
 
 const Dashboard: React.FC = () => {
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [error, setError] = useState('');
+
+  const loadStaff = async () => {
+    try {
+      const response = await axios.get<StaffMember[]>('http://localhost:5000/api/staff');
+      setStaff(response.data);
+    } catch {
+      setError('Unable to load staff notifications.');
+    }
+  };
+
+  useEffect(() => {
+    void loadStaff();
+  }, []);
+
+  const updateStaffStatus = async (member: StaffMember, active: boolean) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/staff/${member.id}/status`, { active });
+      await loadStaff();
+    } catch {
+      setError('Unable to update this staff member.');
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4, color: '#1a1a2e' }}>
@@ -49,19 +77,25 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
-          <Paper sx={{ p: 3, borderRadius: 3, height: 400, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>Recent Activity</Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-               {[1,2,3,4].map(i => (
-                 <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2, pb: 2, borderBottom: '1px solid #eee' }}>
-                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#4facfe' }} />
-                   <Box>
-                     <Typography variant="body2" sx={{ fontWeight: 600 }}>New booking created</Typography>
-                     <Typography variant="caption" color="text.secondary">2 minutes ago</Typography>
-                   </Box>
-                 </Box>
-               ))}
-            </Box>
+          <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>Staff notifications</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Approve new registrations or fire active staff members.</Typography>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {staff.length === 0 && !error && <Typography color="text.secondary">No staff registrations yet.</Typography>}
+            <Stack spacing={2}>
+              {staff.map((member) => (
+                <Box key={member.id} sx={{ pb: 2, borderBottom: '1px solid #eee' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{member.username}</Typography>
+                    <Chip size="small" label={member.active ? 'Active' : 'Pending'} color={member.active ? 'success' : 'warning'} />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{member.role} staff</Typography>
+                  <Button size="small" sx={{ mt: 1, display: 'block' }} color={member.active ? 'error' : 'primary'} onClick={() => void updateStaffStatus(member, !member.active)}>
+                    {member.active ? 'Fire / deactivate' : 'Approve account'}
+                  </Button>
+                </Box>
+              ))}
+            </Stack>
           </Paper>
         </Grid>
       </Grid>
