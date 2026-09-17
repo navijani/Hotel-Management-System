@@ -157,7 +157,7 @@ const Home: React.FC = () => {
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
-            <source src="/hero-video.mp4" type="video/mp4" />
+            <source src="/videos/hero-video.mp4" type="video/mp4" />
           </video>
         </Box>
         
