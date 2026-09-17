@@ -87,9 +87,9 @@ const Home: React.FC = () => {
   };
 
   const heroActionButtonSx = {
-    px: 3.5,
-    py: 2,
-    fontSize: '1.05rem',
+    px: 3,
+    py: 1.5,
+    fontSize: '0.98rem',
     fontWeight: 700,
     borderRadius: '50px',
     textTransform: 'none',
@@ -188,7 +188,7 @@ const Home: React.FC = () => {
             sx={{
               perspective: '1800px',
               width: '100%',
-              maxWidth: '900px',
+              maxWidth: '820px',
             }}
           >
             <Box
@@ -197,12 +197,12 @@ const Home: React.FC = () => {
                 transformStyle: 'preserve-3d',
                 transition: 'transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                minHeight: { xs: '860px', md: '860px' },
+                minHeight: { xs: '730px', md: '760px' },
               }}
             >
               <Box
                 sx={{
-                  p: { xs: 4, md: 8 },
+                  p: { xs: 3, md: 5 },
                   borderRadius: 8,
                   bgcolor: 'rgba(15, 23, 42, 0.4)',
                   backdropFilter: 'blur(16px)',
@@ -268,7 +268,7 @@ const Home: React.FC = () => {
                   gutterBottom 
                   sx={{ 
                     fontWeight: 900, 
-                    fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+                    fontSize: { xs: '2.6rem', sm: '3.4rem', md: '4.2rem' },
                     fontFamily: '"Playfair Display", serif',
                     lineHeight: 1.1,
                     mb: 3,
@@ -286,13 +286,13 @@ const Home: React.FC = () => {
                 <Typography 
                   variant="h5" 
                   sx={{ 
-                    mb: 4, 
+                    mb: 3, 
                     fontWeight: 300,
                     color: 'rgba(255, 255, 255, 0.85)',
                     lineHeight: 1.8,
                     maxWidth: '700px',
                     mx: 'auto',
-                    fontSize: { xs: '1.05rem', md: '1.2rem' },
+                    fontSize: { xs: '1rem', md: '1.1rem' },
                     animation: 'fadeInUp 1s ease-out forwards',
                     animationDelay: '0.8s',
                     opacity: 0,
@@ -339,7 +339,7 @@ const Home: React.FC = () => {
                     endIcon={<ArrowForwardIcon />}
                     sx={{ 
                       ...heroActionButtonSx,
-                      px: 6,
+                      px: 4.5,
                       background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
                       color: '#1a1a1a',
                       boxShadow: '0 8px 25px -8px #d4af37',
@@ -358,7 +358,7 @@ const Home: React.FC = () => {
                     size="large" 
                     sx={{ 
                       ...heroActionButtonSx,
-                      px: 6,
+                      px: 4.5,
                       color: 'white',
                       borderColor: 'rgba(255,255,255,0.5)',
                       borderWidth: '2px',
@@ -383,6 +383,8 @@ const Home: React.FC = () => {
                     onClick={() => openAuthPanel('signup')}
                     sx={{ 
                       ...heroActionButtonSx,
+                      order: -1,
+                      flexBasis: '100%',
                       px: 4,
                       color: '#d4af37',
                       borderColor: 'rgba(212, 175, 55, 0.6)',
