@@ -160,7 +160,7 @@ const GuestLayout: React.FC = () => {
                 Rooms
               </Button>
               <Button 
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/portal')}
                 sx={navItemStyle}
               >
                 Staff

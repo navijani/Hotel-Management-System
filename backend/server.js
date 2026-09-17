@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -68,6 +69,83 @@ app.get('/api/test', async (req, res) => {
   } catch (error) {
     console.error('Database query error:', error);
     res.status(500).json({ error: 'Database query failed' });
+  }
+});
+
+app.post('/api/admin/signin', (req, res) => {
+  const username = process.env.ADMIN_USERNAME || 'hms@gmail.com';
+  const password = process.env.ADMIN_PASSWORD || 'qwertyuiop';
+
+  if (req.body.username?.trim() !== username || req.body.password !== password) {
+    return res.status(401).json({ error: 'Invalid administrator credentials.' });
+  }
+
+  res.json({ message: 'Administrator login successful.' });
+});
+
+// Staff authentication and approval workflow
+app.post('/api/staff/signup', async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter'];
+
+    if (!username || !password || !allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Username, password, and a valid role are required.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, FALSE)', [username.trim(), passwordHash, role]);
+    res.status(201).json({ message: 'Registration submitted. An administrator must approve your account before you can sign in.' });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'That username is already registered.' });
+    }
+    console.error('Staff signup error:', error);
+    res.status(500).json({ error: 'Unable to create staff account.' });
+  }
+});
+
+app.post('/api/staff/signin', async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    const [rows] = await pool.query('SELECT id, username, password, role, active FROM Staff WHERE username = ? AND role = ? LIMIT 1', [username?.trim(), role]);
+    const staff = rows[0];
+
+    if (!staff || !(await bcrypt.compare(password || '', staff.password))) {
+      return res.status(401).json({ error: 'Invalid staff credentials.' });
+    }
+    if (!staff.active) {
+      return res.status(403).json({ error: 'Your account is waiting for administrator approval.' });
+    }
+
+    res.json({ id: staff.id, username: staff.username, role: staff.role });
+  } catch (error) {
+    console.error('Staff signin error:', error);
+    res.status(500).json({ error: 'Unable to sign in.' });
+  }
+});
+
+app.get('/api/staff', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, username, role, active, created_at FROM Staff ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Staff list error:', error);
+    res.status(500).json({ error: 'Unable to load staff accounts.' });
+  }
+});
+
+app.patch('/api/staff/:id/status', async (req, res) => {
+  try {
+    const active = Boolean(req.body.active);
+    const [result] = await pool.query('UPDATE Staff SET active = ? WHERE id = ?', [active, req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Staff member not found.' });
+    }
+    res.json({ message: active ? 'Staff member approved.' : 'Staff member deactivated.' });
+  } catch (error) {
+    console.error('Staff status update error:', error);
+    res.status(500).json({ error: 'Unable to update staff status.' });
   }
 });
 
