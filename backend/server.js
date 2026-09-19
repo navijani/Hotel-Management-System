@@ -46,22 +46,10 @@ const pool = mysql.createPool({
   }
 });
 
-// Test database connection
-pool.getConnection()
-  .then(connection => {
-    console.log('Successfully connected to the MySQL database.');
-    connection.release();
-  })
-  .catch(err => {
-    console.error('Error connecting to the database:', err.message);
-  });
-
-// Root route so the backend shows a useful response in the browser
 app.get('/', (req, res) => {
   res.status(200).send('Hotel Management backend is running. Use /api/test or open the frontend app on port 5173.');
 });
 
-// Basic route
 app.get('/api/test', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT 1 + 1 AS solution');
@@ -83,7 +71,77 @@ app.post('/api/admin/signin', (req, res) => {
   res.json({ message: 'Administrator login successful.' });
 });
 
-// Staff authentication and approval workflow
+app.post('/api/guest/signup', async (req, res) => {
+  try {
+    const { first_name, last_name, email, phone_number, identity_number, password } = req.body;
+    const requiredFields = [first_name, last_name, email, phone_number, identity_number, password];
+
+    if (requiredFields.some((field) => typeof field !== 'string' || !field.trim())) {
+      return res.status(400).json({ error: 'All guest registration fields are required.' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
+    }
+
+    const [existingGuests] = await pool.query(
+      'SELECT guest_id FROM GUEST WHERE email = ? OR identity_number = ? LIMIT 1',
+      [email.trim(), identity_number.trim()]
+    );
+
+    if (existingGuests.length > 0) {
+      return res.status(409).json({ error: 'An account with that email or identity number already exists.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const [result] = await pool.query(
+      'INSERT INTO GUEST (first_name, last_name, email, phone_number, identity_number, password) VALUES (?, ?, ?, ?, ?, ?)',
+      [first_name.trim(), last_name.trim(), email.trim(), phone_number.trim(), identity_number.trim(), passwordHash]
+    );
+
+    res.status(201).json({
+      message: 'Guest account created successfully.',
+      guest_id: result.insertId,
+    });
+  } catch (error) {
+    console.error('Guest signup error:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'An account with those details already exists.' });
+    }
+    res.status(500).json({ error: 'Unable to create guest account.' });
+  }
+});
+
+app.post('/api/guest/signin', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT guest_id, first_name, last_name, email, password FROM GUEST WHERE email = ? LIMIT 1',
+      [email.trim()]
+    );
+    const guest = rows[0];
+
+    if (!guest || !(await bcrypt.compare(password, guest.password))) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    res.json({
+      guest_id: guest.guest_id,
+      first_name: guest.first_name,
+      last_name: guest.last_name,
+      email: guest.email,
+    });
+  } catch (error) {
+    console.error('Guest signin error:', error);
+    res.status(500).json({ error: 'Unable to sign in.' });
+  }
+});
+
 app.post('/api/staff/signup', async (req, res) => {
   try {
     const { username, password, role } = req.body;
@@ -118,10 +176,130 @@ app.post('/api/staff/signin', async (req, res) => {
       return res.status(403).json({ error: 'Your account is waiting for administrator approval.' });
     }
 
-    res.json({ id: staff.id, username: staff.username, role: staff.role });
+    res.json({ id: staff.id, staff_id: staff.id, username: staff.username, role: staff.role });
   } catch (error) {
     console.error('Staff signin error:', error);
     res.status(500).json({ error: 'Unable to sign in.' });
+  }
+});
+
+app.get('/api/staff/:id/workspace', async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const [staffRows] = await pool.query('SELECT id, username, role, active, mobile_number FROM Staff WHERE id = ? LIMIT 1', [staffId]);
+    if (!staffRows[0]) {
+      return res.status(404).json({ error: 'Staff member not found.' });
+    }
+
+    const [attendance] = await pool.query(
+      "SELECT id, DATE_FORMAT(attendance_date, '%Y-%m-%d') AS attendance_date, check_in_time, check_out_time, check_in_location, check_out_location, is_busy FROM staff_attendance WHERE staff_id = ? ORDER BY attendance_date DESC LIMIT 14",
+      [staffId]
+    );
+    const [salaryRows] = await pool.query('SELECT role, rate, salary_amount FROM staff_salary WHERE staff_id = ? LIMIT 1', [staffId]);
+    res.json({ staff: staffRows[0], attendance, salary: salaryRows[0] || { role: staffRows[0].role, rate: 7, salary_amount: 0 } });
+  } catch (error) {
+    console.error('Staff workspace error:', error);
+    res.status(500).json({ error: 'Unable to load staff workspace.' });
+  }
+});
+
+app.patch('/api/staff/:id/profile', async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const { username, mobile_number, password } = req.body;
+    if (!username?.trim() || !mobile_number?.trim()) {
+      return res.status(400).json({ error: 'Username and mobile number are required.' });
+    }
+
+    const values = [username.trim(), mobile_number.trim()];
+    let query = 'UPDATE Staff SET username = ?, mobile_number = ?';
+    if (password) {
+      query += ', password = ?';
+      values.push(await bcrypt.hash(password, 12));
+    }
+    query += ' WHERE id = ?';
+    values.push(staffId);
+    await pool.query(query, values);
+    res.json({ message: 'Account settings updated.' });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'That username is already in use.' });
+    }
+    console.error('Staff profile update error:', error);
+    res.status(500).json({ error: 'Unable to update account settings.' });
+  }
+});
+
+app.post('/api/staff/:id/attendance/check-in', async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const checkInLocation = String(req.body.check_in_location || req.body.location || '').trim();
+    if (!checkInLocation) {
+      return res.status(400).json({ error: 'Location is required for check-in.' });
+    }
+    const [existingAttendance] = await pool.query(
+      'SELECT id, check_out_time FROM staff_attendance WHERE staff_id = ? AND attendance_date = CURDATE() LIMIT 1',
+      [staffId]
+    );
+    if (existingAttendance.length > 0) {
+      return res.json({ message: existingAttendance[0].check_out_time ? 'Today\'s attendance is already completed.' : 'You are already checked in today.', alreadyRecorded: true });
+    }
+    await pool.query(
+      'INSERT INTO staff_attendance (staff_id, attendance_date, check_in_time, check_in_location, is_busy) VALUES (?, CURDATE(), CURTIME(), ?, FALSE)',
+      [staffId, checkInLocation]
+    );
+    const [savedAttendance] = await pool.query(
+      'SELECT id, DATE_FORMAT(attendance_date, \'%Y-%m-%d\') AS attendance_date, check_in_time, check_in_location, is_busy FROM staff_attendance WHERE staff_id = ? AND attendance_date = CURDATE() LIMIT 1',
+      [staffId]
+    );
+    res.status(201).json({ message: 'Checked in successfully.', attendance: savedAttendance[0] });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.json({ message: 'You are already checked in today.', alreadyRecorded: true });
+    }
+    console.error('Staff check-in error:', error);
+    res.status(500).json({ error: 'Unable to record check-in.' });
+  }
+});
+
+app.post('/api/staff/:id/attendance/check-out', async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const checkOutLocation = String(req.body.check_out_location || req.body.location || '').trim();
+    if (!checkOutLocation) {
+      return res.status(400).json({ error: 'Location is required for check-out.' });
+    }
+    const [result] = await pool.query(
+      'UPDATE staff_attendance SET check_out_time = CURTIME(), check_out_location = ? WHERE staff_id = ? AND attendance_date = CURDATE() AND check_out_time IS NULL',
+      [checkOutLocation, staffId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'No open attendance record found for today.' });
+    }
+    const [savedAttendance] = await pool.query(
+      "SELECT id, DATE_FORMAT(attendance_date, '%Y-%m-%d') AS attendance_date, check_in_time, check_out_time, check_in_location, check_out_location, is_busy FROM staff_attendance WHERE staff_id = ? AND attendance_date = CURDATE() LIMIT 1",
+      [staffId]
+    );
+    res.json({ message: 'Checked out successfully.', attendance: savedAttendance[0] });
+  } catch (error) {
+    console.error('Staff check-out error:', error);
+    res.status(500).json({ error: 'Unable to record check-out.' });
+  }
+});
+
+app.patch('/api/staff/:id/attendance/busy', async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      'UPDATE staff_attendance SET is_busy = ? WHERE staff_id = ? AND attendance_date = CURDATE()',
+      [Boolean(req.body.is_busy), Number(req.params.id)]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Check in before changing busy status.' });
+    }
+    res.json({ message: 'Busy status updated.' });
+  } catch (error) {
+    console.error('Staff busy status error:', error);
+    res.status(500).json({ error: 'Unable to update busy status.' });
   }
 });
 
@@ -149,7 +327,6 @@ app.patch('/api/staff/:id/status', async (req, res) => {
   }
 });
 
-// Fetch Rooms
 app.get('/api/rooms', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM Room');
@@ -160,23 +337,17 @@ app.get('/api/rooms', async (req, res) => {
   }
 });
 
-// Create Room
 app.post('/api/rooms', upload.single('image'), async (req, res) => {
   try {
     const { room_number, type, capacity, price_per_night, status } = req.body;
     let image_url = '';
-    
+
     if (req.file) {
-      // Construct a URL to access the uploaded file
       image_url = `http://localhost:5000/uploads/${req.file.filename}`;
     } else if (req.body.image_url) {
-      // Fallback if they passed a URL instead
       image_url = req.body.image_url;
     }
-    
-    // In a real system, you would first resolve 'type' to a room_type_id 
-    // from ROOM_TYPE table, and branch_id from a BRANCH table.
-    // Assuming branch_id = 1 and resolving type manually or assuming the DB schema allows these directly.
+
     const [result] = await pool.query(
       'INSERT INTO Room (room_number, type, capacity, price_per_night, status, image) VALUES (?, ?, ?, ?, ?, ?)',
       [room_number, type, capacity, price_per_night, status || 'Available', image_url]
@@ -185,30 +356,25 @@ app.post('/api/rooms', upload.single('image'), async (req, res) => {
     res.status(201).json({ message: 'Room created successfully', roomId: result.insertId, room: req.body });
   } catch (error) {
     console.error('Create room error:', error);
-    if (error.code === 'ER_NO_SUCH_TABLE' || error.message.includes('Table')) {
-      return res.status(201).json({ message: 'Room created (Mock)', roomId: Math.floor(Math.random() * 1000), room: req.body });
-    }
     res.status(500).json({ error: 'Failed to create room' });
   }
 });
 
-// Create Booking
 app.post('/api/bookings', async (req, res) => {
   try {
     const { firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate, roomType } = req.body;
-    
-    // We assume the DB is running and has GUEST, ROOM, BOOKING tables.
-    // However, if the DB is not fully seeded or available, we might want to return a successful mock response.
-    // For a real implementation, we'd use a transaction:
-    
+
+    if ([firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate, roomType].some((value) => typeof value !== 'string' || !value.trim())) {
+      return res.status(400).json({ error: 'All booking fields are required.' });
+    }
+
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
-      // 1. Check or insert guest
       let guestId;
       const [existingGuest] = await connection.query(
-        'SELECT guest_id FROM GUEST WHERE identification_no = ?',
+        'SELECT guest_id FROM GUEST WHERE identity_number = ?',
         [identificationNo]
       );
 
@@ -216,19 +382,23 @@ app.post('/api/bookings', async (req, res) => {
         guestId = existingGuest[0].guest_id;
       } else {
         const [guestResult] = await connection.query(
-          'INSERT INTO GUEST (first_name, last_name, email, phone_number, identification_no) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO GUEST (first_name, last_name, email, phone_number, identity_number) VALUES (?, ?, ?, ?, ?)',
           [firstName, lastName, email, phone, identificationNo]
         );
         guestId = guestResult.insertId;
       }
 
-      // 2. Find an available room (Mocking room_id = 1 for simplicity if not found)
-      let roomId = 1; 
-      // Example real query: 
-      // const [rooms] = await connection.query('SELECT room_id FROM ROOM WHERE current_status = "Available" LIMIT 1');
-      // if (rooms.length > 0) roomId = rooms[0].room_id;
+      const [availableRooms] = await connection.query(
+        'SELECT room_id FROM Room WHERE type = ? AND status = ? LIMIT 1',
+        [roomType, 'Available']
+      );
+      if (availableRooms.length === 0) {
+        const noRoomError = new Error('No room is available for the selected type.');
+        noRoomError.statusCode = 409;
+        throw noRoomError;
+      }
+      const roomId = availableRooms[0].room_id;
 
-      // 3. Create booking
       const [bookingResult] = await connection.query(
         'INSERT INTO BOOKING (guest_id, room_id, check_in_date, check_out_date, booking_status) VALUES (?, ?, ?, ?, ?)',
         [guestId, roomId, checkInDate, checkOutDate, 'Booked']
@@ -244,12 +414,7 @@ app.post('/api/bookings', async (req, res) => {
     }
   } catch (error) {
     console.error('Booking error:', error);
-    // If DB isn't fully set up yet, fallback to a mock success for the frontend
-    if (error.code === 'ER_NO_SUCH_TABLE' || error.message.includes('Table')) {
-      console.log('Mocking successful booking due to missing tables.');
-      return res.status(201).json({ message: 'Booking successful (Mock)', bookingId: Math.floor(Math.random() * 1000) });
-    }
-    res.status(500).json({ error: 'Failed to create booking' });
+    res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Failed to create booking' });
   }
 });
 

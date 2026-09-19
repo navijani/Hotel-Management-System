@@ -39,6 +39,13 @@ const GuestLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(() => window.sessionStorage.getItem('guestSignedIn') === 'true');
+
+  useEffect(() => {
+    const handleAuthChange = () => setIsSignedIn(window.sessionStorage.getItem('guestSignedIn') === 'true');
+    window.addEventListener('guestAuthChanged', handleAuthChange);
+    return () => window.removeEventListener('guestAuthChanged', handleAuthChange);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -84,14 +91,20 @@ const GuestLayout: React.FC = () => {
   };
 
   const handleBookNow = () => {
-    const isSignedIn = window.sessionStorage.getItem('guestSignedIn') === 'true';
-
     if (isSignedIn) {
       navigate('/rooms');
       return;
     }
 
-    navigate('/?panel=auth&mode=signin');
+    navigate('/?panel=auth&mode=choice');
+  };
+
+  const handleLogout = () => {
+    window.sessionStorage.removeItem('guestSignedIn');
+    window.sessionStorage.removeItem('guestProfile');
+    setIsSignedIn(false);
+    window.dispatchEvent(new Event('guestAuthChanged'));
+    navigate('/');
   };
 
   return (
@@ -146,6 +159,11 @@ const GuestLayout: React.FC = () => {
             </Typography>
             
             <Box sx={{ display: 'flex', gap: { xs: 2, md: 5 }, alignItems: 'center' }}>
+              {isSignedIn && (
+                <Button onClick={handleLogout} sx={navItemStyle}>
+                  Logout
+                </Button>
+              )}
               <Button 
                 onClick={() => navigate('/rooms')}
                 sx={{ 

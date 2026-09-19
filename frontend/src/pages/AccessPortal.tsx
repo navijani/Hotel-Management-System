@@ -42,8 +42,10 @@ const AccessPortal: React.FC = () => {
         return;
       }
 
-      await axios.post('http://localhost:5000/api/staff/signin', { username: email.trim(), password, role });
+      const response = await axios.post('http://localhost:5000/api/staff/signin', { username: email.trim(), password, role });
       sessionStorage.setItem('staffRole', role);
+      sessionStorage.setItem('staffId', String(response.data.staff_id || response.data.id));
+      sessionStorage.setItem('staffProfile', JSON.stringify(response.data));
       navigate(`/staff/${role}`);
     } catch (requestError) {
       if (axios.isAxiosError(requestError)) {

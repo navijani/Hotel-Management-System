@@ -4,7 +4,7 @@ export interface Guest {
   last_name: string;
   email: string;
   phone_number: string;
-  identification_no: string;
+  identity_number: string;
 }
 
 export interface Branch {
