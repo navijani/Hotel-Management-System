@@ -7,6 +7,9 @@ import MainLayout from './layouts/MainLayout';
 import ReceptionDashboard from './pages/reception/Dashboard';
 import ServiceDashboard from './pages/service/ServiceDashboard';
 import ReportsDashboard from './pages/management/ReportsDashboard';
+import BillingOverview from './pages/management/billing/BillingOverview';
+import BillingInvoice from './pages/management/billing/BillingInvoice';
+import BillingRevenue from './pages/management/billing/BillingRevenue';
 
 import GuestLayout from './layouts/GuestLayout';
 import Home from './pages/guest/Home';
@@ -56,7 +59,15 @@ function App() {
             <Route index element={<ReceptionDashboard />} />
             <Route path="service" element={<ServiceDashboard />} />
             <Route path="management" element={<ReportsDashboard />} />
+            <Route path="management/billing" element={<BillingOverview />} />
+            <Route path="management/billing/invoice" element={<BillingInvoice />} />
+            <Route path="management/billing/revenue" element={<BillingRevenue />} />
           </Route>
+
+          {/* Temporary preview route for local billing UI review */}
+          <Route path="/billing-preview" element={<BillingOverview />} />
+          <Route path="/invoice-preview" element={<BillingInvoice />} />
+          <Route path="/revenue-preview" element={<BillingRevenue />} />
           
           {/* System Admin Panel Routes */}
           <Route path="/system-admin" element={<AdminGuard><SystemAdminLayout /></AdminGuard>}>
