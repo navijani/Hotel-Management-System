@@ -48,6 +48,28 @@ export interface Booking {
   created_at: string;
 }
 
+export interface BookingBillingSummary {
+  booking_id: number;
+  booking_status: BookingStatus;
+  guest_name: string;
+  identification_no: string;
+  room_number: string;
+  room_type: string;
+  branch: string;
+  check_in_at: string;
+  check_out_at: string;
+  nights: number;
+  room_daily_rate: number;
+  room_total: number;
+  service_total: number;
+  tax_amount: number;
+  discount_amount: number;
+  net_total: number;
+  total_paid: number;
+  outstanding_balance: number;
+  invoice_status: InvoiceStatus;
+}
+
 export interface Service {
   service_id: number;
   service_name: string;
@@ -66,6 +88,11 @@ export interface ServiceUsage {
   total_price: number;
 }
 
+export interface DetailedServiceUsage extends ServiceUsage {
+  service_name: string;
+  branch?: string;
+}
+
 export type InvoiceStatus = 'Paid' | 'Unpaid' | 'Partial';
 
 export interface Invoice {
@@ -82,12 +109,33 @@ export interface Invoice {
   created_at: string;
 }
 
-export type PaymentMethod = 'Cash' | 'Credit Card' | 'Bank Transfer' | 'Online';
+export type PaymentMethod = 'Cash' | 'Card' | 'Bank Transfer' | 'Online Transfer';
 
 export interface Payment {
   payment_id: number;
   booking_id: number;
   payment_date: string;
+  amount_paid: number;
+  payment_method: PaymentMethod;
+  payment_notes: string;
+}
+
+export interface BillingRevenueByBranch {
+  branch: string;
+  room_charges: number;
+  service_charges: number;
+  total_revenue: number;
+  booking_count: number;
+}
+
+export interface BillingWorkspace {
+  bookings: BookingBillingSummary[];
+  service_usages: DetailedServiceUsage[];
+  payments: Payment[];
+  monthly_revenue: BillingRevenueByBranch[];
+}
+
+export interface BillingPaymentRequest {
   amount_paid: number;
   payment_method: PaymentMethod;
   payment_notes: string;
