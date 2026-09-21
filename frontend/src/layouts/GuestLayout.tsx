@@ -160,10 +160,16 @@ const GuestLayout: React.FC = () => {
                 Rooms
               </Button>
               <Button 
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/staff')}
                 sx={navItemStyle}
               >
                 Staff
+              </Button>
+              <Button
+                onClick={() => navigate('/admin')}
+                sx={navItemStyle}
+              >
+                Admin
               </Button>
               <Button 
                 variant="contained"

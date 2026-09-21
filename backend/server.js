@@ -17,15 +17,15 @@ app.use(cors());
 app.use(express.json());
 
 const bookingLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
+  windowMs: 10 * 60 * 1000,
   limit: 100,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many booking attempts. Please try again later.' },
 }); 
 const authLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  limit: 100,
+  windowMs: 10 * 60 * 1000,
+  limit: 50,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts. Please try again later.' },
@@ -49,6 +49,7 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage: storage });
+const barItemImageUpload = multer({ storage: multer.memoryStorage() });
 
 // Serve uploads directory statically
 app.use('/uploads', express.static('uploads'));
@@ -69,6 +70,36 @@ const pool = mysql.createPool({
   }
 });
 
+const requireAdmin = (req, res, next) => {
+  if (req.get('x-user-role') !== 'admin') {
+    return res.status(403).json({ error: 'Administrator access is required.' });
+  }
+  next();
+};
+
+const requireBarStaff = async (req, res, next) => {
+  const staffId = Number(req.body.staff_id);
+  if (!Number.isInteger(staffId) || staffId <= 0) {
+    return res.status(400).json({ error: 'A valid staff_id is required.' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, role, active FROM Staff WHERE id = ? LIMIT 1',
+      [staffId]
+    );
+    const staff = rows[0];
+    if (!staff || !staff.active || !['bar', 'waiter'].includes(staff.role)) {
+      return res.status(403).json({ error: 'Only active bar staff or waiters can adjust stock.' });
+    }
+    req.staff = staff;
+    next();
+  } catch (error) {
+    console.error('Bar staff authorization error:', error);
+    res.status(500).json({ error: 'Unable to verify staff permissions.' });
+  }
+};
+
 app.get('/', (req, res) => {
   res.status(200).send('Hotel Management backend is running. Use /api/test or open the frontend app on port 5173.');
 });
@@ -80,6 +111,116 @@ app.get('/api/test', async (req, res) => {
   } catch (error) {
     console.error('Database query error:', error);
     res.status(500).json({ error: 'Database query failed' });
+  }
+});
+
+app.get('/api/bar/items', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT item_id, item_name, category, size, in_stock, unit_price, last_updated_by FROM BarItem ORDER BY item_name'
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Bar items list error:', error);
+    res.status(500).json({ error: 'Unable to load bar items.' });
+  }
+});
+
+app.get('/api/bar/items/:id/image', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT image, image_type FROM BarItem WHERE item_id = ? LIMIT 1',
+      [Number(req.params.id)]
+    );
+    if (!rows[0] || !rows[0].image) {
+      return res.status(404).json({ error: 'Bar item image not found.' });
+    }
+    res.setHeader('Content-Type', rows[0].image_type || 'application/octet-stream');
+    res.send(rows[0].image);
+  } catch (error) {
+    console.error('Bar item image error:', error);
+    res.status(500).json({ error: 'Unable to load bar item image.' });
+  }
+});
+
+app.post('/api/admin/bar/items', requireAdmin, barItemImageUpload.single('image'), async (req, res) => {
+  try {
+    const { item_name, category, size, in_stock, unit_price, last_updated_by } = req.body;
+    const parsedSize = Number(size);
+    const parsedStock = in_stock === undefined || in_stock === '' ? 0 : Number(in_stock);
+    const parsedPrice = Number(unit_price);
+    const parsedUpdater = last_updated_by ? Number(last_updated_by) : null;
+
+    if (!item_name?.trim() || !Number.isInteger(parsedSize) || parsedSize <= 0 || !Number.isInteger(parsedStock) || parsedStock < 0 || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ error: 'item_name, positive size, non-negative stock, and unit_price are required.' });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO BarItem (item_name, category, size, in_stock, unit_price, image, image_type, last_updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [item_name.trim(), category?.trim() || 'Soft Drink', parsedSize, parsedStock, parsedPrice, req.file?.buffer || null, req.file?.mimetype || null, parsedUpdater]
+    );
+    res.status(201).json({ message: 'Bar item created successfully.', item_id: result.insertId });
+  } catch (error) {
+    console.error('Bar item create error:', error);
+    res.status(500).json({ error: 'Unable to create bar item.' });
+  }
+});
+
+app.put('/api/admin/bar/items/:id', requireAdmin, barItemImageUpload.single('image'), async (req, res) => {
+  try {
+    const allowedFields = ['item_name', 'category', 'size', 'in_stock', 'unit_price', 'last_updated_by'];
+    const updates = [];
+    const values = [];
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        let value = req.body[field];
+        if (['size', 'in_stock', 'last_updated_by'].includes(field)) value = value === '' ? null : Number(value);
+        if (field === 'unit_price') value = Number(value);
+        if (field === 'item_name' || field === 'category') value = String(value).trim();
+        updates.push(`${field} = ?`);
+        values.push(value);
+      }
+    }
+    if (req.file) {
+      updates.push('image = ?', 'image_type = ?');
+      values.push(req.file.buffer, req.file.mimetype);
+    }
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'At least one bar item field is required.' });
+    }
+
+    values.push(Number(req.params.id));
+    const [result] = await pool.query(`UPDATE BarItem SET ${updates.join(', ')} WHERE item_id = ?`, values);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Bar item not found.' });
+    res.json({ message: 'Bar item updated successfully.' });
+  } catch (error) {
+    console.error('Bar item update error:', error);
+    res.status(500).json({ error: 'Unable to update bar item.' });
+  }
+});
+
+app.patch('/api/bar/items/:id/stock', requireBarStaff, async (req, res) => {
+  try {
+    const addedStock = Number(req.body.added_stock);
+    if (!Number.isInteger(addedStock)) {
+      return res.status(400).json({ error: 'added_stock must be a whole number.' });
+    }
+
+    const [currentRows] = await pool.query('SELECT in_stock FROM BarItem WHERE item_id = ? LIMIT 1', [Number(req.params.id)]);
+    if (!currentRows[0]) return res.status(404).json({ error: 'Bar item not found.' });
+    if (Number(currentRows[0].in_stock) + addedStock < 0) {
+      return res.status(400).json({ error: 'Stock cannot be lower than zero.' });
+    }
+
+    const [result] = await pool.query(
+      'UPDATE BarItem SET in_stock = in_stock + ?, last_updated_by = ? WHERE item_id = ?',
+      [addedStock, req.staff.id, Number(req.params.id)]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Bar item not found.' });
+    res.json({ message: 'Bar item stock updated successfully.' });
+  } catch (error) {
+    console.error('Bar item stock update error:', error);
+    res.status(500).json({ error: 'Unable to update bar item stock.' });
   }
 });
 
@@ -195,7 +336,9 @@ app.post('/api/staff/signin', async (req, res) => {
     );
     const staff = rows[0];
 
-    if (staff && !staff.active && staff.failed_login_attempts >= 5) {
+      const failedLoginAttempts = Number(staff?.failed_login_attempts || 0);
+
+      if (staff && !staff.active && failedLoginAttempts >= 5) {
       return res.status(403).json({
         error: 'Your account is under investigation. Please contact hms@gmail.com for reactivation.',
       });
@@ -207,7 +350,7 @@ app.post('/api/staff/signin', async (req, res) => {
 
     if (!staff || !(await bcrypt.compare(password || '', staff.password))) {
       if (staff) {
-        const nextAttemptCount = staff.failed_login_attempts + 1;
+          const nextAttemptCount = failedLoginAttempts + 1;
         await pool.query(
           'UPDATE Staff SET failed_login_attempts = ?, active = CASE WHEN ? >= 5 THEN FALSE ELSE active END WHERE id = ?',
           [nextAttemptCount, nextAttemptCount, staff.id]
@@ -234,7 +377,7 @@ app.post('/api/staff/signin', async (req, res) => {
 app.get('/api/staff/:id/workspace', async (req, res) => {
   try {
     const staffId = Number(req.params.id);
-    const [staffRows] = await pool.query('SELECT id, username, role, active, mobile_number FROM Staff WHERE id = ? LIMIT 1', [staffId]);
+      const [staffRows] = await pool.query('SELECT id, username, role, active FROM Staff WHERE id = ? LIMIT 1', [staffId]);
     if (!staffRows[0]) {
       return res.status(404).json({ error: 'Staff member not found.' });
     }
@@ -243,7 +386,7 @@ app.get('/api/staff/:id/workspace', async (req, res) => {
       "SELECT id, DATE_FORMAT(attendance_date, '%Y-%m-%d') AS attendance_date, check_in_time, check_out_time, check_in_location, check_out_location, is_busy FROM staff_attendance WHERE staff_id = ? ORDER BY attendance_date DESC LIMIT 14",
       [staffId]
     );
-    const [salaryRows] = await pool.query('SELECT role, rate, salary_amount FROM staff_salary WHERE staff_id = ? LIMIT 1', [staffId]);
+    const [salaryRows] = await pool.query('SELECT role, rate, salary_amount FROM staff_salary WHERE role = ? LIMIT 1', [staffRows[0].role]);
     res.json({ staff: staffRows[0], attendance, salary: salaryRows[0] || { role: staffRows[0].role, rate: 7, salary_amount: 0 } });
   } catch (error) {
     console.error('Staff workspace error:', error);
@@ -254,13 +397,13 @@ app.get('/api/staff/:id/workspace', async (req, res) => {
 app.patch('/api/staff/:id/profile', async (req, res) => {
   try {
     const staffId = Number(req.params.id);
-    const { username, mobile_number, password } = req.body;
-    if (!username?.trim() || !mobile_number?.trim()) {
-      return res.status(400).json({ error: 'Username and mobile number are required.' });
+    const { username, password } = req.body;
+    if (!username?.trim()) {
+      return res.status(400).json({ error: 'Username is required.' });
     }
 
-    const values = [username.trim(), mobile_number.trim()];
-    let query = 'UPDATE Staff SET username = ?, mobile_number = ?';
+    const values = [username.trim()];
+    let query = 'UPDATE Staff SET username = ?';
     if (password) {
       query += ', password = ?';
       values.push(await bcrypt.hash(password, 12));
