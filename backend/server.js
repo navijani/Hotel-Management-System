@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import { rateLimit } from 'express-rate-limit';
 
 dotenv.config();
 
@@ -14,6 +15,14 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+const bookingRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many booking attempts. Please try again later.' },
+});
 
 // Configure multer storage
 const storage = multer.diskStorage({
@@ -39,7 +48,7 @@ const pool = mysql.createPool({
   database: (process.env.DB_NAME || 'hotel_db').trim(),
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
+  queueLimit: 20,
   ssl: {
     minVersion: 'TLSv1.2',
     rejectUnauthorized: true
@@ -360,7 +369,7 @@ app.post('/api/rooms', upload.single('image'), async (req, res) => {
   }
 });
 
-app.post('/api/bookings', async (req, res) => {
+app.post('/api/bookings', bookingRateLimit, async (req, res) => {
   try {
     const { firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate, roomType } = req.body;
 
