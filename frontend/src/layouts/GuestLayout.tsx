@@ -183,6 +183,12 @@ const GuestLayout: React.FC = () => {
               >
                 Staff
               </Button>
+              <Button
+                onClick={() => navigate('/admin')}
+                sx={navItemStyle}
+              >
+                Admin
+              </Button>
               <Button 
                 variant="contained"
                 onClick={handleBookNow}

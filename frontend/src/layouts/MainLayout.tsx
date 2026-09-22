@@ -26,6 +26,7 @@ import {
   Dashboard as DashboardIcon,
   RoomService as ServiceIcon,
   BarChart as ReportIcon,
+  LocalBar as BarIcon,
   Notifications as NotificationsIcon,
   ExitToApp as LogoutIcon,
 } from '@mui/icons-material';
@@ -46,10 +47,16 @@ const MainLayout: React.FC = () => {
     setBranch(event.target.value as string);
   };
 
+  const handleSignOut = () => {
+    window.sessionStorage.removeItem('hmsAdminSignedIn');
+    navigate('/admin/signin', { replace: true });
+  };
+
   const menuItems = [
     { text: 'Reception', icon: <DashboardIcon />, path: '/admin' },
     { text: 'Service Logging', icon: <ServiceIcon />, path: '/admin/service' },
     { text: 'Management', icon: <ReportIcon />, path: '/admin/management' },
+    { text: 'Bar Inventory', icon: <BarIcon />, path: '/admin/bar' },
   ];
 
   const drawer = (
@@ -154,7 +161,7 @@ const MainLayout: React.FC = () => {
             <Typography variant="body2" sx={{ display: { xs: 'none', md: 'block' }, fontWeight: 600 }}>
               Admin User
             </Typography>
-            <IconButton color="inherit" sx={{ ml: 1, transition: 'transform 0.2s, color 0.2s', '&:hover': { transform: 'scale(1.1)', color: '#d4af37' } }}>
+            <IconButton onClick={handleSignOut} color="inherit" sx={{ ml: 1, transition: 'transform 0.2s, color 0.2s', '&:hover': { transform: 'scale(1.1)', color: '#d4af37' } }}>
               <LogoutIcon />
             </IconButton>
           </Box>
