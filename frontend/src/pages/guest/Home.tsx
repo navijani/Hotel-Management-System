@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip } from '@mui/material';
+import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip, Alert } from '@mui/material';
+import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import WifiIcon from '@mui/icons-material/Wifi';
 import PoolIcon from '@mui/icons-material/Pool';
@@ -26,7 +27,20 @@ const Home: React.FC = () => {
     return window.sessionStorage.getItem('guestSignedIn') === 'true';
   });
   const [isFlipped, setIsFlipped] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'signup'>('signin');
+  const [signupForm, setSignupForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone_number: '',
+    identity_number: '',
+    password: '',
+  });
+  const [signupMessage, setSignupMessage] = useState({ type: '', text: '' });
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [signinForm, setSigninForm] = useState({ email: '', password: '' });
+  const [signinMessage, setSigninMessage] = useState({ type: '', text: '' });
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -34,7 +48,7 @@ const Home: React.FC = () => {
     const mode = searchParams.get('mode');
 
     if (panel === 'auth') {
-      setAuthMode(mode === 'signup' ? 'signup' : 'signin');
+      setAuthMode(mode === 'signup' || mode === 'choice' ? mode : 'signin');
       setIsFlipped(true);
       return;
     }
@@ -60,7 +74,7 @@ const Home: React.FC = () => {
     }
   };
 
-  const openAuthPanel = (mode: 'signin' | 'signup' = 'signin') => {
+  const openAuthPanel = (mode: 'choice' | 'signin' | 'signup' = 'signin') => {
     setAuthMode(mode);
     setIsFlipped(true);
     setSearchParams({ panel: 'auth', mode });
@@ -71,10 +85,51 @@ const Home: React.FC = () => {
     setSearchParams({});
   };
 
-  const markSignedIn = () => {
-    window.sessionStorage.setItem('guestSignedIn', 'true');
-    setIsSignedIn(true);
-    closeAuthPanel();
+  const handleSigninChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setSigninForm((currentForm) => ({ ...currentForm, [name]: value }));
+  };
+
+  const handleSignin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSigningIn(true);
+    setSigninMessage({ type: '', text: '' });
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/guest/signin', signinForm);
+      window.sessionStorage.setItem('guestSignedIn', 'true');
+      window.sessionStorage.setItem('guestProfile', JSON.stringify(response.data));
+      setIsSignedIn(true);
+      window.dispatchEvent(new Event('guestAuthChanged'));
+      closeAuthPanel();
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.error : 'Unable to sign in.';
+      setSigninMessage({ type: 'error', text: message || 'Unable to sign in.' });
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleSignupChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setSignupForm((currentForm) => ({ ...currentForm, [name]: value }));
+  };
+
+  const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSigningUp(true);
+    setSignupMessage({ type: '', text: '' });
+
+    try {
+      await axios.post('http://localhost:5000/api/guest/signup', signupForm);
+      setSignupMessage({ type: 'success', text: 'Your account was created. You can now sign in.' });
+      setSignupForm({ first_name: '', last_name: '', email: '', phone_number: '', identity_number: '', password: '' });
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.error : 'Unable to create your account.';
+      setSignupMessage({ type: 'error', text: message || 'Unable to create your account.' });
+    } finally {
+      setIsSigningUp(false);
+    }
   };
 
   const handleProtectedStay = () => {
@@ -87,13 +142,25 @@ const Home: React.FC = () => {
   };
 
   const heroActionButtonSx = {
-    px: 3.5,
-    py: 2,
-    fontSize: '1.05rem',
+    px: 3,
+    py: 1.5,
+    fontSize: '0.98rem',
     fontWeight: 700,
     borderRadius: '50px',
     textTransform: 'none',
     transition: 'all 0.3s ease-in-out',
+  };
+
+  const signupFieldSx = {
+    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.82)' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#64b5f6' },
+    '& .MuiOutlinedInput-root': {
+      color: 'white',
+      '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+      '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.85)' },
+      '&.Mui-focused fieldset': { borderColor: '#2196f3' },
+    },
+    '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.72)' },
   };
 
   return (
@@ -157,7 +224,7 @@ const Home: React.FC = () => {
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
-            <source src="/hero-video.mp4" type="video/mp4" />
+            <source src="/videos/hero-video.mp4" type="video/mp4" />
           </video>
         </Box>
         
@@ -188,7 +255,7 @@ const Home: React.FC = () => {
             sx={{
               perspective: '1800px',
               width: '100%',
-              maxWidth: '900px',
+              maxWidth: '820px',
             }}
           >
             <Box
@@ -197,12 +264,12 @@ const Home: React.FC = () => {
                 transformStyle: 'preserve-3d',
                 transition: 'transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                minHeight: { xs: '860px', md: '860px' },
+                minHeight: { xs: '730px', md: '760px' },
               }}
             >
               <Box
                 sx={{
-                  p: { xs: 4, md: 8 },
+                  p: { xs: 3, md: 5 },
                   borderRadius: 8,
                   bgcolor: 'rgba(15, 23, 42, 0.4)',
                   backdropFilter: 'blur(16px)',
@@ -268,7 +335,7 @@ const Home: React.FC = () => {
                   gutterBottom 
                   sx={{ 
                     fontWeight: 900, 
-                    fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+                    fontSize: { xs: '2.6rem', sm: '3.4rem', md: '4.2rem' },
                     fontFamily: '"Playfair Display", serif',
                     lineHeight: 1.1,
                     mb: 3,
@@ -286,13 +353,13 @@ const Home: React.FC = () => {
                 <Typography 
                   variant="h5" 
                   sx={{ 
-                    mb: 4, 
+                    mb: 3, 
                     fontWeight: 300,
                     color: 'rgba(255, 255, 255, 0.85)',
                     lineHeight: 1.8,
                     maxWidth: '700px',
                     mx: 'auto',
-                    fontSize: { xs: '1.05rem', md: '1.2rem' },
+                    fontSize: { xs: '1rem', md: '1.1rem' },
                     animation: 'fadeInUp 1s ease-out forwards',
                     animationDelay: '0.8s',
                     opacity: 0,
@@ -339,7 +406,7 @@ const Home: React.FC = () => {
                     endIcon={<ArrowForwardIcon />}
                     sx={{ 
                       ...heroActionButtonSx,
-                      px: 6,
+                      px: 4.5,
                       background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
                       color: '#1a1a1a',
                       boxShadow: '0 8px 25px -8px #d4af37',
@@ -358,7 +425,7 @@ const Home: React.FC = () => {
                     size="large" 
                     sx={{ 
                       ...heroActionButtonSx,
-                      px: 6,
+                      px: 4.5,
                       color: 'white',
                       borderColor: 'rgba(255,255,255,0.5)',
                       borderWidth: '2px',
@@ -383,6 +450,8 @@ const Home: React.FC = () => {
                     onClick={() => openAuthPanel('signup')}
                     sx={{ 
                       ...heroActionButtonSx,
+                      order: -1,
+                      flexBasis: '100%',
                       px: 4,
                       color: '#d4af37',
                       borderColor: 'rgba(212, 175, 55, 0.6)',
@@ -462,44 +531,62 @@ const Home: React.FC = () => {
                       : 'Sign in to your guest account to continue with bookings, reservations, and your saved stay details.'}
                   </Typography>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="contained"
-                      size="large"
-                      onClick={markSignedIn}
-                      sx={{
-                        ...heroActionButtonSx,
-                        px: 5,
-                        background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
-                        color: '#1a1a1a',
-                        boxShadow: '0 8px 25px -8px #d4af37',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
-                        },
-                      }}
-                    >
-                      {authMode === 'signup' ? 'Sign Up' : 'Sign In'}
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={() => openAuthPanel(authMode === 'signup' ? 'signin' : 'signup')}
-                      sx={{
-                        ...heroActionButtonSx,
-                        px: 4,
-                        color: 'white',
-                        borderColor: 'rgba(255,255,255,0.45)',
-                        borderWidth: '2px',
-                        '&:hover': {
-                          borderWidth: '2px',
-                          borderColor: 'white',
-                          bgcolor: 'rgba(255,255,255,0.12)',
-                        },
-                      }}
-                    >
-                      {authMode === 'signup' ? 'Sign In' : 'Sign Up'}
-                    </Button>
+                  {signupMessage.text && authMode === 'signup' && (
+                    <Alert severity={signupMessage.type === 'success' ? 'success' : 'error'} sx={{ mb: 3, textAlign: 'left' }}>
+                      {signupMessage.text}
+                    </Alert>
+                  )}
+                  {signinMessage.text && authMode === 'signin' && (
+                    <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
+                      {signinMessage.text}
+                    </Alert>
+                  )}
+
+                  {authMode === 'signup' ? (
+                    <Box component="form" onSubmit={handleSignup} sx={{ display: 'grid', gap: 2, textAlign: 'left' }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                        <TextField sx={signupFieldSx} name="first_name" label="First name" value={signupForm.first_name} onChange={handleSignupChange} required fullWidth />
+                        <TextField sx={signupFieldSx} name="last_name" label="Last name" value={signupForm.last_name} onChange={handleSignupChange} required fullWidth />
+                      </Box>
+                      <TextField sx={signupFieldSx} name="email" type="email" label="Email address" value={signupForm.email} onChange={handleSignupChange} required fullWidth />
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                        <TextField sx={signupFieldSx} name="phone_number" label="Phone number" value={signupForm.phone_number} onChange={handleSignupChange} required fullWidth />
+                        <TextField sx={signupFieldSx} name="identity_number" label="Identity number" value={signupForm.identity_number} onChange={handleSignupChange} required fullWidth />
+                      </Box>
+                      <TextField sx={signupFieldSx} name="password" type="password" label="Password" helperText="Use at least 8 characters" value={signupForm.password} onChange={handleSignupChange} required fullWidth />
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', mt: 1 }}>
+                        <Button type="submit" variant="contained" size="large" disabled={isSigningUp} sx={{ ...heroActionButtonSx, px: 5, background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a1a', boxShadow: '0 8px 25px -8px #d4af37' }}>
+                          {isSigningUp ? 'Creating account...' : 'Create account'}
+                        </Button>
+                        <Button type="button" variant="outlined" size="large" onClick={() => openAuthPanel('signin')} sx={{ ...heroActionButtonSx, px: 4, color: 'white', borderColor: 'rgba(255,255,255,0.45)', borderWidth: '2px' }}>
+                          Sign In
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : authMode === 'signin' ? (
+                    <Box component="form" onSubmit={handleSignin} sx={{ display: 'grid', gap: 2, textAlign: 'left', animation: 'fadeInUp 0.6s ease-out' }}>
+                      <TextField sx={signupFieldSx} name="email" type="email" label="Username (email)" value={signinForm.email} onChange={handleSigninChange} required fullWidth />
+                      <TextField sx={signupFieldSx} name="password" type="password" label="Password" value={signinForm.password} onChange={handleSigninChange} required fullWidth />
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', mt: 1 }}>
+                        <Button type="submit" variant="contained" size="large" disabled={isSigningIn} sx={{ ...heroActionButtonSx, px: 5, background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a1a', boxShadow: '0 8px 25px -8px #d4af37' }}>
+                          {isSigningIn ? 'Signing in...' : 'Sign In'}
+                        </Button>
+                        <Button type="button" variant="outlined" size="large" onClick={() => openAuthPanel('signup')} sx={{ ...heroActionButtonSx, px: 4, color: 'white', borderColor: 'rgba(255,255,255,0.45)', borderWidth: '2px' }}>
+                          Sign Up
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', animation: 'fadeInUp 0.6s ease-out' }}>
+                      <Button variant="contained" size="large" onClick={() => openAuthPanel('signin')} sx={{ ...heroActionButtonSx, px: 5, background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a1a', boxShadow: '0 8px 25px -8px #d4af37' }}>
+                        Sign In
+                      </Button>
+                      <Button variant="outlined" size="large" onClick={() => openAuthPanel('signup')} sx={{ ...heroActionButtonSx, px: 4, color: 'white', borderColor: 'rgba(255,255,255,0.45)', borderWidth: '2px' }}>
+                        Sign Up
+                      </Button>
+                    </Box>
+                  )}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
                     <Button
                       variant="text"
                       onClick={closeAuthPanel}
