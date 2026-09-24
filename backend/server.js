@@ -7,6 +7,8 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
+import createRoomsRouter from './routes/rooms.js';
+import createBookingsRouter from './routes/bookings.js';
 
 dotenv.config();
 
@@ -147,14 +149,6 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
 
 app.post('/api/guest/signin', authRateLimit, async (req, res) => {
   try {
-const staffSignupLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit account creation attempts per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many staff signup attempts. Please try again later.' },
-});
-
     const { email, password } = req.body;
 
     if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
@@ -185,7 +179,7 @@ const staffSignupLimiter = rateLimit({
 
 app.post('/api/staff', authRateLimit, async (req, res) => {
   try {
-app.post('/api/staff', staffSignupLimiter, async (req, res) => {
+    const { username, password, role } = req.body;
     const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
     if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
@@ -207,7 +201,7 @@ app.post('/api/staff', staffSignupLimiter, async (req, res) => {
 // Alias for backwards compatibility
 app.post('/api/staff/signup', authRateLimit, async (req, res) => {
   try {
-app.post('/api/staff/signup', staffSignupLimiter, async (req, res) => {
+    const { username, password, role } = req.body;
     const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
     if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
@@ -390,12 +384,10 @@ app.patch('/api/staff/:id/status', async (req, res) => {
   }
 });
 
-// (Replaced by roomsRouter)
-
-const roomsRouter = require('./routes/rooms')(pool, upload);
+const roomsRouter = createRoomsRouter(pool, upload);
 app.use('/api/rooms', roomsRouter);
 
-const bookingsRouter = require('./routes/bookings')(pool, bookingRateLimit);
+const bookingsRouter = createBookingsRouter(pool, bookingRateLimit);
 app.use('/api/bookings', bookingsRouter);
 
 // Start server

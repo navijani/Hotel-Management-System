@@ -1,7 +1,8 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 
-module.exports = function(pool, upload) {
+export default function createRoomsRouter(pool, upload) {
+  const router = express.Router();
+
   // GET /api/rooms
   router.get('/', async (req, res) => {
     try {
@@ -38,4 +39,4 @@ module.exports = function(pool, upload) {
   });
 
   return router;
-};
+}
