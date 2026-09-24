@@ -125,6 +125,14 @@ app.post('/api/guest/signup', async (req, res) => {
 
 app.post('/api/guest/signin', async (req, res) => {
   try {
+const staffSignupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit account creation attempts per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many staff signup attempts. Please try again later.' },
+});
+
     const { email, password } = req.body;
 
     if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
@@ -153,23 +161,45 @@ app.post('/api/guest/signin', async (req, res) => {
   }
 });
 
-app.post('/api/staff/signup', async (req, res) => {
+app.post('/api/staff', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
-    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter'];
+app.post('/api/staff', staffSignupLimiter, async (req, res) => {
+    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
-    if (!username || !password || !allowedRoles.includes(role)) {
+    if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
       return res.status(400).json({ error: 'Username, password, and a valid role are required.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, FALSE)', [username.trim(), passwordHash, role]);
-    res.status(201).json({ message: 'Registration submitted. An administrator must approve your account before you can sign in.' });
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), passwordHash, role]);
+    res.status(201).json({ message: 'User added successfully.', id: result.insertId });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'That username is already registered.' });
     }
-    console.error('Staff signup error:', error);
+    console.error('Staff creation error:', error);
+    res.status(500).json({ error: 'Unable to create staff account.' });
+  }
+});
+
+// Alias for backwards compatibility
+app.post('/api/staff/signup', async (req, res) => {
+  try {
+app.post('/api/staff/signup', staffSignupLimiter, async (req, res) => {
+    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
+
+    if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Username, password, and a valid role are required.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), passwordHash, role]);
+    res.status(201).json({ message: 'Staff account created successfully.', id: result.insertId });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'That username is already registered.' });
+    }
+    console.error('Staff creation error:', error);
     res.status(500).json({ error: 'Unable to create staff account.' });
   }
 });
@@ -184,7 +214,7 @@ app.post('/api/staff/signin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid staff credentials.' });
     }
     if (!staff.active) {
-      return res.status(403).json({ error: 'Your account is waiting for administrator approval.' });
+      return res.status(403).json({ error: 'Your account has been deactivated. Please contact an administrator.' });
     }
 
     res.json({ id: staff.id, staff_id: staff.id, username: staff.username, role: staff.role });
