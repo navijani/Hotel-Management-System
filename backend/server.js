@@ -96,7 +96,7 @@ app.get('/api/test', async (req, res) => {
 });
 
 app.post('/api/admin/signin', authRateLimit, (req, res) => {
-  const username = process.env.ADMIN_USERNAME ;
+  const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
 
   if (req.body.username?.trim() !== username || req.body.password !== password) {
@@ -149,14 +149,6 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
 
 app.post('/api/guest/signin', authRateLimit, async (req, res) => {
   try {
-const staffSignupLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit account creation attempts per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many staff signup attempts. Please try again later.' },
-});
-
     const { email, password } = req.body;
 
     if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
@@ -187,7 +179,7 @@ const staffSignupLimiter = rateLimit({
 
 app.post('/api/staff', authRateLimit, async (req, res) => {
   try {
-app.post('/api/staff', staffSignupLimiter, async (req, res) => {
+    const { username, password, role } = req.body;
     const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
     if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
@@ -209,7 +201,7 @@ app.post('/api/staff', staffSignupLimiter, async (req, res) => {
 // Alias for backwards compatibility
 app.post('/api/staff/signup', authRateLimit, async (req, res) => {
   try {
-app.post('/api/staff/signup', staffSignupLimiter, async (req, res) => {
+    const { username, password, role } = req.body;
     const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
     if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {

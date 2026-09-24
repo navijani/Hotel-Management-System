@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
-export default function(pool, upload) {
+export default function (pool, upload) {
   // GET /api/rooms
   router.get('/', async (req, res) => {
     try {

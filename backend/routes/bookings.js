@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
-export default function(pool, bookingRateLimit) {
+export default function (pool, bookingRateLimit) {
   // POST /api/bookings
   router.post('/', bookingRateLimit, async (req, res) => {
     try {
@@ -59,7 +59,7 @@ export default function(pool, bookingRateLimit) {
              WHERE room_id = ? 
              AND booking_status IN ('Booked', 'Checked-In')
              AND (check_in_date < ? AND check_out_date > ?) LIMIT 1`,
-             [assignedRoomId, checkOutDate, checkInDate]
+            [assignedRoomId, checkOutDate, checkInDate]
           );
           if (overlap.length > 0) {
             throw { statusCode: 409, message: 'This room is already booked for the selected dates.' };
@@ -110,7 +110,7 @@ export default function(pool, bookingRateLimit) {
     try {
       const { status } = req.body;
       await pool.query('UPDATE BOOKING SET booking_status = ? WHERE booking_id = ?', [status, req.params.id]);
-      
+
       // If status is Checked-Out or Cancelled, maybe we want to free the room if it was previously occupied, 
       // but status in Room table is usually independent (handled manually or by daily cron).
       // We will just update booking_status for now.
