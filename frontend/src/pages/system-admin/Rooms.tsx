@@ -23,7 +23,11 @@ const initialForm = {
   capacity: 2,
   price_per_night: 150,
   status: 'Available',
-  image_url: ''
+  image_url: '',
+  description: '',
+  bed_type: 'King Bed',
+  room_size: '400 sqft',
+  amenities: 'Free WiFi'
 };
 
 const Rooms: React.FC = () => {
@@ -87,6 +91,10 @@ const Rooms: React.FC = () => {
       data.append('capacity', formData.capacity.toString());
       data.append('price_per_night', formData.price_per_night.toString());
       data.append('status', formData.status);
+      data.append('description', formData.description);
+      data.append('bed_type', formData.bed_type);
+      data.append('room_size', formData.room_size);
+      data.append('amenities', formData.amenities);
       if (imageFile) {
         data.append('image', imageFile);
       }
@@ -185,6 +193,18 @@ const Rooms: React.FC = () => {
                 <MenuItem value="Available">Available</MenuItem>
                 <MenuItem value="Maintenance">Maintenance</MenuItem>
               </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth label="Bed Type" name="bed_type" value={formData.bed_type} onChange={handleChange} placeholder="e.g. King Bed" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth label="Room Size" name="room_size" value={formData.room_size} onChange={handleChange} placeholder="e.g. 400 sqft" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth label="Amenities" name="amenities" value={formData.amenities} onChange={handleChange} placeholder="e.g. Free WiFi, Mini Bar" />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth multiline rows={2} label="Description" name="description" value={formData.description} onChange={handleChange} placeholder="Elegantly appointed space featuring premium amenities..." />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>Room Photo (Optional)</Typography>

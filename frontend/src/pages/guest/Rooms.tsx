@@ -16,7 +16,11 @@ const mockRooms = [
     RoomTypeID: 'Deluxe Ocean View',
     Status: 'Available',
     Price: 250,
-    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop'
+    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop',
+    Description: 'Elegantly appointed space featuring premium amenities and stunning ocean views.',
+    BedType: 'King Bed',
+    RoomSize: '450 sqft',
+    Amenities: 'Free WiFi, Balcony'
   },
   {
     RoomID: 'm2',
@@ -24,7 +28,11 @@ const mockRooms = [
     RoomTypeID: 'Premium Suite',
     Status: 'Available',
     Price: 450,
-    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1000&auto=format&fit=crop'
+    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1000&auto=format&fit=crop',
+    Description: 'Spacious suite with separate living area and exclusive lounge access.',
+    BedType: '2 Queen Beds',
+    RoomSize: '600 sqft',
+    Amenities: 'Free WiFi, Lounge Access'
   },
   {
     RoomID: 'm3',
@@ -32,7 +40,11 @@ const mockRooms = [
     RoomTypeID: 'Standard Garden',
     Status: 'Occupied',
     Price: 150,
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1000&auto=format&fit=crop'
+    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1000&auto=format&fit=crop',
+    Description: 'Cozy room with beautiful views of our award-winning gardens.',
+    BedType: 'Queen Bed',
+    RoomSize: '350 sqft',
+    Amenities: 'Free WiFi'
   }
 ];
 
@@ -50,9 +62,13 @@ const Rooms: React.FC = () => {
           RoomID: r.room_id || r.RoomID,
           RoomNumber: r.room_number || r.RoomNumber || 'TBD',
           RoomTypeID: r.type || r.RoomTypeID || 'Standard',
-          Status: r.current_status || r.Status || 'Available',
+          Status: r.current_status || r.Status || r.status || 'Available',
           Price: r.price_per_night || r.Price || 120,
-          image: r.image || mockRooms[Math.floor(Math.random() * mockRooms.length)].image
+          image: r.image || mockRooms[Math.floor(Math.random() * mockRooms.length)].image,
+          Description: r.description || 'Elegantly appointed space featuring premium amenities and stunning views.',
+          BedType: r.bed_type || 'King Bed',
+          RoomSize: r.room_size || '400 sqft',
+          Amenities: r.amenities || 'Free WiFi'
         }));
         
         if (fetchedRooms.length === 0) {
@@ -166,21 +182,21 @@ const Rooms: React.FC = () => {
                       </Box>
                       
                       <Typography color="text.secondary" sx={{ mb: 3, fontSize: '0.9rem' }}>
-                        Room {room.RoomNumber} • Elegantly appointed space featuring premium amenities and stunning views.
+                        Room {room.RoomNumber} • {room.Description}
                       </Typography>
 
                       <Box sx={{ display: 'flex', gap: 2, mb: 3, color: 'text.secondary' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <BedIcon fontSize="small" />
-                          <Typography variant="caption">King Bed</Typography>
+                          <Typography variant="caption">{room.BedType}</Typography>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <AspectRatioIcon fontSize="small" />
-                          <Typography variant="caption">400 sqft</Typography>
+                          <Typography variant="caption">{room.RoomSize}</Typography>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <WifiIcon fontSize="small" />
-                          <Typography variant="caption">Free WiFi</Typography>
+                          <Typography variant="caption">{room.Amenities}</Typography>
                         </Box>
                       </Box>
 
