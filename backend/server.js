@@ -19,6 +19,25 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Global API Rate Limiter
+const globalRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 300, // 300 requests per 15 min
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this IP. Please try again later.' },
+});
+
+// Authentication & Account Creation Rate Limiter (Brute-force protection)
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 15, // 15 login/signup attempts per 15 min
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts. Please try again later.' },
+});
+
+// Booking Rate Limiter
 const bookingRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -26,6 +45,9 @@ const bookingRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many booking attempts. Please try again later.' },
 });
+
+// Apply global rate limiting to all API endpoints
+app.use('/api/', globalRateLimit);
 
 // Configure multer storage
 const storage = multer.diskStorage({
@@ -73,7 +95,7 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
-app.post('/api/admin/signin', (req, res) => {
+app.post('/api/admin/signin', authRateLimit, (req, res) => {
   const username = process.env.ADMIN_USERNAME ;
   const password = process.env.ADMIN_PASSWORD;
 
@@ -84,7 +106,7 @@ app.post('/api/admin/signin', (req, res) => {
   res.json({ message: 'Administrator login successful.' });
 });
 
-app.post('/api/guest/signup', async (req, res) => {
+app.post('/api/guest/signup', authRateLimit, async (req, res) => {
   try {
     const { first_name, last_name, email, phone_number, identity_number, password } = req.body;
     const requiredFields = [first_name, last_name, email, phone_number, identity_number, password];
@@ -125,8 +147,16 @@ app.post('/api/guest/signup', async (req, res) => {
   }
 });
 
-app.post('/api/guest/signin', async (req, res) => {
+app.post('/api/guest/signin', authRateLimit, async (req, res) => {
   try {
+const staffSignupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit account creation attempts per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many staff signup attempts. Please try again later.' },
+});
+
     const { email, password } = req.body;
 
     if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
@@ -155,28 +185,50 @@ app.post('/api/guest/signin', async (req, res) => {
   }
 });
 
-app.post('/api/staff/signup', async (req, res) => {
+app.post('/api/staff', authRateLimit, async (req, res) => {
   try {
-    const { username, password, role } = req.body;
-    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter'];
+app.post('/api/staff', staffSignupLimiter, async (req, res) => {
+    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
-    if (!username || !password || !allowedRoles.includes(role)) {
+    if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
       return res.status(400).json({ error: 'Username, password, and a valid role are required.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, FALSE)', [username.trim(), passwordHash, role]);
-    res.status(201).json({ message: 'Registration submitted. An administrator must approve your account before you can sign in.' });
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), passwordHash, role]);
+    res.status(201).json({ message: 'User added successfully.', id: result.insertId });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'That username is already registered.' });
     }
-    console.error('Staff signup error:', error);
+    console.error('Staff creation error:', error);
     res.status(500).json({ error: 'Unable to create staff account.' });
   }
 });
 
-app.post('/api/staff/signin', async (req, res) => {
+// Alias for backwards compatibility
+app.post('/api/staff/signup', authRateLimit, async (req, res) => {
+  try {
+app.post('/api/staff/signup', staffSignupLimiter, async (req, res) => {
+    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
+
+    if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Username, password, and a valid role are required.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), passwordHash, role]);
+    res.status(201).json({ message: 'Staff account created successfully.', id: result.insertId });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'That username is already registered.' });
+    }
+    console.error('Staff creation error:', error);
+    res.status(500).json({ error: 'Unable to create staff account.' });
+  }
+});
+
+app.post('/api/staff/signin', authRateLimit, async (req, res) => {
   try {
     const { username, password, role } = req.body;
     const [rows] = await pool.query('SELECT id, username, password, role, active FROM Staff WHERE username = ? AND role = ? LIMIT 1', [username?.trim(), role]);
@@ -186,7 +238,7 @@ app.post('/api/staff/signin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid staff credentials.' });
     }
     if (!staff.active) {
-      return res.status(403).json({ error: 'Your account is waiting for administrator approval.' });
+      return res.status(403).json({ error: 'Your account has been deactivated. Please contact an administrator.' });
     }
 
     res.json({ id: staff.id, staff_id: staff.id, username: staff.username, role: staff.role });
