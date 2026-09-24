@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 
@@ -51,7 +52,8 @@ const pool = mysql.createPool({
   queueLimit: 20,
   ssl: {
     minVersion: 'TLSv1.2',
-    rejectUnauthorized: true
+    rejectUnauthorized: true,
+    ca: fs.existsSync('ca.pem') ? fs.readFileSync('ca.pem') : undefined
   }
 });
 
