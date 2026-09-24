@@ -123,6 +123,14 @@ app.post('/api/guest/signup', async (req, res) => {
 
 app.post('/api/guest/signin', async (req, res) => {
   try {
+const staffSignupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit account creation attempts per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many staff signup attempts. Please try again later.' },
+});
+
     const { email, password } = req.body;
 
     if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
@@ -153,7 +161,7 @@ app.post('/api/guest/signin', async (req, res) => {
 
 app.post('/api/staff', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+app.post('/api/staff', staffSignupLimiter, async (req, res) => {
     const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
     if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
@@ -175,7 +183,7 @@ app.post('/api/staff', async (req, res) => {
 // Alias for backwards compatibility
 app.post('/api/staff/signup', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+app.post('/api/staff/signup', staffSignupLimiter, async (req, res) => {
     const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
     if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
