@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 
@@ -51,7 +52,8 @@ const pool = mysql.createPool({
   queueLimit: 20,
   ssl: {
     minVersion: 'TLSv1.2',
-    rejectUnauthorized: true
+    rejectUnauthorized: true,
+    ca: fs.existsSync('ca.pem') ? fs.readFileSync('ca.pem') : undefined
   }
 });
 
@@ -366,110 +368,13 @@ app.patch('/api/staff/:id/status', async (req, res) => {
   }
 });
 
-app.delete('/api/staff/:id', async (req, res) => {
-  try {
-    const staffId = req.params.id;
-    const [result] = await pool.query('DELETE FROM Staff WHERE id = ?', [staffId]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-    res.json({ message: 'User removed successfully.' });
-  } catch (error) {
-    console.error('Staff deletion error:', error);
-    res.status(500).json({ error: 'Unable to remove user.' });
-  }
-});
+// (Replaced by roomsRouter)
 
-app.get('/api/rooms', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM Room');
-    res.json(rows);
-  } catch (error) {
-    console.error('Database query error:', error);
-    res.status(500).json({ error: 'Failed to fetch rooms' });
-  }
-});
+const roomsRouter = require('./routes/rooms')(pool, upload);
+app.use('/api/rooms', roomsRouter);
 
-app.post('/api/rooms', upload.single('image'), async (req, res) => {
-  try {
-    const { room_number, type, capacity, price_per_night, status } = req.body;
-    let image_url = '';
-
-    if (req.file) {
-      image_url = `http://localhost:5000/uploads/${req.file.filename}`;
-    } else if (req.body.image_url) {
-      image_url = req.body.image_url;
-    }
-
-    const [result] = await pool.query(
-      'INSERT INTO Room (room_number, type, capacity, price_per_night, status, image) VALUES (?, ?, ?, ?, ?, ?)',
-      [room_number, type, capacity, price_per_night, status || 'Available', image_url]
-    );
-
-    res.status(201).json({ message: 'Room created successfully', roomId: result.insertId, room: req.body });
-  } catch (error) {
-    console.error('Create room error:', error);
-    res.status(500).json({ error: 'Failed to create room' });
-  }
-});
-
-app.post('/api/bookings', bookingRateLimit, async (req, res) => {
-  try {
-    const { firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate, roomType } = req.body;
-
-    if ([firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate, roomType].some((value) => typeof value !== 'string' || !value.trim())) {
-      return res.status(400).json({ error: 'All booking fields are required.' });
-    }
-
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
-
-      let guestId;
-      const [existingGuest] = await connection.query(
-        'SELECT guest_id FROM GUEST WHERE identity_number = ?',
-        [identificationNo]
-      );
-
-      if (existingGuest.length > 0) {
-        guestId = existingGuest[0].guest_id;
-      } else {
-        const [guestResult] = await connection.query(
-          'INSERT INTO GUEST (first_name, last_name, email, phone_number, identity_number) VALUES (?, ?, ?, ?, ?)',
-          [firstName, lastName, email, phone, identificationNo]
-        );
-        guestId = guestResult.insertId;
-      }
-
-      const [availableRooms] = await connection.query(
-        'SELECT room_id FROM Room WHERE type = ? AND status = ? LIMIT 1',
-        [roomType, 'Available']
-      );
-      if (availableRooms.length === 0) {
-        const noRoomError = new Error('No room is available for the selected type.');
-        noRoomError.statusCode = 409;
-        throw noRoomError;
-      }
-      const roomId = availableRooms[0].room_id;
-
-      const [bookingResult] = await connection.query(
-        'INSERT INTO BOOKING (guest_id, room_id, check_in_date, check_out_date, booking_status) VALUES (?, ?, ?, ?, ?)',
-        [guestId, roomId, checkInDate, checkOutDate, 'Booked']
-      );
-
-      await connection.commit();
-      res.status(201).json({ message: 'Booking successful', bookingId: bookingResult.insertId });
-    } catch (dbError) {
-      await connection.rollback();
-      throw dbError;
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error('Booking error:', error);
-    res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Failed to create booking' });
-  }
-});
+const bookingsRouter = require('./routes/bookings')(pool, bookingRateLimit);
+app.use('/api/bookings', bookingsRouter);
 
 // Start server
 app.listen(port, () => {
