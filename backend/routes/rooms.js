@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-module.exports = function(pool, upload) {
+export default function(pool, upload) {
   // GET /api/rooms
   router.get('/', async (req, res) => {
     try {
@@ -37,5 +37,43 @@ module.exports = function(pool, upload) {
     }
   });
 
+  // PUT /api/rooms/:id
+  router.put('/:id', upload.single('image'), async (req, res) => {
+    try {
+      const { room_number, type, capacity, price_per_night, status, description, bed_type, room_size, amenities } = req.body;
+      const roomId = req.params.id;
+      let query = 'UPDATE Room SET room_number = ?, type = ?, capacity = ?, price_per_night = ?, status = ?, description = ?, bed_type = ?, room_size = ?, amenities = ?';
+      const values = [room_number, type, capacity, price_per_night, status, description, bed_type, room_size, amenities];
+
+      if (req.file) {
+        query += ', image = ?';
+        values.push(`http://localhost:5000/uploads/${req.file.filename}`);
+      } else if (req.body.image_url) {
+        query += ', image = ?';
+        values.push(req.body.image_url);
+      }
+
+      query += ' WHERE room_id = ?';
+      values.push(roomId);
+
+      await pool.query(query, values);
+      res.json({ message: 'Room updated successfully' });
+    } catch (error) {
+      console.error('Update room error:', error);
+      res.status(500).json({ error: 'Failed to update room' });
+    }
+  });
+
+  // DELETE /api/rooms/:id
+  router.delete('/:id', async (req, res) => {
+    try {
+      await pool.query('DELETE FROM Room WHERE room_id = ?', [req.params.id]);
+      res.json({ message: 'Room deleted successfully' });
+    } catch (error) {
+      console.error('Delete room error:', error);
+      res.status(500).json({ error: 'Failed to delete room' });
+    }
+  });
+
   return router;
-};
+}

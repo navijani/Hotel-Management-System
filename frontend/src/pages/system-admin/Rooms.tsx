@@ -3,9 +3,9 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, Button, Chip, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  MenuItem, Grid, CircularProgress, Alert
+  MenuItem, Grid, CircularProgress, Alert, Tooltip, Avatar
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, KingBed as KingBedIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 interface Room {
@@ -63,12 +63,49 @@ const Rooms: React.FC = () => {
     fetchRooms();
   }, []);
 
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const isSuperAdmin = sessionStorage.getItem('adminAuthenticated') === 'true';
+
   const handleOpen = () => {
+    setEditingId(null);
     setFormData(initialForm);
     setImageFile(null);
     setError('');
     setOpen(true);
   };
+  
+  const handleEdit = (room: Room) => {
+    if (!isSuperAdmin) return;
+    setEditingId(room.room_id);
+    setFormData({
+      room_number: room.room_number || '',
+      type: room.type || 'Standard',
+      capacity: room.capacity || 2,
+      price_per_night: room.price_per_night || 150,
+      status: room.status || 'Available',
+      image_url: '',
+      description: (room as any).description || '',
+      bed_type: (room as any).bed_type || 'King Bed',
+      room_size: (room as any).room_size || '400 sqft',
+      amenities: (room as any).amenities || 'Free WiFi'
+    });
+    setImageFile(null);
+    setError('');
+    setOpen(true);
+  };
+
+  const handleDelete = async (roomId: number) => {
+    if (!isSuperAdmin) return;
+    if (window.confirm('Are you sure you want to delete this room?')) {
+      try {
+        await axios.delete(`http://localhost:5000/api/rooms/${roomId}`);
+        fetchRooms();
+      } catch (err: any) {
+        alert('Failed to delete room');
+      }
+    }
+  };
+
   const handleClose = () => setOpen(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,15 +136,19 @@ const Rooms: React.FC = () => {
         data.append('image', imageFile);
       }
 
-      await axios.post('http://localhost:5000/api/rooms', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      if (editingId) {
+        await axios.put(`http://localhost:5000/api/rooms/${editingId}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } else {
+        await axios.post('http://localhost:5000/api/rooms', data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
       setOpen(false);
       fetchRooms();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add room.');
+      setError(err.response?.data?.error || 'Failed to save room.');
     } finally {
       setSubmitting(false);
     }
@@ -115,49 +156,110 @@ const Rooms: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a1a2e' }}>
-          Rooms Management
-        </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpen} sx={{ bgcolor: '#4facfe', borderRadius: 2 }}>
-          Add New Room
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, bgcolor: '#fff', p: 3, borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+            Rooms Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Manage your hotel rooms, pricing, and availability status.
+          </Typography>
+        </Box>
+        {isSuperAdmin && (
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={handleOpen} 
+            sx={{ 
+              bgcolor: '#4facfe', 
+              backgroundImage: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)',
+              borderRadius: 8,
+              px: 3,
+              py: 1,
+              fontWeight: 'bold',
+              textTransform: 'none',
+              boxShadow: '0 4px 15px rgba(79, 172, 254, 0.4)'
+            }}
+          >
+            Add New Room
+          </Button>
+        )}
       </Box>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-        <Table>
-          <TableHead sx={{ bgcolor: '#f8f9fa' }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 8px 30px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+        <Table sx={{ minWidth: 700 }}>
+          <TableHead sx={{ bgcolor: 'rgba(248, 249, 250, 0.8)', backdropFilter: 'blur(8px)' }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Room Number</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Type</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Capacity</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Price</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', align: 'center' }}>Actions</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1, py: 3 }}>Room Details</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Capacity</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Price / Night</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1, align: 'center' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} align="center"><CircularProgress size={24} sx={{ my: 2 }} /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} align="center"><CircularProgress size={30} sx={{ my: 4, color: '#4facfe' }} /></TableCell></TableRow>
             ) : rooms.length === 0 ? (
-              <TableRow><TableCell colSpan={6} align="center">No rooms found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No rooms found.</Typography></TableCell></TableRow>
             ) : (
               rooms.map((room) => (
-                <TableRow key={room.room_id} hover>
-                  <TableCell>{room.room_number}</TableCell>
-                  <TableCell>{room.type}</TableCell>
-                  <TableCell>{room.capacity}</TableCell>
-                  <TableCell>${room.price_per_night}</TableCell>
+                <TableRow key={room.room_id} hover sx={{ transition: 'background-color 0.2s' }}>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{ bgcolor: 'rgba(79, 172, 254, 0.1)', color: '#4facfe', borderRadius: 2 }}>
+                        <KingBedIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                          Room {room.room_number}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 500 }}>
+                          {room.type || 'Standard'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
+                      {room.capacity || 2} Persons
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#10b981' }}>
+                      ${room.price_per_night || 0}
+                    </Typography>
+                  </TableCell>
                   <TableCell>
                     <Chip 
-                      label={room.status} 
-                      color={room.status === 'Available' ? 'success' : room.status === 'Occupied' ? 'error' : 'warning'} 
+                      label={room.status || 'Available'} 
+                      sx={{ 
+                        fontWeight: 600,
+                        bgcolor: room.status === 'Available' ? 'rgba(16, 185, 129, 0.1)' : room.status === 'Occupied' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                        color: room.status === 'Available' ? '#10b981' : room.status === 'Occupied' ? '#ef4444' : '#f59e0b',
+                        border: 'none',
+                        px: 1
+                      }} 
                       size="small" 
                     />
                   </TableCell>
                   <TableCell align="center">
-                    <IconButton size="small" color="primary"><EditIcon fontSize="small" /></IconButton>
-                    <IconButton size="small" color="error"><DeleteIcon fontSize="small" /></IconButton>
+                    {isSuperAdmin ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                        <Tooltip title="Edit Room">
+                          <IconButton size="small" onClick={() => handleEdit(room)} sx={{ color: '#6366f1', bgcolor: 'rgba(99, 102, 241, 0.1)', '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.2)' } }}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Room">
+                          <IconButton size="small" onClick={() => handleDelete(room.room_id)} sx={{ color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.1)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' } }}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    ) : (
+                      <Chip label="Read Only" size="small" variant="outlined" sx={{ color: '#94a3b8', borderColor: '#e2e8f0', fontSize: '0.7rem' }} />
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -166,9 +268,9 @@ const Rooms: React.FC = () => {
         </Table>
       </TableContainer>
 
-      {/* Add Room Dialog */}
+      {/* Add/Edit Room Dialog */}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>Add New Room</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>{editingId ? 'Edit Room' : 'Add New Room'}</DialogTitle>
         <DialogContent dividers>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Grid container spacing={2}>

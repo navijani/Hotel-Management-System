@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-module.exports = function(pool, bookingRateLimit) {
+export default function(pool, bookingRateLimit) {
   // POST /api/bookings
   router.post('/', bookingRateLimit, async (req, res) => {
     try {
@@ -62,4 +62,4 @@ module.exports = function(pool, bookingRateLimit) {
   });
 
   return router;
-};
+}

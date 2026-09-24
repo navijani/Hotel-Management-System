@@ -7,6 +7,8 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
+import createRoomsRouter from './routes/rooms.js';
+import createBookingsRouter from './routes/bookings.js';
 
 dotenv.config();
 
@@ -340,10 +342,10 @@ app.patch('/api/staff/:id/status', async (req, res) => {
 
 // (Replaced by roomsRouter)
 
-const roomsRouter = require('./routes/rooms')(pool, upload);
+const roomsRouter = createRoomsRouter(pool, upload);
 app.use('/api/rooms', roomsRouter);
 
-const bookingsRouter = require('./routes/bookings')(pool, bookingRateLimit);
+const bookingsRouter = createBookingsRouter(pool, bookingRateLimit);
 app.use('/api/bookings', bookingsRouter);
 
 // Start server
