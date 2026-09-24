@@ -190,18 +190,17 @@ const Home: React.FC = () => {
           }
         }}
       >
-        {/* Video Background Container */}
-        <Box
+        {/* Hero Background */}
+        <Box 
           sx={{
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: -2,
-            pointerEvents: 'none',
-            overflow: 'hidden',
-            backgroundColor: '#0a0a0a'
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            backgroundColor: '#0a0a0a',
+            overflow: 'hidden'
           }}
         >
           <video
@@ -218,34 +217,33 @@ const Home: React.FC = () => {
               height: '100%',
               objectFit: 'cover',
               transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-              zIndex: -2,
+              zIndex: 0,
               opacity: 0.85,
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
             <source src="/videos/hero-video.mp4" type="video/mp4" />
           </video>
+          
+          {/* Modern Gradient Overlay */}
+          <Box 
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(212, 175, 55, 0.2) 100%)',
+              zIndex: 1
+            }}
+          />
         </Box>
-        
-        {/* Modern Gradient Overlay */}
-        <Box 
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(212, 175, 55, 0.2) 100%)',
-            zIndex: -1
-          }}
-        />
 
         <Container 
           maxWidth="lg" 
           sx={{ 
             position: 'relative', 
-            zIndex: 1, 
+            zIndex: 2, 
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -1002,38 +1000,7 @@ const Home: React.FC = () => {
         </Grid>
       </Container>
 
-      {/* Newsletter */}
-      <Box sx={{ py: 8, bgcolor: '#f3e5ab' }}>
-        <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1a1a1a' }}>
-            Join Our Newsletter
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(0,0,0,0.7)', mb: 4 }}>
-            Subscribe to receive exclusive offers, travel inspiration, and updates from our luxury hotels.
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <TextField 
-              fullWidth 
-              placeholder="Your Email Address" 
-              variant="outlined" 
-              sx={{ bgcolor: 'white', borderRadius: 1 }}
-            />
-            <Button 
-              variant="contained" 
-              size="large"
-              sx={{ 
-                bgcolor: '#1a1a1a', 
-                color: 'white', 
-                px: 4, 
-                py: { xs: 2, sm: 0 },
-                '&:hover': { bgcolor: '#333' }
-              }}
-            >
-              Subscribe
-            </Button>
-          </Box>
-        </Container>
-      </Box>
+
 
     </Box>
   );

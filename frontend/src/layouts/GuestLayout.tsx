@@ -7,9 +7,21 @@ import {
   Toolbar,
   Typography,
   Button,
-  Container
+  Container,
+  Grid,
+  IconButton,
+  Divider,
+  TextField
 } from '@mui/material';
-import { ArrowRightAlt } from '@mui/icons-material';
+import { 
+  ArrowRightAlt, 
+  Facebook, 
+  Twitter, 
+  Instagram, 
+  Email, 
+  Phone, 
+  LocationOn 
+} from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 
 const pulse = keyframes`
@@ -108,7 +120,7 @@ const GuestLayout: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#ffffff' }}>
       <CssBaseline />
       <AppBar 
         position="fixed" 
@@ -188,9 +200,9 @@ const GuestLayout: React.FC = () => {
                 onClick={handleBookNow}
                 endIcon={<ArrowRightAlt sx={{ transition: 'transform 0.3s', ml: 0.5 }} />}
                 sx={{ 
-                  background: 'linear-gradient(45deg, #1a1a1a 30%, #333333 90%)',
+                  background: 'linear-gradient(45deg, #111111 30%, #333333 90%)',
                   color: 'white',
-                  borderRadius: '50px',
+                  borderRadius: '0px',
                   px: { xs: 3, md: 5 },
                   py: scrolled ? 1.2 : 1.5,
                   fontWeight: 600,
@@ -223,10 +235,99 @@ const GuestLayout: React.FC = () => {
         <Outlet />
       </Box>
       
-      <Box component="footer" sx={{ py: 4, bgcolor: '#1a1a1a', color: '#fff', textAlign: 'center' }}>
-        <Typography variant="body2" sx={{ opacity: 0.7 }}>
-          © {new Date().getFullYear()} Paradise Resorts. All rights reserved.
-        </Typography>
+      <Box component="footer" sx={{ bgcolor: '#111111', color: '#f8fafc', pt: { xs: 8, md: 10 }, pb: 4, mt: 'auto', borderTop: '2px solid #d4af37' }}>
+        <Container maxWidth="xl">
+          <Grid container spacing={6} sx={{ mb: 6 }}>
+            {/* Brand Column */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"Playfair Display", serif', letterSpacing: '1px', mb: 3 }}>
+                <Box component="span" sx={{ color: '#d4af37', mr: 1 }}>Paradise</Box> 
+                <Box component="span" sx={{ fontWeight: 400 }}>Resorts</Box>
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.7, mb: 4, lineHeight: 1.8, maxWidth: '90%' }}>
+                Experience unparalleled luxury and breathtaking views at Paradise Resorts. Your perfect escape awaits in our meticulously designed rooms and suites, offering world-class amenities and unforgettable hospitality.
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <IconButton sx={{ color: '#d4af37', bgcolor: 'rgba(212,175,55,0.1)', '&:hover': { bgcolor: '#d4af37', color: '#1a1a1a' } }}><Facebook fontSize="small" /></IconButton>
+                <IconButton sx={{ color: '#d4af37', bgcolor: 'rgba(212,175,55,0.1)', '&:hover': { bgcolor: '#d4af37', color: '#1a1a1a' } }}><Twitter fontSize="small" /></IconButton>
+                <IconButton sx={{ color: '#d4af37', bgcolor: 'rgba(212,175,55,0.1)', '&:hover': { bgcolor: '#d4af37', color: '#1a1a1a' } }}><Instagram fontSize="small" /></IconButton>
+              </Box>
+            </Grid>
+
+            {/* Quick Links */}
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3, color: '#e2e8f0', letterSpacing: 1 }}>EXPLORE</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {['Our Story', 'Rooms & Suites', 'Dining', 'Spa & Wellness', 'Special Offers'].map((link) => (
+                  <Typography key={link} variant="body2" sx={{ opacity: 0.7, cursor: 'pointer', transition: '0.2s', '&:hover': { opacity: 1, color: '#d4af37', transform: 'translateX(4px)' } }}>
+                    {link}
+                  </Typography>
+                ))}
+              </Box>
+            </Grid>
+
+            {/* Contact Info */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3, color: '#e2e8f0', letterSpacing: 1 }}>CONTACT</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <LocationOn sx={{ color: '#d4af37', fontSize: 20, mt: 0.2 }} />
+                  <Typography variant="body2" sx={{ opacity: 0.7, lineHeight: 1.6 }}>123 Paradise Boulevard,<br />Oceanview District,<br />CA 90210</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Phone sx={{ color: '#d4af37', fontSize: 20 }} />
+                  <Typography variant="body2" sx={{ opacity: 0.7 }}>+1 (800) 123-4567</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Email sx={{ color: '#d4af37', fontSize: 20 }} />
+                  <Typography variant="body2" sx={{ opacity: 0.7 }}>reservations@paradiseresorts.com</Typography>
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Newsletter */}
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3, color: '#e2e8f0', letterSpacing: 1 }}>NEWSLETTER</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.7, mb: 3, lineHeight: 1.6 }}>
+                Subscribe to our newsletter for exclusive offers, travel inspiration, and the latest resort news.
+              </Typography>
+              <Box component="form" sx={{ display: 'flex', gap: 1 }}>
+                <TextField 
+                  variant="outlined" 
+                  size="small" 
+                  placeholder="Your email address" 
+                  fullWidth
+                  sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.05)', 
+                    borderRadius: 0,
+                    '& input': { color: '#fff', fontSize: '0.9rem' },
+                    '& fieldset': { borderColor: 'rgba(212,175,55,0.3)', borderRadius: 0 },
+                    '&:hover fieldset': { borderColor: '#d4af37 !important' },
+                    '&.Mui-focused fieldset': { borderColor: '#d4af37 !important' }
+                  }} 
+                />
+                <Button variant="contained" sx={{ bgcolor: '#d4af37', color: '#1a1a1a', borderRadius: 0, fontWeight: 'bold', '&:hover': { bgcolor: '#e5c158' } }}>
+                  SUBSCRIBE
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ borderColor: 'rgba(212,175,55,0.2)', mb: 3 }} />
+          
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+            <Typography variant="caption" sx={{ opacity: 0.6 }}>
+              © {new Date().getFullYear()} Paradise Resorts. All rights reserved.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((link) => (
+                <Typography key={link} variant="caption" sx={{ opacity: 0.6, cursor: 'pointer', '&:hover': { opacity: 1, color: '#d4af37' } }}>
+                  {link}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        </Container>
       </Box>
     </Box>
   );
