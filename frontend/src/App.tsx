@@ -42,15 +42,13 @@ function App() {
     <ThemeProvider theme={theme}>
       <BrowserRouter>
         <Routes>
-          {/* Guest Website Routes */}
+          {/* Website Routes with Top Navigation */}
           <Route path="/" element={<GuestLayout />}>
             <Route index element={<Home />} />
             <Route path="rooms" element={<Rooms />} />
             <Route path="book" element={<Book />} />
+            <Route path="portal" element={<AccessPortal />} />
           </Route>
-
-          {/* Shared entry point for administration and staff */}
-          <Route path="/portal" element={<AccessPortal />} />
 
           {/* Administrator login and protected administration panels */}
           <Route path="/admin" element={<AdminLogin />} />
