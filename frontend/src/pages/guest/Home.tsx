@@ -170,8 +170,8 @@ const Home: React.FC = () => {
         sx={{ 
           position: 'relative',
           color: 'white',
-          pt: { xs: 10, md: 12 },
-          pb: { xs: 8, md: 12 },
+          pt: { xs: 12, md: 14 },
+          pb: { xs: 8, md: 6 },
           px: 2,
           textAlign: 'center',
           overflow: 'hidden',
@@ -264,12 +264,12 @@ const Home: React.FC = () => {
                 transformStyle: 'preserve-3d',
                 transition: 'transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                minHeight: { xs: '730px', md: '760px' },
+                display: 'grid',
               }}
             >
               <Box
                 sx={{
-                  p: { xs: 3, md: 5 },
+                  p: { xs: 3, md: 4 },
                   borderRadius: 8,
                   bgcolor: 'rgba(15, 23, 42, 0.4)',
                   backdropFilter: 'blur(16px)',
@@ -277,8 +277,7 @@ const Home: React.FC = () => {
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
                   width: '100%',
-                  position: 'absolute',
-                  inset: 0,
+                  gridArea: '1 / 1',
                   backfaceVisibility: 'hidden',
                   overflow: 'hidden'
                 }}
@@ -335,10 +334,10 @@ const Home: React.FC = () => {
                   gutterBottom 
                   sx={{ 
                     fontWeight: 900, 
-                    fontSize: { xs: '2.6rem', sm: '3.4rem', md: '4.2rem' },
+                    fontSize: { xs: '2.4rem', sm: '3rem', md: '3.5rem' },
                     fontFamily: '"Playfair Display", serif',
                     lineHeight: 1.1,
-                    mb: 3,
+                    mb: 2,
                     background: 'linear-gradient(to right, #ffffff, #d4af37)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -372,7 +371,7 @@ const Home: React.FC = () => {
                   display: 'flex', 
                   gap: { xs: 2, md: 4 }, 
                   justifyContent: 'center', 
-                  mb: 5,
+                  mb: 4,
                   flexWrap: 'wrap',
                   animation: 'fadeInUp 1s ease-out forwards',
                   animationDelay: '1s',
@@ -472,7 +471,7 @@ const Home: React.FC = () => {
 
               <Box
                 sx={{
-                  p: { xs: 4, md: 8 },
+                  p: { xs: 4, md: 4 },
                   borderRadius: 8,
                   bgcolor: 'rgba(15, 23, 42, 0.45)',
                   backdropFilter: 'blur(18px)',
@@ -480,8 +479,7 @@ const Home: React.FC = () => {
                   border: '1px solid rgba(212, 175, 55, 0.22)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
                   width: '100%',
-                  position: 'absolute',
-                  inset: 0,
+                  gridArea: '1 / 1',
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                   overflow: 'hidden',
@@ -508,7 +506,7 @@ const Home: React.FC = () => {
                     sx={{
                       fontWeight: 900,
                       mb: 2,
-                      fontSize: { xs: '2.3rem', md: '3.5rem' },
+                      fontSize: { xs: '2rem', md: '2.8rem' },
                       fontFamily: '"Playfair Display", serif',
                       background: 'linear-gradient(to right, #ffffff, #d4af37)',
                       WebkitBackgroundClip: 'text',
@@ -521,7 +519,7 @@ const Home: React.FC = () => {
                   <Typography
                     sx={{
                       color: 'rgba(255,255,255,0.82)',
-                      mb: 5,
+                      mb: 3,
                       lineHeight: 1.9,
                       fontSize: { xs: '1rem', md: '1.15rem' },
                     }}
@@ -613,7 +611,7 @@ const Home: React.FC = () => {
           {/* Quick Availability Search Bar */}
           <Box
             sx={{
-              mt: { xs: 4, md: 6 },
+              mt: { xs: 2, md: 3 },
               p: 2,
               borderRadius: 4,
               bgcolor: 'rgba(255, 255, 255, 0.1)',
