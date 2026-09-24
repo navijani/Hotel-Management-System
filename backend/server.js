@@ -96,7 +96,7 @@ app.get('/api/test', async (req, res) => {
 });
 
 app.post('/api/admin/signin', authRateLimit, (req, res) => {
-  const username = process.env.ADMIN_USERNAME ;
+  const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
 
   if (req.body.username?.trim() !== username || req.body.password !== password) {
@@ -383,6 +383,8 @@ app.patch('/api/staff/:id/status', async (req, res) => {
     res.status(500).json({ error: 'Unable to update staff status.' });
   }
 });
+
+// (Replaced by roomsRouter)
 
 const roomsRouter = createRoomsRouter(pool, upload);
 app.use('/api/rooms', roomsRouter);

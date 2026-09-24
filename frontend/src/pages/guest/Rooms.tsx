@@ -206,7 +206,7 @@ const Rooms: React.FC = () => {
                         variant="contained" 
                         fullWidth 
                         disabled={!isAvailable}
-                        onClick={() => navigate('/book')}
+                        onClick={() => navigate('/book', { state: { room } })}
                         sx={{ 
                           mt: 'auto',
                           py: 1.5,
