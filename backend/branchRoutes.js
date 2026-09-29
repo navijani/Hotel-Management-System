@@ -87,13 +87,13 @@ router.delete('/branches/:id', async (req, res) => {
         res.status(200).json({ message: "Branch deleted successfully" });
     } catch (error) {
         if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-            return res.status(409).json({ error: "Cannot delete branch. It has active rooms or staff." });
+            return res.status(409).json({ error: "Cannot delete branch. It has referenced by other records." });
         }
         res.status(500).json({ error: error.message });
     }
 });
 
-// JOIN: Fetch all rooms available at a specific branch
+// JOIN: Fetch all rooms at a specific branch(no filtering-need to update in future to filter on awailability)
 router.get('/branches/:id/rooms', async (req, res) => {
     try {
         const { id } = req.params;
