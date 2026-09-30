@@ -161,45 +161,45 @@ const Bookings: React.FC = () => {
         <DialogContent dividers>
           {selectedBooking && (
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" color="text.secondary">Guest Information</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Name:</strong> {selectedBooking.first_name} {selectedBooking.last_name}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Email:</strong> {selectedBooking.email}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Phone:</strong> {selectedBooking.phone_number}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>ID:</strong> {selectedBooking.identity_number}</Typography>
               </Grid>
 
-              <Grid item xs={12}><Divider sx={{ my: 1 }} /></Grid>
+              <Grid size={{ xs: 12 }}><Divider sx={{ my: 1 }} /></Grid>
               
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" color="text.secondary">Room Details</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Room:</strong> {selectedBooking.room_number || 'TBD'}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Type:</strong> {selectedBooking.room_type || 'N/A'}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Check-In:</strong> {dayjs(selectedBooking.check_in_date).format('MMM DD, YYYY')}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Check-Out:</strong> {dayjs(selectedBooking.check_out_date).format('MMM DD, YYYY')}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2">
                   <strong>Total Nights:</strong> {dayjs(selectedBooking.check_out_date).diff(dayjs(selectedBooking.check_in_date), 'day')}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2">
                   <strong>Total Price:</strong> ${dayjs(selectedBooking.check_out_date).diff(dayjs(selectedBooking.check_in_date), 'day') * selectedBooking.price_per_night}
                 </Typography>

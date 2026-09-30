@@ -107,9 +107,14 @@ const Dashboard: React.FC = () => {
                 </Box>
               ))}
             </Stack>
-            <Button fullWidth variant="outlined" sx={{ mt: 3, borderRadius: 2 }} onClick={() => navigate('/system-admin/users')}>
-              Manage All Users
-            </Button>
+            <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+              <Button fullWidth variant="outlined" sx={{ borderRadius: 2 }} onClick={() => navigate('/system-admin/users')}>
+                Manage Users
+              </Button>
+              <Button fullWidth variant="contained" sx={{ borderRadius: 2 }} onClick={() => navigate('/system-admin/bar')}>
+                Bar & Beverages
+              </Button>
+            </Stack>
           </Paper>
         </Grid>
       </Grid>
