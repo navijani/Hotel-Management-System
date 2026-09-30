@@ -12,8 +12,34 @@ import {
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { PickersDay, PickersDayProps } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
+
+
+function CustomPickersDay(props: PickersDayProps<Dayjs> & { bookedDates: {start: Dayjs, end: Dayjs}[] }) {
+  const { day, bookedDates, ...other } = props;
+  
+  const isBooked = bookedDates.some(range => 
+    day.isSame(range.start, 'day') || day.isSame(range.end, 'day') || 
+    (day.isAfter(range.start, 'day') && day.isBefore(range.end, 'day'))
+  );
+
+  return (
+    <PickersDay 
+      {...other} 
+      day={day} 
+      sx={{
+        ...(isBooked && {
+          backgroundColor: 'rgba(239, 68, 68, 0.1) !important',
+          color: '#ef4444 !important',
+          textDecoration: 'line-through',
+          fontWeight: 'bold',
+        })
+      }} 
+    />
+  );
+}
 
 const Book: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -227,16 +253,6 @@ const Book: React.FC = () => {
                       <Grid container spacing={3}>
                         <Grid size={{ xs: 12, sm: 6 }}>
                           <DatePicker
-                            label="Check-In Date"
-                            value={formData.checkInDate}
-                            onChange={(newValue) => setFormData({ ...formData, checkInDate: newValue })}
-                            shouldDisableDate={shouldDisableDate}
-                            disablePast
-                            sx={{ width: '100%', '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#fff' } }}
-                          />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                          <DatePicker
                             label="Check-Out Date"
                             value={formData.checkOutDate}
                             onChange={(newValue) => setFormData({ ...formData, checkOutDate: newValue })}
@@ -246,6 +262,8 @@ const Book: React.FC = () => {
                               return false;
                             }}
                             disablePast
+                            slots={{ day: CustomPickersDay }}
+                            slotProps={{ day: { bookedDates } as any }}
                             sx={{ width: '100%', '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#fff' } }}
                           />
                         </Grid>

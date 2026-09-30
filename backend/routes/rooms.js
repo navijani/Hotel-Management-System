@@ -26,7 +26,7 @@ export default function (pool, upload) {
       }
 
       const [result] = await pool.query(
-        'INSERT INTO Room (room_number, type, capacity, price_per_night, status, image, description, bed_type, room_size, amenities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO Room (room_number, type, capacity, price_per_night, status, image, description, bed_type, room_size, amenities, branch_id, room_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
         [room_number, type, capacity, price_per_night, status || 'Available', image_url, description, bed_type, room_size, amenities]
       );
 
