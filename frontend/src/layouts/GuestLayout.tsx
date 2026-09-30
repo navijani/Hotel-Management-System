@@ -189,6 +189,29 @@ const GuestLayout: React.FC = () => {
               >
                 Rooms
               </Button>
+              {!isAuthenticated ? (
+                <Button 
+                  onClick={() => navigate('/signin')}
+                  sx={navItemStyle}
+                >
+                  Sign In
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    onClick={() => navigate('/profile')}
+                    sx={navItemStyle}
+                  >
+                    Profile
+                  </Button>
+                  <Button 
+                    onClick={handleLogout}
+                    sx={navItemStyle}
+                  >
+                    Logout
+                  </Button>
+                </>
+              )}
               <Button 
                 onClick={() => navigate('/portal')}
                 sx={navItemStyle}

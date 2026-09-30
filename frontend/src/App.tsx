@@ -15,6 +15,9 @@ import GuestLayout from './layouts/GuestLayout';
 import Home from './pages/guest/Home';
 import Rooms from './pages/guest/Rooms';
 import Book from './pages/guest/Book';
+import SignIn from './pages/guest/SignIn';
+import SignUp from './pages/guest/SignUp';
+import Profile from './pages/guest/Profile';
 
 import SystemAdminLayout from './layouts/SystemAdminLayout';
 import SystemDashboard from './pages/system-admin/Dashboard';
@@ -28,6 +31,10 @@ import CleaningStaff from './pages/staff/CleaningStaff';
 import BarKeepingStaff from './pages/staff/BarKeepingStaff';
 import TherapistStaff from './pages/staff/TherapistStaff';
 import WaiterStaff from './pages/staff/WaiterStaff';
+
+const GuestGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
+  sessionStorage.getItem('guestAuthenticated') === 'true' ? <>{children}</> : <Navigate to="/signin" replace />
+);
 
 const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
   sessionStorage.getItem('adminAuthenticated') === 'true' ? <>{children}</> : <Navigate to="/admin" replace />
@@ -48,6 +55,9 @@ function App() {
             <Route path="rooms" element={<Rooms />} />
             <Route path="book" element={<Book />} />
             <Route path="portal" element={<AccessPortal />} />
+            <Route path="signin" element={<SignIn />} />
+            <Route path="signup" element={<SignUp />} />
+            <Route path="profile" element={<GuestGuard><Profile /></GuestGuard>} />
           </Route>
 
           {/* Administrator login and protected administration panels */}

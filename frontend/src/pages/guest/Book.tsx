@@ -12,36 +12,35 @@ import {
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { PickersDay, PickersDayProps } from '@mui/x-date-pickers';
+import { PickerDay } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 
 
-function CustomPickersDay(props: PickersDayProps<Dayjs> & { bookedDates: {start: Dayjs, end: Dayjs}[] }) {
-  const { day, bookedDates, ...other } = props;
-  
-  const isBooked = bookedDates.some(range => 
-    day.isSame(range.start, 'day') || day.isSame(range.end, 'day') || 
-    (day.isAfter(range.start, 'day') && day.isBefore(range.end, 'day'))
-  );
 
-  return (
-    <PickersDay 
-      {...other} 
-      day={day} 
-      sx={{
-        ...(isBooked && {
-          backgroundColor: 'rgba(239, 68, 68, 0.1) !important',
-          color: '#ef4444 !important',
-          textDecoration: 'line-through',
-          fontWeight: 'bold',
-        })
-      }} 
-    />
-  );
-}
 
 const Book: React.FC = () => {
+  const CustomPickerDay = (props: any) => {
+    const { day, ...other } = props;
+    const isBooked = day && bookedDates.some(range => 
+      day.isSame(range.start, 'day') || day.isSame(range.end, 'day') || 
+      (day.isAfter(range.start, 'day') && day.isBefore(range.end, 'day'))
+    );
+    return (
+      <PickerDay 
+        {...other} 
+        day={day} 
+        sx={{
+          ...(isBooked && {
+            backgroundColor: 'rgba(239, 68, 68, 0.1) !important',
+            color: '#ef4444 !important',
+            textDecoration: 'line-through',
+            fontWeight: 'bold',
+          })
+        }} 
+      />
+    );
+  };
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -251,9 +250,20 @@ const Book: React.FC = () => {
                         Select your check-in and check-out dates. Days that are greyed out are already booked for this specific room.
                       </Typography>
                       <Grid container spacing={3}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                          <DatePicker
-                            label="Check-Out Date"
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <DatePicker
+                              label="Check-In Date"
+                              value={formData.checkInDate}
+                              onChange={(newValue) => setFormData({ ...formData, checkInDate: newValue })}
+                              shouldDisableDate={shouldDisableDate}
+                              disablePast
+                              slots={{ day: CustomPickerDay }}
+                              sx={{ width: '100%', '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#fff' } }}
+                            />
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <DatePicker
+                              label="Check-Out Date"
                             value={formData.checkOutDate}
                             onChange={(newValue) => setFormData({ ...formData, checkOutDate: newValue })}
                             shouldDisableDate={(date) => {
@@ -262,7 +272,7 @@ const Book: React.FC = () => {
                               return false;
                             }}
                             disablePast
-                            slots={{ day: CustomPickersDay }}
+                            slots={{ day: CustomPickerDay }}
                             slotProps={{ day: { bookedDates } as any }}
                             sx={{ width: '100%', '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#fff' } }}
                           />
