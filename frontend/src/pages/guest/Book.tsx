@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, TextField, Button, Grid, Paper, 
   Container, Stepper, Step, StepLabel, CircularProgress, Alert,
-  Divider, CardMedia, Chip
+  Divider, CardMedia
 } from '@mui/material';
 import { 
   MeetingRoom as MeetingRoomIcon, 
@@ -74,7 +74,7 @@ const Book: React.FC = () => {
     if (selectedRoomId) {
       axios.get(`http://localhost:5000/api/bookings/room/${selectedRoomId}/dates`)
         .then(res => {
-          const dates = res.data.map((b: any) => ({
+          const dates = res.data.map((b: { check_in_date: string; check_out_date: string }) => ({
             start: dayjs(b.check_in_date).startOf('day'),
             end: dayjs(b.check_out_date).startOf('day')
           }));
@@ -103,8 +103,12 @@ const Book: React.FC = () => {
       const response = await axios.post('http://localhost:5000/api/bookings', payload);
       setSuccess('Booking confirmed successfully! Booking ID: ' + response.data.bookingId);
       setActiveStep((prev) => prev + 1);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create booking. Please try again.');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error || 'Failed to create booking. Please try again.');
+      } else {
+        setError('Failed to create booking. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -191,11 +195,9 @@ const Book: React.FC = () => {
                   {steps.map((label, index) => (
                     <Step key={label}>
                       <StepLabel 
-                        StepIconProps={{
-                          sx: { 
-                            '&.Mui-active': { color: '#4facfe' },
-                            '&.Mui-completed': { color: '#10b981' }
-                          }
+                        sx={{
+                          '& .MuiStepIcon-root.Mui-active': { color: '#4facfe' },
+                          '& .MuiStepIcon-root.Mui-completed': { color: '#10b981' }
                         }}
                       >
                         <Typography sx={{ fontWeight: activeStep === index ? 700 : 500, mt: 1 }}>{label}</Typography>
@@ -253,10 +255,23 @@ const Book: React.FC = () => {
                       <Grid container spacing={3}>
                         <Grid size={{ xs: 12, sm: 6 }}>
                           <DatePicker
+<<<<<<< Updated upstream
+=======
+                            label="Check-In Date"
+                            value={formData.checkInDate}
+                            onChange={(newValue: Dayjs | null) => setFormData({ ...formData, checkInDate: newValue })}
+                            shouldDisableDate={shouldDisableDate}
+                            disablePast
+                            sx={{ width: '100%', '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#fff' } }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <DatePicker
+>>>>>>> Stashed changes
                             label="Check-Out Date"
                             value={formData.checkOutDate}
-                            onChange={(newValue) => setFormData({ ...formData, checkOutDate: newValue })}
-                            shouldDisableDate={(date) => {
+                            onChange={(newValue: Dayjs | null) => setFormData({ ...formData, checkOutDate: newValue })}
+                            shouldDisableDate={(date: Dayjs) => {
                               if (shouldDisableDate(date)) return true;
                               if (formData.checkInDate && date.isBefore(formData.checkInDate.add(1, 'day'), 'day')) return true;
                               return false;
