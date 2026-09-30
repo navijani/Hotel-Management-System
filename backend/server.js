@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import createRoomsRouter from './routes/rooms.js';
 import createBookingsRouter from './routes/bookings.js';
+import createBarRouter from './routes/bar.js';
 
 dotenv.config();
 
@@ -391,6 +392,10 @@ app.use('/api/rooms', roomsRouter);
 
 const bookingsRouter = createBookingsRouter(pool, bookingRateLimit);
 app.use('/api/bookings', bookingsRouter);
+
+const barRouter = createBarRouter(pool, upload);
+app.use('/api/bar', barRouter);
+app.use('/api/admin/bar', barRouter);
 
 // Start server
 app.listen(port, () => {

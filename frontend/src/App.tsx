@@ -28,6 +28,8 @@ import CleaningStaff from './pages/staff/CleaningStaff';
 import BarKeepingStaff from './pages/staff/BarKeepingStaff';
 import TherapistStaff from './pages/staff/TherapistStaff';
 import WaiterStaff from './pages/staff/WaiterStaff';
+import BarItemsAdmin from './pages/bar/BarItemsAdmin';
+import BarItemsStaff from './pages/bar/BarItemsStaff';
 
 const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
   sessionStorage.getItem('adminAuthenticated') === 'true' ? <>{children}</> : <Navigate to="/admin" replace />
@@ -57,6 +59,7 @@ function App() {
             <Route index element={<ReceptionDashboard />} />
             <Route path="service" element={<ServiceDashboard />} />
             <Route path="management" element={<ReportsDashboard />} />
+            <Route path="bar" element={<BarItemsAdmin />} />
             <Route path="management/billing" element={<BillingOverview />} />
             <Route path="management/billing/invoice" element={<BillingInvoice />} />
             <Route path="management/billing/revenue" element={<BillingRevenue />} />
@@ -73,12 +76,14 @@ function App() {
             <Route path="rooms" element={<SystemRooms />} />
             <Route path="users" element={<SystemUsers />} />
             <Route path="bookings" element={<SystemBookings />} />
+            <Route path="bar" element={<BarItemsAdmin />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 
           {/* Dedicated staff workspaces */}
           <Route path="/staff/cleaning" element={<StaffGuard role="cleaning"><CleaningStaff /></StaffGuard>} />
           <Route path="/staff/bar" element={<StaffGuard role="bar"><BarKeepingStaff /></StaffGuard>} />
+          <Route path="/staff/bar-items" element={<StaffGuard role="bar"><BarItemsStaff /></StaffGuard>} />
           <Route path="/staff/therapist" element={<StaffGuard role="therapist"><TherapistStaff /></StaffGuard>} />
           <Route path="/staff/waiter" element={<StaffGuard role="waiter"><WaiterStaff /></StaffGuard>} />
         </Routes>

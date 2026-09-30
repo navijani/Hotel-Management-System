@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Box, Typography, Paper, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, Button, Chip, IconButton,
+  TableContainer, TableHead, TableRow, Button, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   MenuItem, Alert, CircularProgress, Stack
 } from '@mui/material';
@@ -211,7 +211,7 @@ const Users: React.FC = () => {
           <PersonAddIcon color="primary" /> Add New User / Staff
         </DialogTitle>
         <Box component="form" onSubmit={handleAddUserSubmit}>
-          <DialogContent divider>
+          <DialogContent dividers>
             <Stack spacing={2.5}>
               <Typography variant="body2" color="text.secondary">
                 Directly create a staff or user account. No approval required; the user can log in immediately.

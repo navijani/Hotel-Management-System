@@ -53,10 +53,10 @@ const MainLayout: React.FC = () => {
   };
 
   const menuItems = [
-    { text: 'Reception', icon: <DashboardIcon />, path: '/admin' },
-    { text: 'Service Logging', icon: <ServiceIcon />, path: '/admin/service' },
-    { text: 'Management', icon: <ReportIcon />, path: '/admin/management' },
-    { text: 'Bar Inventory', icon: <BarIcon />, path: '/admin/bar' },
+    { text: 'Reception', icon: <DashboardIcon />, path: '/admin/dashboard' },
+    { text: 'Service Logging', icon: <ServiceIcon />, path: '/admin/dashboard/service' },
+    { text: 'Management', icon: <ReportIcon />, path: '/admin/dashboard/management' },
+    { text: 'Bar Inventory', icon: <BarIcon />, path: '/admin/dashboard/bar' },
   ];
 
   const drawer = (

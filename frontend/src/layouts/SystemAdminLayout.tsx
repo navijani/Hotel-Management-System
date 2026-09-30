@@ -23,6 +23,7 @@ import {
   MeetingRoom as RoomIcon,
   People as PeopleIcon,
   EventNote as BookingIcon,
+  LocalBar as BarIcon,
   Settings as SettingsIcon,
   ExitToApp as LogoutIcon,
 } from '@mui/icons-material';
@@ -42,6 +43,7 @@ const SystemAdminLayout: React.FC = () => {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
     { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
     { text: 'Bookings', icon: <BookingIcon />, path: '/system-admin/bookings' },
+    { text: 'Bar & Beverages', icon: <BarIcon />, path: '/system-admin/bar' },
     { text: 'Users & Staff', icon: <PeopleIcon />, path: '/system-admin/users' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/system-admin/settings' },
   ];
