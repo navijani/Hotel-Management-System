@@ -4,7 +4,8 @@ import { Person, Email, Phone, EventNote } from '@mui/icons-material';
 
 const Profile: React.FC = () => {
   // Mock user data since we don't have a backend auth state yet
-  const user = {
+  const storedUser = sessionStorage.getItem('guestUser');
+  const user = storedUser ? JSON.parse(storedUser) : {
     firstName: 'Guest',
     lastName: 'User',
     email: 'guest@example.com',
@@ -35,6 +36,9 @@ const Profile: React.FC = () => {
               </Typography>
               <Button variant="outlined" fullWidth sx={{ borderRadius: 8, color: '#d4af37', borderColor: '#d4af37', textTransform: 'none', '&:hover': { borderColor: '#1a1a2e', color: '#1a1a2e', bgcolor: 'transparent' } }}>
                 Edit Profile
+              </Button>
+              <Button variant="outlined" color="error" fullWidth sx={{ mt: 2, borderRadius: 8, textTransform: 'none', borderColor: 'error.main', '&:hover': { bgcolor: 'error.main', color: '#fff' } }} onClick={() => { sessionStorage.removeItem('guestAuthenticated'); sessionStorage.removeItem('guestSignedIn'); window.dispatchEvent(new Event('guestAuthChanged')); window.location.href = '/'; }}>
+                Logout
               </Button>
             </Paper>
           </Grid>

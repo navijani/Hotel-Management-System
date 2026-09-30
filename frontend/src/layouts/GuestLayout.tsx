@@ -171,11 +171,7 @@ const GuestLayout: React.FC = () => {
             </Typography>
             
             <Box sx={{ display: 'flex', gap: { xs: 2, md: 5 }, alignItems: 'center' }}>
-              {isSignedIn && (
-                <Button onClick={handleLogout} sx={navItemStyle}>
-                  Logout
-                </Button>
-              )}
+              
               <Button 
                 onClick={() => navigate('/rooms')}
                 sx={{ 
@@ -189,7 +185,7 @@ const GuestLayout: React.FC = () => {
               >
                 Rooms
               </Button>
-              {!isAuthenticated ? (
+              {!isSignedIn ? (
                 <Button 
                   onClick={() => navigate('/signin')}
                   sx={navItemStyle}
@@ -204,12 +200,7 @@ const GuestLayout: React.FC = () => {
                   >
                     Profile
                   </Button>
-                  <Button 
-                    onClick={handleLogout}
-                    sx={navItemStyle}
-                  >
-                    Logout
-                  </Button>
+                  
                 </>
               )}
               <Button 

@@ -18,7 +18,16 @@ const SignIn: React.FC = () => {
     // Simulate sign in
     console.log('Signing in with', email, password);
     setSuccess('Login successful! Redirecting...');
-    sessionStorage.setItem('guestAuthenticated', 'true');
+    sessionStorage.setItem('guestAuthenticated', 'true'); sessionStorage.setItem('guestSignedIn', 'true');
+    if (!sessionStorage.getItem('guestUser')) {
+      sessionStorage.setItem('guestUser', JSON.stringify({
+        firstName: email.split('@')[0],
+        lastName: 'Member',
+        email: email,
+        phone: '+1 (555) 000-0000',
+        joinDate: new Date().toLocaleDateString()
+      }));
+    } window.dispatchEvent(new Event('guestAuthChanged'));
     // Dispatch event so Layout updates immediately
     window.dispatchEvent(new Event('authChange'));
     setTimeout(() => {

@@ -36,7 +36,14 @@ const SignUp: React.FC = () => {
     // Simulate sign up and auto-login
     console.log('Signing up with', formData);
     setSuccess('Registration successful! Logging you in...');
-    sessionStorage.setItem('guestAuthenticated', 'true');
+    sessionStorage.setItem('guestAuthenticated', 'true'); sessionStorage.setItem('guestSignedIn', 'true');
+    sessionStorage.setItem('guestUser', JSON.stringify({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      joinDate: new Date().toLocaleDateString()
+    })); window.dispatchEvent(new Event('guestAuthChanged'));
     window.dispatchEvent(new Event('authChange'));
     setTimeout(() => {
       navigate('/profile');
