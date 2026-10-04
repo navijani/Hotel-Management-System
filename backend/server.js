@@ -73,8 +73,13 @@ app.get('/api/test', async (req, res) => {
 });
 
 app.post('/api/admin/signin', (req, res) => {
+<<<<<<< HEAD
   const username = process.env.ADMIN_USERNAME || 'hms@gmail.com';
   const password = process.env.ADMIN_PASSWORD || 'qwertyuiop';
+=======
+  const username = process.env.ADMIN_USERNAME ;
+  const password = process.env.ADMIN_PASSWORD ;
+>>>>>>> 9ec3e6ac4fe9843e4cf8e823f3aeb64004fdd472
 
   if (req.body.username?.trim() !== username || req.body.password !== password) {
     return res.status(401).json({ error: 'Invalid administrator credentials.' });
