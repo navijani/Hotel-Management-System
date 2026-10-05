@@ -13,6 +13,7 @@ import BillingRevenue from './pages/management/billing/BillingRevenue';
 
 import GuestLayout from './layouts/GuestLayout';
 import Home from './pages/guest/Home';
+import About from './pages/guest/About';
 import Rooms from './pages/guest/Rooms';
 import Book from './pages/guest/Book';
 import SignIn from './pages/guest/SignIn';
