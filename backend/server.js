@@ -122,6 +122,29 @@ app.post('/api/admin/signin', authRateLimit, (req, res) => {
   res.json({ message: 'Administrator login successful.' });
 });
 
+app.get('/api/guest/check-id', async (req, res) => {
+  try {
+    const { identity_number } = req.query;
+    if (!identity_number || typeof identity_number !== 'string' || !identity_number.trim()) {
+      return res.status(400).json({ error: 'Identity number is required.' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT guest_id FROM GUEST WHERE identity_number = ? LIMIT 1',
+      [identity_number.trim()]
+    );
+
+    if (rows.length > 0) {
+      return res.json({ available: false, error: 'ID number already in use. Please choose a different ID.' });
+    }
+
+    res.json({ available: true });
+  } catch (error) {
+    console.error('Check ID error:', error);
+    res.status(500).json({ error: 'Unable to verify ID number.' });
+  }
+});
+
 app.post('/api/guest/signup', authRateLimit, async (req, res) => {
   try {
     const { first_name, last_name, email, phone_number, identity_number, password } = req.body;
@@ -135,13 +158,14 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
 
-    const [existingGuests] = await pool.query(
-      'SELECT guest_id FROM GUEST WHERE email = ? OR identity_number = ? LIMIT 1',
-      [email.trim(), identity_number.trim()]
-    );
+    const [existingEmail] = await pool.query('SELECT guest_id FROM GUEST WHERE email = ? LIMIT 1', [email.trim()]);
+    if (existingEmail.length > 0) {
+      return res.status(409).json({ error: 'An account with that email address already exists.' });
+    }
 
-    if (existingGuests.length > 0) {
-      return res.status(409).json({ error: 'An account with that email or identity number already exists.' });
+    const [existingId] = await pool.query('SELECT guest_id FROM GUEST WHERE identity_number = ? LIMIT 1', [identity_number.trim()]);
+    if (existingId.length > 0) {
+      return res.status(409).json({ error: 'ID number already in use. Please choose a different ID.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -157,7 +181,7 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
   } catch (error) {
     console.error('Guest signup error:', error);
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'An account with those details already exists.' });
+      return res.status(409).json({ error: 'ID number or email already in use. Please choose a different ID.' });
     }
     res.status(500).json({ error: 'Unable to create guest account.' });
   }
@@ -172,13 +196,13 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
     }
 
     const [rows] = await pool.query(
-      'SELECT guest_id, first_name, last_name, email, password FROM GUEST WHERE email = ? LIMIT 1',
+      'SELECT guest_id, first_name, last_name, email, phone_number, identity_number, password FROM GUEST WHERE email = ? LIMIT 1',
       [email.trim()]
     );
     const guest = rows[0];
 
     if (!guest || !(await bcrypt.compare(password, guest.password))) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Account not found or password incorrect. Please check your credentials.' });
     }
 
     res.json({
@@ -186,10 +210,54 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
       first_name: guest.first_name,
       last_name: guest.last_name,
       email: guest.email,
+      phone_number: guest.phone_number,
+      identity_number: guest.identity_number,
     });
   } catch (error) {
     console.error('Guest signin error:', error);
     res.status(500).json({ error: 'Unable to sign in.' });
+  }
+});
+
+app.patch('/api/guest/:id/profile', async (req, res) => {
+  try {
+    const guestId = Number(req.params.id);
+    const { phone_number, first_name, last_name } = req.body;
+
+    if (!phone_number || typeof phone_number !== 'string' || !phone_number.trim()) {
+      return res.status(400).json({ error: 'Phone number is required.' });
+    }
+
+    const values = [phone_number.trim()];
+    let query = 'UPDATE GUEST SET phone_number = ?';
+
+    if (first_name && typeof first_name === 'string' && first_name.trim()) {
+      query += ', first_name = ?';
+      values.push(first_name.trim());
+    }
+
+    if (last_name && typeof last_name === 'string' && last_name.trim()) {
+      query += ', last_name = ?';
+      values.push(last_name.trim());
+    }
+
+    query += ' WHERE guest_id = ?';
+    values.push(guestId);
+
+    const [result] = await pool.query(query, values);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Guest account not found.' });
+    }
+
+    const [updatedRows] = await pool.query(
+      'SELECT guest_id, first_name, last_name, email, phone_number, identity_number FROM GUEST WHERE guest_id = ? LIMIT 1',
+      [guestId]
+    );
+
+    res.json({ message: 'Profile updated successfully.', guest: updatedRows[0] });
+  } catch (error) {
+    console.error('Guest profile update error:', error);
+    res.status(500).json({ error: 'Unable to update profile.' });
   }
 });
 

@@ -62,6 +62,14 @@ const Home: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.log('Video autoplay prevented or loading:', err);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchOffers = async () => {
       try {
         const res = await axios.get('http://localhost:5000/api/offers?active_only=true');
@@ -167,10 +175,26 @@ const Home: React.FC = () => {
     setIsSigningUp(true);
     setSignupMessage({ type: '', text: '' });
 
+    if (!signupForm.identity_number.trim()) {
+      setSignupMessage({ type: 'error', text: 'ID number is required.' });
+      setIsSigningUp(false);
+      return;
+    }
+
     try {
+      const checkRes = await axios.get(`http://localhost:5000/api/guest/check-id?identity_number=${encodeURIComponent(signupForm.identity_number.trim())}`);
+      if (checkRes.data && checkRes.data.available === false) {
+        setSignupMessage({ type: 'error', text: 'ID number already in use. Please choose a different ID.' });
+        setIsSigningUp(false);
+        return;
+      }
+
       await axios.post('http://localhost:5000/api/guest/signup', signupForm);
-      setSignupMessage({ type: 'success', text: 'Your account was created. You can now sign in.' });
+      setSignupMessage({ type: 'success', text: 'Your account was created successfully! Switching to sign in...' });
       setSignupForm({ first_name: '', last_name: '', email: '', phone_number: '', identity_number: '', password: '' });
+      setTimeout(() => {
+        openAuthPanel('signin');
+      }, 1500);
     } catch (error) {
       const message = axios.isAxiosError(error) ? error.response?.data?.error : 'Unable to create your account.';
       setSignupMessage({ type: 'error', text: message || 'Unable to create your account.' });
@@ -256,6 +280,7 @@ const Home: React.FC = () => {
             loop
             muted
             playsInline
+            key="hero-video-v3"
             style={{
               position: 'absolute',
               top: '50%',
@@ -269,7 +294,7 @@ const Home: React.FC = () => {
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
-            <source src="/videos/hero-video.mp4" type="video/mp4" />
+            <source src="/videos/hero-video.mp4?v=2" type="video/mp4" />
           </video>
           
           {/* Modern Gradient Overlay */}
@@ -1056,7 +1081,7 @@ const Home: React.FC = () => {
                           }}
                         />
                       )}
-                      {offer.discount && offer.discount > 0 ? (
+                      {offer.discount && offer.discount > 0 && (!offer.popup || (!offer.popup.toLowerCase().includes(`${offer.discount}%`) && !offer.popup.toLowerCase().includes('off'))) ? (
                         <Chip
                           label={`${offer.discount}% OFF`}
                           sx={{

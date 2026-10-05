@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Container, Typography, TextField, Button, Paper, Alert, Grid } from '@mui/material';
+import { Box, Container, Typography, TextField, Button, Paper, Alert, Grid, CircularProgress, FormHelperText } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const SignUp: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -8,46 +9,117 @@ const SignUp: React.FC = () => {
     lastName: '',
     email: '',
     phone: '',
+    identityNumber: '',
     password: '',
     confirmPassword: ''
   });
+  const [idError, setIdError] = useState('');
+  const [checkingId, setCheckingId] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'identityNumber') {
+      setIdError('');
+    }
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleCheckId = async (idVal: string) => {
+    if (!idVal.trim()) return;
+    try {
+      setCheckingId(true);
+      const res = await axios.get(`http://localhost:5000/api/guest/check-id?identity_number=${encodeURIComponent(idVal.trim())}`);
+      if (res.data && res.data.available === false) {
+        setIdError('ID number already in use. Please choose a different ID.');
+      } else {
+        setIdError('');
+      }
+    } catch (err: any) {
+      if (err.response?.data?.error) {
+        setIdError(err.response.data.error);
+      }
+    } finally {
+      setCheckingId(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { firstName, lastName, email, phone, password, confirmPassword } = formData;
-    
-    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
-      setError('Please fill out all fields.');
+    setError('');
+    setSuccess('');
+
+    const { firstName, lastName, email, phone, identityNumber, password, confirmPassword } = formData;
+
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim() || !identityNumber.trim() || !password || !confirmPassword) {
+      setError('Please fill out all required fields.');
       return;
     }
-    
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
-    
-    // Simulate sign up and auto-login
-    console.log('Signing up with', formData);
-    setSuccess('Registration successful! Logging you in...');
-    sessionStorage.setItem('guestAuthenticated', 'true'); sessionStorage.setItem('guestSignedIn', 'true');
-    sessionStorage.setItem('guestUser', JSON.stringify({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      joinDate: new Date().toLocaleDateString()
-    })); window.dispatchEvent(new Event('guestAuthChanged'));
-    window.dispatchEvent(new Event('authChange'));
-    setTimeout(() => {
-      navigate('/profile');
-    }, 2000);
+
+    if (idError) {
+      setError(idError);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Double check ID before submission
+      const checkRes = await axios.get(`http://localhost:5000/api/guest/check-id?identity_number=${encodeURIComponent(identityNumber.trim())}`);
+      if (checkRes.data && checkRes.data.available === false) {
+        setIdError('ID number already in use. Please choose a different ID.');
+        setError('ID number already in use. Please choose a different ID.');
+        setLoading(false);
+        return;
+      }
+
+      await axios.post('http://localhost:5000/api/guest/signup', {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+        phone_number: phone.trim(),
+        identity_number: identityNumber.trim(),
+        password: password
+      });
+
+      setSuccess('Account created successfully! Auto-signing you in...');
+
+      // Auto sign in
+      const signinRes = await axios.post('http://localhost:5000/api/guest/signin', {
+        email: email.trim(),
+        password: password
+      });
+
+      sessionStorage.setItem('guestAuthenticated', 'true');
+      sessionStorage.setItem('guestSignedIn', 'true');
+      sessionStorage.setItem('guestProfile', JSON.stringify(signinRes.data));
+      window.dispatchEvent(new Event('guestAuthChanged'));
+      window.dispatchEvent(new Event('authChange'));
+
+      setTimeout(() => {
+        navigate('/profile');
+      }, 1500);
+    } catch (err: any) {
+      const serverMsg = err.response?.data?.error || 'Unable to create your account.';
+      setError(serverMsg);
+      if (serverMsg.toLowerCase().includes('id number')) {
+        setIdError(serverMsg);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,7 +179,7 @@ const SignUp: React.FC = () => {
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
-              <Grid size={{ xs: 12 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   required
                   fullWidth
@@ -120,6 +192,25 @@ const SignUp: React.FC = () => {
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
+
+              {/* ID Number Field mapping to identity_number */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  required
+                  fullWidth
+                  id="identityNumber"
+                  label="ID Number (NIC / Passport)"
+                  name="identityNumber"
+                  placeholder="e.g. 199512345678"
+                  value={formData.identityNumber}
+                  onChange={handleChange}
+                  onBlur={() => handleCheckId(formData.identityNumber)}
+                  error={Boolean(idError)}
+                  helperText={idError || (checkingId ? 'Verifying ID availability...' : 'Unique identity number')}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              </Grid>
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   required
@@ -131,6 +222,7 @@ const SignUp: React.FC = () => {
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
+                  helperText="At least 8 characters"
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
               </Grid>
@@ -154,8 +246,9 @@ const SignUp: React.FC = () => {
               type="submit"
               fullWidth
               variant="contained"
+              disabled={loading}
               sx={{ 
-                mt: 5, 
+                mt: 4, 
                 mb: 2, 
                 bgcolor: '#d4af37', 
                 color: 'white', 
@@ -168,7 +261,7 @@ const SignUp: React.FC = () => {
                 '&:hover': { bgcolor: '#c5a028' }
               }}
             >
-              Sign Up
+              {loading ? <CircularProgress size={26} color="inherit" /> : 'Create Account'}
             </Button>
             
             <Box sx={{ textAlign: 'center', mt: 2 }}>

@@ -1,38 +1,49 @@
 import React, { useState } from 'react';
-import { Box, Container, Typography, TextField, Button, Paper, Alert } from '@mui/material';
+import { Box, Container, Typography, TextField, Button, Paper, Alert, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const SignIn: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill out all fields.');
+    setError('');
+    setSuccess('');
+
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.');
       return;
     }
-    // Simulate sign in
-    console.log('Signing in with', email, password);
-    setSuccess('Login successful! Redirecting...');
-    sessionStorage.setItem('guestAuthenticated', 'true'); sessionStorage.setItem('guestSignedIn', 'true');
-    if (!sessionStorage.getItem('guestUser')) {
-      sessionStorage.setItem('guestUser', JSON.stringify({
-        firstName: email.split('@')[0],
-        lastName: 'Member',
-        email: email,
-        phone: '+1 (555) 000-0000',
-        joinDate: new Date().toLocaleDateString()
-      }));
-    } window.dispatchEvent(new Event('guestAuthChanged'));
-    // Dispatch event so Layout updates immediately
-    window.dispatchEvent(new Event('authChange'));
-    setTimeout(() => {
-      navigate('/profile');
-    }, 1500);
+
+    try {
+      setLoading(true);
+      const res = await axios.post('http://localhost:5000/api/guest/signin', {
+        email: email.trim(),
+        password: password,
+      });
+
+      setSuccess('Login successful! Redirecting...');
+      sessionStorage.setItem('guestAuthenticated', 'true');
+      sessionStorage.setItem('guestSignedIn', 'true');
+      sessionStorage.setItem('guestProfile', JSON.stringify(res.data));
+      window.dispatchEvent(new Event('guestAuthChanged'));
+      window.dispatchEvent(new Event('authChange'));
+
+      setTimeout(() => {
+        navigate('/profile');
+      }, 1000);
+    } catch (err: any) {
+      const serverError = err.response?.data?.error || 'Unable to sign in. Please check your credentials.';
+      setError(serverError);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,8 +57,8 @@ const SignIn: React.FC = () => {
             Sign in to access your reservations and exclusive offers.
           </Typography>
 
-          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
 
           <Box component="form" onSubmit={handleSignIn} noValidate>
             <TextField
@@ -57,6 +68,7 @@ const SignIn: React.FC = () => {
               id="email"
               label="Email Address"
               name="email"
+              type="email"
               autoComplete="email"
               autoFocus
               value={email}
@@ -81,6 +93,7 @@ const SignIn: React.FC = () => {
               type="submit"
               fullWidth
               variant="contained"
+              disabled={loading}
               sx={{ 
                 mt: 4, 
                 mb: 2, 
@@ -95,7 +108,7 @@ const SignIn: React.FC = () => {
                 '&:hover': { bgcolor: '#c5a028' }
               }}
             >
-              Sign In
+              {loading ? <CircularProgress size={26} color="inherit" /> : 'Sign In'}
             </Button>
             
             <Box sx={{ textAlign: 'center', mt: 2 }}>

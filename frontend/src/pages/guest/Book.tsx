@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, TextField, Button, Grid, Paper, 
   Container, Stepper, Step, StepLabel, CircularProgress, Alert,
-  Divider, CardMedia
+  Divider, CardMedia, Chip
 } from '@mui/material';
 import { 
   MeetingRoom as MeetingRoomIcon, 
   Hotel as HotelIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Payment as PaymentIcon,
+  CreditCard as CreditCardIcon,
+  Security as SecurityIcon,
+  VerifiedUser as VerifiedUserIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -16,8 +20,11 @@ import { PickerDay } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 
-
-
+declare global {
+  interface Window {
+    payhere?: any;
+  }
+}
 
 const Book: React.FC = () => {
   const CustomPickerDay = (props: any) => {
@@ -41,10 +48,13 @@ const Book: React.FC = () => {
       />
     );
   };
+
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [payhereOrderId, setPayhereOrderId] = useState('');
+
   const navigate = useNavigate();
   const location = useLocation();
   const { room, roomId: fallbackId, roomType: fallbackType } = location.state || {};
@@ -56,13 +66,16 @@ const Book: React.FC = () => {
   
   const [bookedDates, setBookedDates] = useState<{ start: Dayjs, end: Dayjs }[]>([]);
 
-  // Basic form state
+  // Guest profile auto-fill
+  const storedProfileRaw = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
+  const storedProfile = storedProfileRaw ? JSON.parse(storedProfileRaw) : null;
+
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    identificationNo: '',
+    firstName: storedProfile?.first_name || storedProfile?.firstName || '',
+    lastName: storedProfile?.last_name || storedProfile?.lastName || '',
+    email: storedProfile?.email || '',
+    phone: storedProfile?.phone_number || storedProfile?.phone || '',
+    identificationNo: storedProfile?.identity_number || storedProfile?.identityNumber || '',
     checkInDate: null as Dayjs | null,
     checkOutDate: null as Dayjs | null,
     roomType: selectedRoomType,
@@ -90,29 +103,6 @@ const Book: React.FC = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const submitBooking = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const payload = {
-        ...formData,
-        checkInDate: formData.checkInDate ? formData.checkInDate.format('YYYY-MM-DD') : '',
-        checkOutDate: formData.checkOutDate ? formData.checkOutDate.format('YYYY-MM-DD') : '',
-      };
-      const response = await axios.post('http://localhost:5000/api/bookings', payload);
-      setSuccess('Booking confirmed successfully! Booking ID: ' + response.data.bookingId);
-      setActiveStep((prev) => prev + 1);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || 'Failed to create booking. Please try again.');
-      } else {
-        setError('Failed to create booking. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const shouldDisableDate = (date: Dayjs) => {
     return bookedDates.some(range => 
       date.isSame(range.start, 'day') || date.isSame(range.end, 'day') || 
@@ -128,7 +118,108 @@ const Book: React.FC = () => {
     return 0;
   };
 
-  const steps = ['Guest Details', 'Stay Dates', 'Confirmation'];
+  // Confirm booking ONLY after PayHere payment passes
+  const confirmBookingWithPayment = async (orderId: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      const payload = {
+        ...formData,
+        checkInDate: formData.checkInDate ? formData.checkInDate.format('YYYY-MM-DD') : '',
+        checkOutDate: formData.checkOutDate ? formData.checkOutDate.format('YYYY-MM-DD') : '',
+        paymentStatus: 'PAID',
+        payhereOrderId: orderId
+      };
+
+      const response = await axios.post('http://localhost:5000/api/bookings', payload);
+      setSuccess('Booking confirmed successfully! Booking ID: ' + response.data.bookingId);
+      setPayhereOrderId(orderId);
+      setActiveStep(3); // Step 3 is Confirmation
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error || 'Failed to save booking. Please try again.');
+      } else {
+        setError('Failed to save booking. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Trigger Official PayHere Sandbox SDK Popup
+  const handlePayHereCheckout = async () => {
+    setError('');
+    const totalAmount = calculateTotal();
+    if (totalAmount <= 0) {
+      setError('Please select valid check-in and check-out stay dates first.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const orderId = 'RESORT_' + Date.now();
+
+      // Request PayHere Hash from backend
+      const hashRes = await axios.post('http://localhost:5000/api/bookings/payhere-hash', {
+        order_id: orderId,
+        amount: totalAmount,
+        currency: 'LKR'
+      });
+
+      if (!window.payhere) {
+        throw new Error('PayHere Payment SDK is loading... Please ensure payhere.js is loaded.');
+      }
+
+      const payment = {
+        sandbox: hashRes.data.sandbox !== undefined ? hashRes.data.sandbox : true,
+        merchant_id: hashRes.data.merchant_id,
+        return_url: window.location.origin + '/book',
+        cancel_url: window.location.origin + '/book',
+        notify_url: 'http://localhost:5000/api/bookings/payhere-notify',
+        order_id: orderId,
+        items: `Resort Room Booking - ${selectedRoomType}`,
+        amount: hashRes.data.amount,
+        currency: hashRes.data.currency || 'LKR',
+        hash: hashRes.data.hash,
+        first_name: formData.firstName || 'Guest',
+        last_name: formData.lastName || 'Member',
+        email: formData.email || 'guest@example.com',
+        phone: formData.phone || '0770000000',
+        address: 'Paradise Resorts Hotel',
+        city: 'Colombo',
+        country: 'Sri Lanka',
+      };
+
+      // Official PayHere Callbacks
+      window.payhere.onCompleted = function onCompleted(completedOrderId: string) {
+        console.log('PayHere payment completed successfully. OrderID:', completedOrderId);
+        confirmBookingWithPayment(completedOrderId || orderId);
+      };
+
+      window.payhere.onDismissed = function onDismissed() {
+        console.log('PayHere payment window dismissed by user.');
+        setError('PayHere Payment was cancelled. Booking was not completed until payment passes.');
+        setLoading(false);
+      };
+
+      window.payhere.onError = function onError(payhereErr: any) {
+        console.error('PayHere Payment Error:', payhereErr);
+        setError('PayHere Payment Error: ' + (typeof payhereErr === 'string' ? payhereErr : JSON.stringify(payhereErr)));
+        setLoading(false);
+      };
+
+      // Launch Official PayHere Sandbox SDK Popup
+      window.payhere.startPayment(payment);
+
+    } catch (err: any) {
+      console.error('PayHere initiation error:', err);
+      const msg = err.response?.data?.error || err.message || 'Failed to initialize PayHere gateway.';
+      setError(msg);
+      setLoading(false);
+    }
+  };
+
+  const steps = ['Guest Details', 'Stay Dates', 'PayHere Payment', 'Confirmation'];
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -182,45 +273,55 @@ const Book: React.FC = () => {
                   </Box>
                   
                   {calculateTotal() > 0 && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 1, p: 2, bgcolor: '#f8fafc', borderRadius: 2 }}>
-                      <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 700 }}>Estimated Total</Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e' }}>${calculateTotal()}</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                      <Box>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 700, display: 'block' }}>Total Stay Amount</Typography>
+                        <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>
+                          {formData.checkOutDate?.diff(formData.checkInDate, 'day')} Night(s)
+                        </Typography>
+                      </Box>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#d4af37' }}>
+                        LKR {calculateTotal().toLocaleString()}
+                      </Typography>
                     </Box>
                   )}
                 </Box>
               </Paper>
             </Grid>
 
-            {/* Right Column: Booking Form */}
+            {/* Right Column: Booking & PayHere Workflow */}
             <Grid size={{ xs: 12, md: 8 }}>
               <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, boxShadow: '0 12px 40px rgba(0,0,0,0.06)' }}>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                  Secure Reservation
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1, fontFamily: '"Playfair Display", serif' }}>
+                  Resort Booking & PayHere Payment
                 </Typography>
                 <Typography color="text.secondary" sx={{ mb: 4 }}>
-                  Please complete the steps below to finalize your booking.
+                  Complete the steps below. Booking is finalized ONLY after successful PayHere payment verification.
                 </Typography>
                 
-                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 6 }}>
+                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 5 }}>
                   {steps.map((label, index) => (
                     <Step key={label}>
                       <StepLabel 
                         sx={{
-                          '& .MuiStepIcon-root.Mui-active': { color: '#4facfe' },
+                          '& .MuiStepIcon-root.Mui-active': { color: '#d4af37' },
                           '& .MuiStepIcon-root.Mui-completed': { color: '#10b981' }
                         }}
                       >
-                        <Typography sx={{ fontWeight: activeStep === index ? 700 : 500, mt: 1 }}>{label}</Typography>
+                        <Typography sx={{ fontWeight: activeStep === index ? 700 : 500, fontSize: '0.85rem', mt: 0.5 }}>{label}</Typography>
                       </StepLabel>
                     </Step>
                   ))}
                 </Stepper>
 
-                {error && <Alert severity="error" sx={{ mb: 4, borderRadius: 2 }}>{error}</Alert>}
+                {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 4, borderRadius: 2 }}>{error}</Alert>}
 
-                {/* Step 1: Guest Details */}
+                {/* Step 0: Guest Details */}
                 {activeStep === 0 && (
                   <Box component="form" noValidate autoComplete="off">
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 2.5, color: '#1a1a2e' }}>
+                      Step 1: Guest Personal Information
+                    </Typography>
                     <Grid container spacing={3}>
                       <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField required fullWidth label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
@@ -244,7 +345,7 @@ const Book: React.FC = () => {
                         onClick={handleNext} 
                         size="large"
                         disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.identificationNo}
-                        sx={{ bgcolor: '#1a1a2e', color: 'white', px: 6, borderRadius: 8, textTransform: 'none', fontSize: '1rem', '&:hover': { bgcolor: '#2a2a4a' } }}
+                        sx={{ bgcolor: '#1a1a2e', color: 'white', px: 6, borderRadius: 8, textTransform: 'none', fontSize: '1rem', '&:hover': { bgcolor: '#d4af37', color: '#1a1a2e' } }}
                       >
                         Continue to Dates
                       </Button>
@@ -252,15 +353,18 @@ const Book: React.FC = () => {
                   </Box>
                 )}
 
-                {/* Step 2: Stay Dates */}
+                {/* Step 1: Stay Dates */}
                 {activeStep === 1 && (
                   <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 2.5, color: '#1a1a2e' }}>
+                      Step 2: Select Stay Dates
+                    </Typography>
                     <Box sx={{ bgcolor: '#f8fafc', p: 3, borderRadius: 3, mb: 4, border: '1px solid #e2e8f0' }}>
                       <Typography variant="subtitle2" color="primary" sx={{ mb: 2, fontWeight: 700, display: 'flex', alignItems: 'center' }}>
                         <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} /> Real-time availability active
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        Select your check-in and check-out dates. Days that are greyed out are already booked for this specific room.
+                        Select check-in and check-out dates. Greyed out dates are unavailable for this room.
                       </Typography>
                       <Grid container spacing={3}>
                         <Grid size={{ xs: 12, sm: 6 }}>
@@ -292,52 +396,183 @@ const Book: React.FC = () => {
                         </Grid>
                       </Grid>
                     </Box>
+
+                    {calculateTotal() > 0 && (
+                      <Paper elevation={0} sx={{ p: 2.5, mb: 4, bgcolor: '#fff8e7', border: '1px solid #ffe0b2', borderRadius: 3 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#e65100', mb: 0.5 }}>
+                          Total Amount: LKR {calculateTotal().toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          ({formData.checkOutDate?.diff(formData.checkInDate, 'day')} Nights &times; ${selectedPrice} / night)
+                        </Typography>
+                      </Paper>
+                    )}
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 5 }}>
                       <Button onClick={handleBack} size="large" sx={{ color: '#64748b', fontWeight: 600 }}>Back</Button>
                       <Button 
                         variant="contained" 
-                        onClick={submitBooking} 
+                        onClick={handleNext} 
                         size="large"
-                        disabled={loading || !formData.checkInDate || !formData.checkOutDate}
+                        disabled={!formData.checkInDate || !formData.checkOutDate || calculateTotal() <= 0}
                         sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white', 
-                          px: 6, 
+                          background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', 
+                          color: '#1a1a2e', 
+                          px: 5, 
                           borderRadius: 8, 
                           textTransform: 'none', 
+                          fontWeight: 800, 
                           fontSize: '1rem', 
-                          boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
-                          '&:hover': { bgcolor: '#059669' } 
+                          boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
+                          '&:hover': { background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)' } 
                         }}
                       >
-                        {loading ? <CircularProgress size={24} color="inherit" /> : 'Confirm Reservation'}
+                        Proceed to PayHere Payment
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Step 2: PayHere Official Sandbox Gateway */}
+                {activeStep === 2 && (
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                      <PaymentIcon sx={{ color: '#d4af37', fontSize: 32 }} />
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+                          Step 3: Official PayHere Payment Gateway
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Resort booking is strictly finalized ONLY after successful payment verification.
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Summary Payment Details */}
+                    <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 3 }}>
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Typography variant="caption" color="text.secondary">Guest Name</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 700 }}>{formData.firstName} {formData.lastName}</Typography>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Typography variant="caption" color="text.secondary">Stay Dates</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                            {formData.checkInDate?.format('MMM DD, YYYY')} &rarr; {formData.checkOutDate?.format('MMM DD, YYYY')}
+                          </Typography>
+                        </Grid>
+                        <Grid size={{ xs: 12 }}>
+                          <Divider sx={{ my: 1.5 }} />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+                              Amount Payable:
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 900, color: '#d4af37' }}>
+                              LKR {calculateTotal().toLocaleString()}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+
+                    {/* PayHere Sandbox Credentials Guidance */}
+                    <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: '#f0f7ff', border: '1px solid #b3d7ff', borderRadius: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <SecurityIcon sx={{ color: '#0066cc' }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#004085' }}>
+                          PayHere Official Sandbox Test Cards (Use in PayHere Popup):
+                        </Typography>
+                      </Box>
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Visa Test Card</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>
+                            4532 0000 0000 0000
+                          </Typography>
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Expiry Date</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>
+                            12 / 28
+                          </Typography>
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>CVV / OTP</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>
+                            123 / 123456
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4 }}>
+                      <Button onClick={handleBack} disabled={loading} size="large" sx={{ color: '#64748b', fontWeight: 600 }}>
+                        Back
+                      </Button>
+                      <Button 
+                        variant="contained" 
+                        onClick={handlePayHereCheckout} 
+                        size="large"
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CreditCardIcon />}
+                        sx={{ 
+                          background: 'linear-gradient(45deg, #0066cc 30%, #004085 90%)', 
+                          color: '#fff', 
+                          px: 5, 
+                          py: 1.5,
+                          borderRadius: 8, 
+                          textTransform: 'none', 
+                          fontWeight: 800, 
+                          fontSize: '1.05rem', 
+                          boxShadow: '0 6px 20px rgba(0, 102, 204, 0.4)',
+                          '&:hover': { background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a2e' } 
+                        }}
+                      >
+                        {loading ? 'Launching PayHere Popup...' : 'Pay via Official PayHere Gateway'}
                       </Button>
                     </Box>
                   </Box>
                 )}
 
                 {/* Step 3: Confirmation */}
-                {activeStep === 2 && (
+                {activeStep === 3 && (
                   <Box sx={{ textAlign: 'center', py: 6, px: 2 }}>
                     <Box sx={{ display: 'inline-flex', bgcolor: 'rgba(16, 185, 129, 0.1)', p: 2, borderRadius: '50%', mb: 3 }}>
-                      <CheckCircleIcon sx={{ fontSize: 60, color: '#10b981' }} />
+                      <CheckCircleIcon sx={{ fontSize: 64, color: '#10b981' }} />
                     </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 2, fontFamily: '"Playfair Display", serif' }}>
-                      Reservation Confirmed!
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 1.5, fontFamily: '"Playfair Display", serif' }}>
+                      Payment Passed & Booking Confirmed!
                     </Typography>
+                    <Chip 
+                      icon={<VerifiedUserIcon sx={{ color: '#ffffff !important' }} />} 
+                      label="PAID VIA PAYHERE SANDBOX" 
+                      sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 'bold', mb: 3, py: 0.5, px: 1 }} 
+                    />
                     <Typography color="text.secondary" sx={{ mb: 1, fontSize: '1.1rem' }}>
-                      Thank you for choosing HRGSMS Grand Hotel, {formData.firstName}.
+                      Thank you, {formData.firstName}! Your payment was verified and processed via PayHere.
                     </Typography>
-                    <Typography color="text.secondary" sx={{ mb: 5 }}>
-                      We have sent a confirmation email with your booking details.
+                    <Typography color="text.secondary" sx={{ mb: 4 }}>
+                      A confirmation receipt has been issued for your reservation.
                     </Typography>
                     
-                    <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: '#f8fafc', display: 'inline-block', textAlign: 'left', minWidth: '300px', mb: 5 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>Booking Reference</Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e' }}>#{success.split(': ')[1] || '102938'}</Typography>
+                    <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: '#f8fafc', display: 'inline-block', textAlign: 'left', minWidth: '320px', mb: 5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, display: 'block', mb: 0.5 }}>
+                        Booking Reference
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1 }}>
+                        #{success.split(': ')[1] || '102938'}
+                      </Typography>
+                      {payhereOrderId && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          PayHere Order ID: {payhereOrderId}
+                        </Typography>
+                      )}
                     </Paper>
 
-                    <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+                      <Button variant="contained" onClick={() => navigate('/profile')} size="large" sx={{ borderRadius: 8, px: 4, bgcolor: '#1a1a2e', color: '#fff', textTransform: 'none', fontWeight: 600 }}>
+                        View My Profile & Bookings
+                      </Button>
                       <Button variant="outlined" onClick={() => navigate('/')} size="large" sx={{ borderRadius: 8, px: 4, textTransform: 'none', fontWeight: 600, color: '#1a1a2e', borderColor: '#cbd5e1' }}>
                         Return to Homepage
                       </Button>
