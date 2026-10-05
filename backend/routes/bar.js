@@ -92,9 +92,64 @@ export default function createBarRouter(pool, upload) {
     }
   });
 
+  const handleUpdateBarItem = async (req, res) => {
+    try {
+      await ensureTable();
+      const itemId = req.params.id;
+      const { item_name, category, size, in_stock, unit_price } = req.body;
+
+      if (!item_name?.trim()) {
+        return res.status(400).json({ error: 'Item name is required.' });
+      }
+
+      let query = 'UPDATE bar_items SET item_name = ?, category = ?, size = ?, in_stock = ?, unit_price = ?';
+      const values = [item_name.trim(), category || 'Soft Drink', Number(size) || 330, Number(in_stock) || 0, Number(unit_price) || 0];
+
+      if (req.file) {
+        query += ', image_path = ?';
+        values.push(req.file.path);
+      }
+
+      query += ' WHERE item_id = ?';
+      values.push(itemId);
+
+      const [result] = await pool.query(query, values);
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Bar item not found.' });
+      }
+
+      res.json({ message: 'Bar item updated successfully.' });
+    } catch (error) {
+      console.error('Update bar item error:', error);
+      res.status(500).json({ error: 'Failed to update bar item.' });
+    }
+  };
+
+  const handleDeleteBarItem = async (req, res) => {
+    try {
+      await ensureTable();
+      const [result] = await pool.query('DELETE FROM bar_items WHERE item_id = ?', [req.params.id]);
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Bar item not found.' });
+      }
+      res.json({ message: 'Bar item deleted successfully.' });
+    } catch (error) {
+      console.error('Delete bar item error:', error);
+      res.status(500).json({ error: 'Failed to delete bar item.' });
+    }
+  };
+
   // POST endpoints for creating bar items
   router.post('/items', upload.single('image'), handleCreateBarItem);
   router.post('/admin/items', upload.single('image'), handleCreateBarItem);
+
+  // PUT endpoints for updating bar items
+  router.put('/items/:id', upload.single('image'), handleUpdateBarItem);
+  router.put('/admin/items/:id', upload.single('image'), handleUpdateBarItem);
+
+  // DELETE endpoints for removing bar items
+  router.delete('/items/:id', handleDeleteBarItem);
+  router.delete('/admin/items/:id', handleDeleteBarItem);
 
   return router;
 }

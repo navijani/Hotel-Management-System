@@ -167,7 +167,18 @@ const Book: React.FC = () => {
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                     <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 600 }}>Rate per night</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#10b981' }}>${selectedPrice}</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#10b981' }}>
+                      {room?.OriginalPrice && room.OriginalPrice > selectedPrice ? (
+                        <>
+                          <Typography component="span" sx={{ textDecoration: 'line-through', color: '#888', fontSize: '0.85em', mr: 1 }}>
+                            ${room.OriginalPrice}
+                          </Typography>
+                          ${selectedPrice}
+                        </>
+                      ) : (
+                        `$${selectedPrice}`
+                      )}
+                    </Typography>
                   </Box>
                   
                   {calculateTotal() > 0 && (

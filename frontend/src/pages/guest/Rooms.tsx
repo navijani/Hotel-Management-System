@@ -195,6 +195,7 @@ const Rooms: React.FC = () => {
           RoomTypeID: r.type || r.RoomTypeID || 'Standard',
           Status: r.status || r.current_status || r.Status || 'Available',
           Price: r.price_per_night || r.Price || 120,
+          Discount: Number(r.discount || r.Discount || 0),
           image: r.image || mockRooms[Math.floor(Math.random() * mockRooms.length)].image,
           Description: r.description || 'Elegantly appointed space featuring premium amenities and stunning views.',
           BedType: r.bed_type || 'King Bed',
@@ -360,8 +361,13 @@ const Rooms: React.FC = () => {
                 if (room.Capacity < minCapacity) return false;
                 return true;
               })
+              // Sort discounted items to the top of the search results
+              .sort((a, b) => (b.Discount || 0) - (a.Discount || 0))
               .map((room) => {
               const isAvailable = room.Status === 'Available';
+              const discountPercent = room.Discount || 0;
+              const discountedPrice = discountPercent > 0 ? Math.round(room.Price * (1 - discountPercent / 100)) : room.Price;
+
               return (
                 <Grid key={room.RoomID} size={{ xs: 12, md: 4 }}>
                   <Card 
@@ -372,8 +378,9 @@ const Rooms: React.FC = () => {
                       flexDirection: 'column', 
                       borderRadius: 3,
                       transition: 'all 0.3s ease',
-                      border: '1px solid rgba(0,0,0,0.05)',
+                      border: discountPercent > 0 ? '2px solid #d4af37' : '1px solid rgba(0,0,0,0.05)',
                       bgcolor: 'white',
+                      position: 'relative',
                       '&:hover': { 
                         transform: 'translateY(-10px)', 
                         boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
@@ -387,6 +394,21 @@ const Rooms: React.FC = () => {
                         image={room.image}
                         alt={`Room ${room.RoomNumber}`}
                       />
+                      {discountPercent > 0 && (
+                        <Chip 
+                          label={`${discountPercent}% OFF`}
+                          sx={{ 
+                            position: 'absolute', 
+                            top: 16, 
+                            left: 16,
+                            fontWeight: 'bold',
+                            borderRadius: '50px',
+                            bgcolor: '#d4af37',
+                            color: 'white',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                          }} 
+                        />
+                      )}
                       {(room.Status === 'Available' || room.Status === 'Maintenance') && (
                         <Chip 
                           label={room.Status} 
@@ -407,11 +429,25 @@ const Rooms: React.FC = () => {
                         <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Playfair Display", serif' }}>
                           {room.RoomTypeID}
                         </Typography>
-                        <Typography variant="h6" sx={{ color: '#d4af37', fontWeight: 'bold' }}>
-                          ${room.Price}
-                          <Typography component="span" variant="caption" sx={{ color: 'text.secondary', display: 'block', textAlign: 'right' }}>
-                            / night
-                          </Typography>
+                        <Typography variant="h6" sx={{ color: '#d4af37', fontWeight: 'bold', textAlign: 'right' }}>
+                          {discountPercent > 0 ? (
+                            <>
+                              <Typography component="span" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.85em', mr: 1 }}>
+                                ${room.Price}
+                              </Typography>
+                              ${discountedPrice}
+                              <Typography component="span" variant="caption" sx={{ color: '#e65100', display: 'block', fontWeight: 'bold' }}>
+                                / night ({discountPercent}% off)
+                              </Typography>
+                            </>
+                          ) : (
+                            <>
+                              ${room.Price}
+                              <Typography component="span" variant="caption" sx={{ color: 'text.secondary', display: 'block', textAlign: 'right' }}>
+                                / night
+                              </Typography>
+                            </>
+                          )}
                         </Typography>
                       </Box>
                       
@@ -440,7 +476,7 @@ const Rooms: React.FC = () => {
                         variant="contained" 
                         fullWidth 
                         disabled={!isAvailable}
-                        onClick={() => navigate('/book', { state: { room } })}
+                        onClick={() => navigate('/book', { state: { room: { ...room, Price: discountedPrice, OriginalPrice: room.Price } } })}
                         sx={{ 
                           mt: 'auto',
                           py: 1.5,

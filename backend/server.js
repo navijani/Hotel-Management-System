@@ -51,9 +51,17 @@ const bookingRateLimit = rateLimit({
 // Apply global rate limiting to all API endpoints
 app.use('/api/', globalRateLimit);
 
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads', { recursive: true });
+}
+
 // Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    if (!fs.existsSync('uploads')) {
+      fs.mkdirSync('uploads', { recursive: true });
+    }
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
@@ -61,7 +69,13 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024,  // 50MB max file size
+    fieldSize: 50 * 1024 * 1024  // 50MB max text field size (for base64 image strings)
+  }
+});
 
 // Serve uploads directory statically
 app.use('/uploads', express.static('uploads'));
@@ -401,6 +415,15 @@ app.use('/api/admin/bar', barRouter);
 const offersRouter = createOffersRouter(pool, upload);
 app.use('/api/offers', offersRouter);
 app.use('/api/exclusive-offers', offersRouter);
+
+// Global Error Handler (Catches Multer, JSON parsing, and general server errors)
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  const status = err.statusCode || err.status || 500;
+  res.status(status).json({
+    error: err.message || 'An unexpected server error occurred.'
+  });
+});
 
 // Start server
 app.listen(port, () => {
