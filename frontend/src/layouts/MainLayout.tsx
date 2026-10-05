@@ -27,6 +27,7 @@ import {
   RoomService as ServiceIcon,
   BarChart as ReportIcon,
   LocalBar as BarIcon,
+  LocalOffer as OfferIcon,
   Notifications as NotificationsIcon,
   ExitToApp as LogoutIcon,
 } from '@mui/icons-material';
@@ -48,8 +49,9 @@ const MainLayout: React.FC = () => {
   };
 
   const handleSignOut = () => {
+    window.sessionStorage.removeItem('adminAuthenticated');
     window.sessionStorage.removeItem('hmsAdminSignedIn');
-    navigate('/admin/signin', { replace: true });
+    navigate('/admin', { replace: true });
   };
 
   const menuItems = [
@@ -57,6 +59,7 @@ const MainLayout: React.FC = () => {
     { text: 'Service Logging', icon: <ServiceIcon />, path: '/admin/dashboard/service' },
     { text: 'Management', icon: <ReportIcon />, path: '/admin/dashboard/management' },
     { text: 'Bar Inventory', icon: <BarIcon />, path: '/admin/dashboard/bar' },
+    { text: 'Exclusive Offers', icon: <OfferIcon />, path: '/admin/dashboard/offers' },
   ];
 
   const drawer = (

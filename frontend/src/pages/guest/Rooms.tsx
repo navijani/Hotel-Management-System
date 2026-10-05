@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Typography, Box, Card, CardContent, Grid, Button, 
   CircularProgress, Container, CardMedia, Chip, Divider 
-, TextField, MenuItem, Slider, Collapse, IconButton, Paper, InputAdornment} from '@mui/material';
+, TextField, MenuItem, Slider, Collapse, Paper, InputAdornment} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import axios from 'axios';
@@ -314,7 +314,7 @@ const Rooms: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" gutterBottom>Min Capacity: {minCapacity} Persons</Typography>
                 <Slider 
                   value={minCapacity} 
-                  onChange={(e, val) => setMinCapacity(val as number)} 
+                  onChange={(_, val) => setMinCapacity(val as number)} 
                   step={1} 
                   marks 
                   min={1} 
@@ -328,7 +328,7 @@ const Rooms: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" gutterBottom>Max Price: ${maxPrice}</Typography>
                 <Slider 
                   value={maxPrice} 
-                  onChange={(e, val) => setMaxPrice(val as number)} 
+                  onChange={(_, val) => setMaxPrice(val as number)} 
                   step={50} 
                   min={50} 
                   max={2000} 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip, Alert } from '@mui/material';
+import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import WifiIcon from '@mui/icons-material/Wifi';
@@ -14,6 +14,16 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+
+interface ExclusiveOffer {
+  id: number;
+  popup: string;
+  topic: string;
+  details: string;
+  more_details: string;
+  image: string | null;
+  active: boolean;
+}
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -41,7 +51,23 @@ const Home: React.FC = () => {
   const [signinForm, setSigninForm] = useState({ email: '', password: '' });
   const [signinMessage, setSigninMessage] = useState({ type: '', text: '' });
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [offers, setOffers] = useState<ExclusiveOffer[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<ExclusiveOffer | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const res = await axios.get('/api/offers?active_only=true');
+        if (Array.isArray(res.data)) {
+          setOffers(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load exclusive offers:', err);
+      }
+    };
+    fetchOffers();
+  }, []);
 
   useEffect(() => {
     const panel = searchParams.get('panel');
@@ -902,35 +928,38 @@ const Home: React.FC = () => {
           Indulge in our carefully curated packages for an unforgettable experience.
         </Typography>
         <Grid container spacing={4}>
-          {[
-            { title: 'Romantic Getaway', discount: '15% Off', img: '/images/romantic.jpg', desc: 'Enjoy a romantic weekend with complimentary champagne and late checkout.' },
-            { title: 'Business Retreat', discount: 'Free Upgrades', img: '/images/business.jpg', desc: 'Seamlessly blend work and relaxation with premium Wi-Fi and lounge access.' }
-          ].map((offer, index) => (
-            <Grid key={index} size={{ xs: 12, md: 6 }}>
+          {offers.map((offer) => (
+            <Grid key={offer.id} size={{ xs: 12, md: 6 }}>
               <Card sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, height: '100%', transition: '0.3s', '&:hover': { transform: 'scale(1.02)', boxShadow: 6 } }}>
                 <Box 
                   sx={{ 
                     width: { xs: '100%', sm: 200 }, 
                     height: { xs: 200, sm: 'auto' },
-                    backgroundImage: `url("${offer.img}")`,
+                    backgroundImage: `url("${offer.image || '/images/romantic.jpg'}")`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     position: 'relative'
                   }}
                 >
-                  <Chip 
-                    label={offer.discount} 
-                    sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold' }} 
-                  />
+                  {offer.popup && (
+                    <Chip 
+                      label={offer.popup} 
+                      sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold' }} 
+                    />
+                  )}
                 </Box>
                 <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: 3 }}>
                   <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    {offer.title}
+                    {offer.topic}
                   </Typography>
                   <Typography color="text.secondary" sx={{ mb: 2 }}>
-                    {offer.desc}
+                    {offer.details}
                   </Typography>
-                  <Button variant="outlined" sx={{ alignSelf: 'flex-start', color: '#1a1a1a', borderColor: '#d4af37', '&:hover': { borderColor: '#1a1a1a', bgcolor: 'rgba(212, 175, 55, 0.1)' } }}>
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => setSelectedOffer(offer)}
+                    sx={{ alignSelf: 'flex-start', color: '#1a1a1a', borderColor: '#d4af37', '&:hover': { borderColor: '#1a1a1a', bgcolor: 'rgba(212, 175, 55, 0.1)' } }}
+                  >
                     View Details
                   </Button>
                 </CardContent>
@@ -939,6 +968,59 @@ const Home: React.FC = () => {
           ))}
         </Grid>
       </Container>
+
+      {/* Offer Detail Dialog */}
+      {selectedOffer && (
+        <Dialog open={Boolean(selectedOffer)} onClose={() => setSelectedOffer(null)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ bgcolor: '#1a1a1a', color: '#fff', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocalOfferIcon sx={{ color: '#d4af37' }} />
+              {selectedOffer.topic}
+            </Box>
+            {selectedOffer.popup && (
+              <Chip label={selectedOffer.popup} size="small" sx={{ bgcolor: '#d4af37', color: '#fff', fontWeight: 'bold' }} />
+            )}
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 3 }}>
+            {selectedOffer.image && (
+              <Box
+                component="img"
+                src={selectedOffer.image}
+                alt={selectedOffer.topic}
+                sx={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 2, mb: 2 }}
+              />
+            )}
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+              Overview
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {selectedOffer.details}
+            </Typography>
+            {selectedOffer.more_details && (
+              <>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Inclusions & Terms
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', bgcolor: '#f9f9f9', p: 2, borderRadius: 2, border: '1px solid #eee' }}>
+                  {selectedOffer.more_details}
+                </Typography>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setSelectedOffer(null)} color="inherit">
+              Close
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={() => { setSelectedOffer(null); navigate('/rooms'); }}
+              sx={{ bgcolor: '#1a1a1a', color: '#fff', '&:hover': { bgcolor: '#d4af37' } }}
+            >
+              Book This Offer
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Testimonials */}
       <Box sx={{ bgcolor: '#1a1a1a', color: 'white', py: 8 }}>

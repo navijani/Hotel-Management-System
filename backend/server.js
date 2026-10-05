@@ -10,6 +10,7 @@ import { rateLimit } from 'express-rate-limit';
 import createRoomsRouter from './routes/rooms.js';
 import createBookingsRouter from './routes/bookings.js';
 import createBarRouter from './routes/bar.js';
+import createOffersRouter from './routes/offers.js';
 
 dotenv.config();
 
@@ -396,6 +397,10 @@ app.use('/api/bookings', bookingsRouter);
 const barRouter = createBarRouter(pool, upload);
 app.use('/api/bar', barRouter);
 app.use('/api/admin/bar', barRouter);
+
+const offersRouter = createOffersRouter(pool, upload);
+app.use('/api/offers', offersRouter);
+app.use('/api/exclusive-offers', offersRouter);
 
 // Start server
 app.listen(port, () => {

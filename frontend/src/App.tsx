@@ -25,6 +25,7 @@ import SystemRooms from './pages/system-admin/Rooms';
 import SystemUsers from './pages/system-admin/Users';
 import SystemBookings from './pages/system-admin/Bookings';
 import SystemSettings from './pages/system-admin/Settings';
+import ExclusiveOffers from './pages/system-admin/ExclusiveOffers';
 import AccessPortal from './pages/AccessPortal';
 import AdminLogin from './pages/AdminLogin';
 import CleaningStaff from './pages/staff/CleaningStaff';
@@ -39,7 +40,9 @@ const GuestGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
 );
 
 const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
-  sessionStorage.getItem('adminAuthenticated') === 'true' ? <>{children}</> : <Navigate to="/admin" replace />
+  (sessionStorage.getItem('adminAuthenticated') === 'true' || sessionStorage.getItem('hmsAdminSignedIn') === 'true')
+    ? <>{children}</>
+    : <Navigate to="/admin" replace />
 );
 
 const StaffGuard: React.FC<{ role: string; children: ReactNode }> = ({ role, children }) => (
@@ -64,12 +67,14 @@ function App() {
 
           {/* Administrator login and protected administration panels */}
           <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/signin" element={<AdminLogin />} />
 
           <Route path="/admin/dashboard" element={<AdminGuard><MainLayout /></AdminGuard>}>
             <Route index element={<ReceptionDashboard />} />
             <Route path="service" element={<ServiceDashboard />} />
             <Route path="management" element={<ReportsDashboard />} />
             <Route path="bar" element={<BarItemsAdmin />} />
+            <Route path="offers" element={<ExclusiveOffers />} />
             <Route path="management/billing" element={<BillingOverview />} />
             <Route path="management/billing/invoice" element={<BillingInvoice />} />
             <Route path="management/billing/revenue" element={<BillingRevenue />} />
@@ -87,6 +92,7 @@ function App() {
             <Route path="users" element={<SystemUsers />} />
             <Route path="bookings" element={<SystemBookings />} />
             <Route path="bar" element={<BarItemsAdmin />} />
+            <Route path="offers" element={<ExclusiveOffers />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 

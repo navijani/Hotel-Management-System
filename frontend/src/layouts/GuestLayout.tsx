@@ -200,7 +200,12 @@ const GuestLayout: React.FC = () => {
                   >
                     Profile
                   </Button>
-                  
+                  <Button 
+                    onClick={handleLogout}
+                    sx={navItemStyle}
+                  >
+                    Sign Out
+                  </Button>
                 </>
               )}
               <Button 
