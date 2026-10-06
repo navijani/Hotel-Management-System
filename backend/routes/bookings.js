@@ -20,7 +20,20 @@ export default function (pool, bookingRateLimit) {
       const currStr = String(currency || 'LKR').trim();
       const amountFormatted = Number(amount || 0).toFixed(2);
 
-      const hashedKey = crypto.createHash('md5').update(merchant_key).digest('hex').toUpperCase();
+      // Determine secret key (decode if base64 encoded by PayHere Portal)
+      let secretKey = merchant_key;
+      try {
+        if (merchant_key.endsWith('==') || merchant_key.endsWith('=')) {
+          const decoded = Buffer.from(merchant_key, 'base64').toString('utf8');
+          if (decoded && /^[\w-]+$/.test(decoded)) {
+            secretKey = decoded;
+          }
+        }
+      } catch {
+        secretKey = merchant_key;
+      }
+
+      const hashedKey = crypto.createHash('md5').update(secretKey).digest('hex').toUpperCase();
       const hashData = merchant_id + orderIdStr + amountFormatted + currStr + hashedKey;
       const hash = crypto.createHash('md5').update(hashData).digest('hex').toUpperCase();
 
