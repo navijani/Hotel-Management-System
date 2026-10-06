@@ -7,13 +7,14 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
+import { fileURLToPath } from 'url';
 import createRoomsRouter from './routes/rooms.js';
 import createBookingsRouter from './routes/bookings.js';
 import createBarRouter from './routes/bar.js';
 import createOffersRouter from './routes/offers.js';
 import createBillingRouter from './routes/billing.js';
 
-dotenv.config();
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 
 const app = express();
 const port = process.env.PORT || 5000;
