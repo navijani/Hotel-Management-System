@@ -58,6 +58,7 @@ function App() {
           {/* Website Routes with Top Navigation */}
           <Route path="/" element={<GuestLayout />}>
             <Route index element={<Home />} />
+            <Route path="about" element={<About />} />
             <Route path="rooms" element={<Rooms />} />
             <Route path="book" element={<Book />} />
             <Route path="portal" element={<AccessPortal />} />

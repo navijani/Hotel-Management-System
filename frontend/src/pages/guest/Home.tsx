@@ -57,7 +57,7 @@ const Home: React.FC = () => {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [offers, setOffers] = useState<ExclusiveOffer[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<ExclusiveOffer | null>(null);
-  const [welcomePopupOffer, setWelcomePopupOffer] = useState<ExclusiveOffer | null>(null);
+  const [, setWelcomePopupOffer] = useState<ExclusiveOffer | null>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -87,7 +87,7 @@ const Home: React.FC = () => {
     fetchOffers();
   }, []);
 
-  const handleBookOffer = (offer: ExclusiveOffer | null) => {
+  const handleBookOffer = (_offer?: ExclusiveOffer | null) => {
     setShowWelcomePopup(false);
     setSelectedOffer(null);
     if (isSignedIn) {
@@ -979,17 +979,17 @@ const Home: React.FC = () => {
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
               }
-            }
-          }}
-          PaperProps={{
-            sx: { 
-              borderRadius: '36px', 
-              overflow: 'hidden', 
-              bgcolor: 'rgba(255, 255, 255, 0.96)', 
-              backdropFilter: 'blur(30px)',
-              WebkitBackdropFilter: 'blur(30px)',
-              border: '1.5px solid rgba(212, 175, 55, 0.5)',
-              boxShadow: '0 35px 70px -15px rgba(0, 0, 0, 0.65)',
+            },
+            paper: {
+              sx: { 
+                borderRadius: '36px', 
+                overflow: 'hidden', 
+                bgcolor: 'rgba(255, 255, 255, 0.96)', 
+                backdropFilter: 'blur(30px)',
+                WebkitBackdropFilter: 'blur(30px)',
+                border: '1.5px solid rgba(212, 175, 55, 0.5)',
+                boxShadow: '0 35px 70px -15px rgba(0, 0, 0, 0.65)',
+              }
             }
           }}
         >
@@ -1252,17 +1252,17 @@ const Home: React.FC = () => {
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)',
               }
-            }
-          }}
-          PaperProps={{
-            sx: { 
-              borderRadius: '36px', 
-              overflow: 'hidden', 
-              bgcolor: 'rgba(255, 255, 255, 0.94)', 
-              backdropFilter: 'blur(30px)',
-              WebkitBackdropFilter: 'blur(30px)',
-              border: '1.5px solid rgba(212, 175, 55, 0.5)',
-              boxShadow: '0 35px 70px -15px rgba(0, 0, 0, 0.65)',
+            },
+            paper: {
+              sx: { 
+                borderRadius: '36px', 
+                overflow: 'hidden', 
+                bgcolor: 'rgba(255, 255, 255, 0.94)', 
+                backdropFilter: 'blur(30px)',
+                WebkitBackdropFilter: 'blur(30px)',
+                border: '1.5px solid rgba(212, 175, 55, 0.5)',
+                boxShadow: '0 35px 70px -15px rgba(0, 0, 0, 0.65)',
+              }
             }
           }}
         >

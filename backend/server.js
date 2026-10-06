@@ -484,6 +484,21 @@ const offersRouter = createOffersRouter(pool, upload);
 app.use('/api/offers', offersRouter);
 app.use('/api/exclusive-offers', offersRouter);
 
+// Serve static frontend files in production (from public/ or ../frontend/dist)
+const publicDistPath = path.join(process.cwd(), 'public');
+const relativeDistPath = path.join(process.cwd(), '../frontend/dist');
+const staticPath = fs.existsSync(publicDistPath) ? publicDistPath : (fs.existsSync(relativeDistPath) ? relativeDistPath : null);
+
+if (staticPath) {
+  app.use(express.static(staticPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+}
+
 // Global Error Handler (Catches Multer, JSON parsing, and general server errors)
 app.use((err, req, res, next) => {
   console.error('Unhandled Server Error:', err);
