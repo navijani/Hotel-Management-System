@@ -173,9 +173,9 @@ const Book: React.FC = () => {
       const payment = {
         sandbox: hashRes.data.sandbox !== undefined ? hashRes.data.sandbox : true,
         merchant_id: hashRes.data.merchant_id,
-        return_url: window.location.origin + '/book',
-        cancel_url: window.location.origin + '/book',
-        notify_url: window.location.origin + '/api/bookings/payhere-notify',
+        return_url: import.meta.env.VITE_PAYHERE_RETURN_URL || window.location.origin + '/book',
+        cancel_url: import.meta.env.VITE_PAYHERE_CANCEL_URL || window.location.origin + '/book',
+        notify_url: import.meta.env.VITE_PAYHERE_NOTIFY_URL || window.location.origin + '/api/bookings/payhere-notify',
         order_id: orderId,
         items: `Resort Room Booking - ${selectedRoomType}`,
         amount: hashRes.data.amount,
