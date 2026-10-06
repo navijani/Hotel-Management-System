@@ -349,7 +349,7 @@ const ExclusiveOffers: React.FC = () => {
             Adding an offer with a Room and Discount percentage automatically updates the Room table discount attribute! Discounted rooms will be listed at the top of guest search results with original price strikethrough.
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-            <Box 
+            <Box
               component="img"
               src="/images/guide_offer.png"
               alt="Exclusive Offer Layout Guide"
@@ -428,11 +428,11 @@ const ExclusiveOffers: React.FC = () => {
                       <TableCell sx={{ fontWeight: 600 }}>{offer.topic}</TableCell>
                       <TableCell>
                         {linkedRoom ? (
-                          <Chip 
-                            label={`Room ${linkedRoom.room_number} (${linkedRoom.type})`} 
-                            size="small" 
-                            variant="outlined" 
-                            color="primary" 
+                          <Chip
+                            label={`Room ${linkedRoom.room_number} (${linkedRoom.type})`}
+                            size="small"
+                            variant="outlined"
+                            color="primary"
                           />
                         ) : (
                           <Typography variant="caption" color="text.secondary">General Offer</Typography>
@@ -615,9 +615,9 @@ const ExclusiveOffers: React.FC = () => {
                   Live Guest Card Preview:
                 </Typography>
                 <Card sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 250, border: '1px solid #e0e0e0', boxShadow: 3 }}>
-                  <Box 
-                    sx={{ 
-                      width: '100%', 
+                  <Box
+                    sx={{
+                      width: '100%',
                       height: 140,
                       backgroundImage: `url("${imagePreview || currentSelectedRoom?.image || '/images/romantic.jpg'}")`,
                       backgroundSize: 'cover',
@@ -627,9 +627,9 @@ const ExclusiveOffers: React.FC = () => {
                     }}
                   >
                     {popup && (
-                      <Chip 
-                        label={popup} 
-                        sx={{ position: 'absolute', top: 12, left: 12, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold' }} 
+                      <Chip
+                        label={popup}
+                        sx={{ position: 'absolute', top: 12, left: 12, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold' }}
                       />
                     )}
                   </Box>

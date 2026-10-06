@@ -81,27 +81,27 @@ const StaffRolePage: React.FC<{ role: StaffRole }> = ({ role }) => {
   const [settings, setSettings] = useState({ username: profile.username || '', mobile_number: profile.mobile_number || '', password: '' });
   const [orders, setOrders] = useState(orderSets[role]);
 
-const timeToDate = (time: string, reference: Date) => {
-  const [hours, minutes, seconds = 0] = time.split(':').map(Number);
-  const value = new Date(reference);
-  value.setHours(hours, minutes, seconds, 0);
-  return value;
-};
+  const timeToDate = (time: string, reference: Date) => {
+    const [hours, minutes, seconds = 0] = time.split(':').map(Number);
+    const value = new Date(reference);
+    value.setHours(hours, minutes, seconds, 0);
+    return value;
+  };
 
-const formatDuration = (seconds: number) => {
-  const totalSeconds = Math.max(0, Math.floor(seconds));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const remainingSeconds = totalSeconds % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-};
+  const formatDuration = (seconds: number) => {
+    const totalSeconds = Math.max(0, Math.floor(seconds));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainingSeconds = totalSeconds % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+  };
 
-const localDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+  const localDateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const [message, setMessage] = useState({ type: '', text: '' });
   const [busy, setBusy] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());

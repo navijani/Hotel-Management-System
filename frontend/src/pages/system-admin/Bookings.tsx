@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Box, Typography, Paper, Table, TableBody, TableCell, 
+import {
+  Box, Typography, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Chip, IconButton, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Select, MenuItem,
   FormControl, InputLabel, Grid, Divider
@@ -133,10 +133,10 @@ const Bookings: React.FC = () => {
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{dayjs(b.check_out_date).format('MMM DD, YYYY')}</Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={b.booking_status} 
-                      color={getStatusColor(b.booking_status) as any} 
-                      size="small" 
+                    <Chip
+                      label={b.booking_status}
+                      color={getStatusColor(b.booking_status) as any}
+                      size="small"
                       sx={{ fontWeight: 600 }}
                     />
                   </TableCell>
@@ -178,7 +178,7 @@ const Bookings: React.FC = () => {
               </Grid>
 
               <Grid size={{ xs: 12 }}><Divider sx={{ my: 1 }} /></Grid>
-              
+
               <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" color="text.secondary">Room Details</Typography>
               </Grid>

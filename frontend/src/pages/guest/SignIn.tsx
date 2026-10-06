@@ -88,20 +88,20 @@ const SignIn: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
-            
+
             <Button
               type="submit"
               fullWidth
               variant="contained"
               disabled={loading}
-              sx={{ 
-                mt: 4, 
-                mb: 2, 
-                bgcolor: '#d4af37', 
-                color: 'white', 
+              sx={{
+                mt: 4,
+                mb: 2,
+                bgcolor: '#d4af37',
+                color: 'white',
                 py: 1.5,
-                borderRadius: 8, 
-                textTransform: 'none', 
+                borderRadius: 8,
+                textTransform: 'none',
                 fontSize: '1.1rem',
                 fontWeight: 600,
                 boxShadow: '0 8px 20px -6px rgba(212, 175, 55, 0.5)',
@@ -110,7 +110,7 @@ const SignIn: React.FC = () => {
             >
               {loading ? <CircularProgress size={26} color="inherit" /> : 'Sign In'}
             </Button>
-            
+
             <Box sx={{ textAlign: 'center', mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 Don't have an account? <Box component="span" onClick={() => navigate('/signup')} sx={{ color: '#d4af37', fontWeight: 600, cursor: 'pointer' }}>Sign Up</Box>

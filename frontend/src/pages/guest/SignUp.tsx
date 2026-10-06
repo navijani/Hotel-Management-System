@@ -241,20 +241,20 @@ const SignUp: React.FC = () => {
                 />
               </Grid>
             </Grid>
-            
+
             <Button
               type="submit"
               fullWidth
               variant="contained"
               disabled={loading}
-              sx={{ 
-                mt: 4, 
-                mb: 2, 
-                bgcolor: '#d4af37', 
-                color: 'white', 
+              sx={{
+                mt: 4,
+                mb: 2,
+                bgcolor: '#d4af37',
+                color: 'white',
                 py: 1.5,
-                borderRadius: 8, 
-                textTransform: 'none', 
+                borderRadius: 8,
+                textTransform: 'none',
                 fontSize: '1.1rem',
                 fontWeight: 600,
                 boxShadow: '0 8px 20px -6px rgba(212, 175, 55, 0.5)',
@@ -263,7 +263,7 @@ const SignUp: React.FC = () => {
             >
               {loading ? <CircularProgress size={26} color="inherit" /> : 'Create Account'}
             </Button>
-            
+
             <Box sx={{ textAlign: 'center', mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 Already have an account? <Box component="span" onClick={() => navigate('/signin')} sx={{ color: '#d4af37', fontWeight: 600, cursor: 'pointer' }}>Sign In</Box>

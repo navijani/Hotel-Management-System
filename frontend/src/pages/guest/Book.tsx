@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, TextField, Button, Grid, Paper, 
+import {
+  Box, Typography, TextField, Button, Grid, Paper,
   Container, Stepper, Step, StepLabel, CircularProgress, Alert,
   Divider, CardMedia, Chip
 } from '@mui/material';
-import { 
-  MeetingRoom as MeetingRoomIcon, 
+import {
+  MeetingRoom as MeetingRoomIcon,
   Hotel as HotelIcon,
   CheckCircle as CheckCircleIcon,
   Payment as PaymentIcon,
@@ -29,14 +29,14 @@ declare global {
 const Book: React.FC = () => {
   const CustomPickerDay = (props: any) => {
     const { day, ...other } = props;
-    const isBooked = day && bookedDates.some(range => 
-      day.isSame(range.start, 'day') || day.isSame(range.end, 'day') || 
+    const isBooked = day && bookedDates.some(range =>
+      day.isSame(range.start, 'day') || day.isSame(range.end, 'day') ||
       (day.isAfter(range.start, 'day') && day.isBefore(range.end, 'day'))
     );
     return (
-      <PickerDay 
-        {...other} 
-        day={day} 
+      <PickerDay
+        {...other}
+        day={day}
         sx={{
           ...(isBooked && {
             backgroundColor: 'rgba(239, 68, 68, 0.1) !important',
@@ -44,7 +44,7 @@ const Book: React.FC = () => {
             textDecoration: 'line-through',
             fontWeight: 'bold',
           })
-        }} 
+        }}
       />
     );
   };
@@ -58,12 +58,12 @@ const Book: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { room, roomId: fallbackId, roomType: fallbackType } = location.state || {};
-  
+
   const selectedRoomId = room?.RoomID || fallbackId || null;
   const selectedRoomType = room?.RoomTypeID || fallbackType || 'Standard';
   const selectedPrice = room?.Price || 150;
   const selectedImage = room?.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop';
-  
+
   const [bookedDates, setBookedDates] = useState<{ start: Dayjs, end: Dayjs }[]>([]);
 
   // Guest profile auto-fill
@@ -104,8 +104,8 @@ const Book: React.FC = () => {
   };
 
   const shouldDisableDate = (date: Dayjs) => {
-    return bookedDates.some(range => 
-      date.isSame(range.start, 'day') || date.isSame(range.end, 'day') || 
+    return bookedDates.some(range =>
+      date.isSame(range.start, 'day') || date.isSame(range.end, 'day') ||
       (date.isAfter(range.start, 'day') && date.isBefore(range.end, 'day'))
     );
   };
@@ -226,7 +226,7 @@ const Book: React.FC = () => {
       <Box sx={{ bgcolor: '#f4f7f6', minHeight: '100vh', py: { xs: 4, md: 8 } }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
-            
+
             {/* Left Column: Room Summary */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Paper elevation={0} sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.06)', position: 'sticky', top: 100 }}>
@@ -244,7 +244,7 @@ const Book: React.FC = () => {
                   <Typography variant="h5" sx={{ fontWeight: 800, mt: 1, mb: 2, color: '#1a1a2e', fontFamily: '"Playfair Display", serif' }}>
                     {selectedRoomType}
                   </Typography>
-                  
+
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, color: 'text.secondary' }}>
                     <MeetingRoomIcon sx={{ mr: 1.5, color: '#4facfe' }} fontSize="small" />
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>Room {room?.RoomNumber || 'TBD'}</Typography>
@@ -271,7 +271,7 @@ const Book: React.FC = () => {
                       )}
                     </Typography>
                   </Box>
-                  
+
                   {calculateTotal() > 0 && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
                       <Box>
@@ -298,11 +298,11 @@ const Book: React.FC = () => {
                 <Typography color="text.secondary" sx={{ mb: 4 }}>
                   Complete the steps below. Booking is finalized ONLY after successful PayHere payment verification.
                 </Typography>
-                
+
                 <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 5 }}>
                   {steps.map((label, index) => (
                     <Step key={label}>
-                      <StepLabel 
+                      <StepLabel
                         sx={{
                           '& .MuiStepIcon-root.Mui-active': { color: '#d4af37' },
                           '& .MuiStepIcon-root.Mui-completed': { color: '#10b981' }
@@ -340,9 +340,9 @@ const Book: React.FC = () => {
                       </Grid>
                     </Grid>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 5 }}>
-                      <Button 
-                        variant="contained" 
-                        onClick={handleNext} 
+                      <Button
+                        variant="contained"
+                        onClick={handleNext}
                         size="large"
                         disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.identificationNo}
                         sx={{ bgcolor: '#1a1a2e', color: 'white', px: 6, borderRadius: 8, textTransform: 'none', fontSize: '1rem', '&:hover': { bgcolor: '#d4af37', color: '#1a1a2e' } }}
@@ -410,21 +410,21 @@ const Book: React.FC = () => {
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 5 }}>
                       <Button onClick={handleBack} size="large" sx={{ color: '#64748b', fontWeight: 600 }}>Back</Button>
-                      <Button 
-                        variant="contained" 
-                        onClick={handleNext} 
+                      <Button
+                        variant="contained"
+                        onClick={handleNext}
                         size="large"
                         disabled={!formData.checkInDate || !formData.checkOutDate || calculateTotal() <= 0}
-                        sx={{ 
-                          background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', 
-                          color: '#1a1a2e', 
-                          px: 5, 
-                          borderRadius: 8, 
-                          textTransform: 'none', 
-                          fontWeight: 800, 
-                          fontSize: '1rem', 
+                        sx={{
+                          background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
+                          color: '#1a1a2e',
+                          px: 5,
+                          borderRadius: 8,
+                          textTransform: 'none',
+                          fontWeight: 800,
+                          fontSize: '1rem',
                           boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
-                          '&:hover': { background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)' } 
+                          '&:hover': { background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)' }
                         }}
                       >
                         Proceed to PayHere Payment
@@ -509,23 +509,23 @@ const Book: React.FC = () => {
                       <Button onClick={handleBack} disabled={loading} size="large" sx={{ color: '#64748b', fontWeight: 600 }}>
                         Back
                       </Button>
-                      <Button 
-                        variant="contained" 
-                        onClick={handlePayHereCheckout} 
+                      <Button
+                        variant="contained"
+                        onClick={handlePayHereCheckout}
                         size="large"
                         disabled={loading}
                         startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CreditCardIcon />}
-                        sx={{ 
-                          background: 'linear-gradient(45deg, #0066cc 30%, #004085 90%)', 
-                          color: '#fff', 
-                          px: 5, 
+                        sx={{
+                          background: 'linear-gradient(45deg, #0066cc 30%, #004085 90%)',
+                          color: '#fff',
+                          px: 5,
                           py: 1.5,
-                          borderRadius: 8, 
-                          textTransform: 'none', 
-                          fontWeight: 800, 
-                          fontSize: '1.05rem', 
+                          borderRadius: 8,
+                          textTransform: 'none',
+                          fontWeight: 800,
+                          fontSize: '1.05rem',
                           boxShadow: '0 6px 20px rgba(0, 102, 204, 0.4)',
-                          '&:hover': { background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a2e' } 
+                          '&:hover': { background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a2e' }
                         }}
                       >
                         {loading ? 'Launching PayHere Popup...' : 'Pay via Official PayHere Gateway'}
@@ -543,10 +543,10 @@ const Book: React.FC = () => {
                     <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 1.5, fontFamily: '"Playfair Display", serif' }}>
                       Payment Passed & Booking Confirmed!
                     </Typography>
-                    <Chip 
-                      icon={<VerifiedUserIcon sx={{ color: '#ffffff !important' }} />} 
-                      label="PAID VIA PAYHERE SANDBOX" 
-                      sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 'bold', mb: 3, py: 0.5, px: 1 }} 
+                    <Chip
+                      icon={<VerifiedUserIcon sx={{ color: '#ffffff !important' }} />}
+                      label="PAID VIA PAYHERE SANDBOX"
+                      sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 'bold', mb: 3, py: 0.5, px: 1 }}
                     />
                     <Typography color="text.secondary" sx={{ mb: 1, fontSize: '1.1rem' }}>
                       Thank you, {formData.firstName}! Your payment was verified and processed via PayHere.
@@ -554,7 +554,7 @@ const Book: React.FC = () => {
                     <Typography color="text.secondary" sx={{ mb: 4 }}>
                       A confirmation receipt has been issued for your reservation.
                     </Typography>
-                    
+
                     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: '#f8fafc', display: 'inline-block', textAlign: 'left', minWidth: '320px', mb: 5 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, display: 'block', mb: 0.5 }}>
                         Booking Reference
@@ -582,7 +582,7 @@ const Book: React.FC = () => {
 
               </Paper>
             </Grid>
-            
+
           </Grid>
         </Container>
       </Box>

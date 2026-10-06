@@ -44,13 +44,13 @@ export default function createOffersRouter(pool, upload) {
       console.error('Create table exclusive_offers check:', e.message);
     }
 
-    try { await pool.query('ALTER TABLE exclusive_offers MODIFY details TEXT'); } catch (e) {}
-    try { await pool.query('ALTER TABLE exclusive_offers MODIFY more_details TEXT'); } catch (e) {}
-    try { await pool.query('ALTER TABLE exclusive_offers MODIFY image LONGBLOB'); } catch (e) {}
-    try { await pool.query('ALTER TABLE exclusive_offers ADD COLUMN room_id INT DEFAULT NULL'); } catch (e) {}
-    try { await pool.query('ALTER TABLE exclusive_offers ADD COLUMN branch_id INT DEFAULT NULL'); } catch (e) {}
-    try { await pool.query('ALTER TABLE exclusive_offers ADD COLUMN discount INT DEFAULT 0'); } catch (e) {}
-    try { await pool.query('ALTER TABLE Room ADD COLUMN discount INT DEFAULT 0'); } catch (e) {}
+    try { await pool.query('ALTER TABLE exclusive_offers MODIFY details TEXT'); } catch (e) { }
+    try { await pool.query('ALTER TABLE exclusive_offers MODIFY more_details TEXT'); } catch (e) { }
+    try { await pool.query('ALTER TABLE exclusive_offers MODIFY image LONGBLOB'); } catch (e) { }
+    try { await pool.query('ALTER TABLE exclusive_offers ADD COLUMN room_id INT DEFAULT NULL'); } catch (e) { }
+    try { await pool.query('ALTER TABLE exclusive_offers ADD COLUMN branch_id INT DEFAULT NULL'); } catch (e) { }
+    try { await pool.query('ALTER TABLE exclusive_offers ADD COLUMN discount INT DEFAULT 0'); } catch (e) { }
+    try { await pool.query('ALTER TABLE Room ADD COLUMN discount INT DEFAULT 0'); } catch (e) { }
     schemaEnsured = true;
   };
 
@@ -145,7 +145,7 @@ export default function createOffersRouter(pool, upload) {
       if (req.file && req.file.path) {
         if (fs.existsSync(req.file.path)) {
           imageBuffer = fs.readFileSync(req.file.path);
-          try { fs.unlinkSync(req.file.path); } catch (e) {}
+          try { fs.unlinkSync(req.file.path); } catch (e) { }
         }
       } else if (req.body.image_base64 && typeof req.body.image_base64 === 'string' && req.body.image_base64.trim()) {
         const base64Data = req.body.image_base64.replace(/^data:image\/\w+;base64,/, '').trim();
@@ -187,7 +187,7 @@ export default function createOffersRouter(pool, upload) {
         if (fs.existsSync(req.file.path)) {
           imageBuffer = fs.readFileSync(req.file.path);
           updateImage = true;
-          try { fs.unlinkSync(req.file.path); } catch (e) {}
+          try { fs.unlinkSync(req.file.path); } catch (e) { }
         }
       } else if (req.body.image_base64 && typeof req.body.image_base64 === 'string' && req.body.image_base64.trim()) {
         const base64Data = req.body.image_base64.replace(/^data:image\/\w+;base64,/, '').trim();
@@ -229,7 +229,7 @@ export default function createOffersRouter(pool, upload) {
     try {
       const { active } = req.body;
       const activeVal = active === true || active === 1 || active === 'true' ? 1 : 0;
-      
+
       const [result] = await pool.query('UPDATE exclusive_offers SET active = ? WHERE id = ?', [activeVal, req.params.id]);
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Offer not found.' });
@@ -251,7 +251,7 @@ export default function createOffersRouter(pool, upload) {
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Offer not found.' });
       }
-      
+
       await syncRoomDiscounts();
 
       res.json({ message: 'Exclusive offer deleted successfully.' });

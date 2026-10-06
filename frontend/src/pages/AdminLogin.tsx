@@ -57,20 +57,20 @@ const AdminLogin: React.FC = () => {
             </Box>
 
             <Stack component="form" spacing={2.5} onSubmit={handleSubmit}>
-              <TextField 
-                label="Username / Email" 
-                type="email" 
-                value={email} 
-                onChange={(event) => setEmail(event.target.value)} 
+              <TextField
+                label="Username / Email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 autoComplete="username"
                 required
                 fullWidth
               />
-              <TextField 
-                label="Password" 
-                type="password" 
-                value={password} 
-                onChange={(event) => setPassword(event.target.value)} 
+              <TextField
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
                 required
                 fullWidth
@@ -78,9 +78,9 @@ const AdminLogin: React.FC = () => {
 
               {error && <Alert severity="error">{error}</Alert>}
 
-              <Button 
-                type="submit" 
-                variant="contained" 
+              <Button
+                type="submit"
+                variant="contained"
                 disabled={loading}
                 sx={{ bgcolor: '#1e1e2f', color: '#fff', py: 1.2, fontWeight: 'bold', '&:hover': { bgcolor: '#4facfe' } }}
               >

@@ -86,7 +86,7 @@ function App() {
           <Route path="/billing-preview" element={<BillingOverview />} />
           <Route path="/invoice-preview" element={<BillingInvoice />} />
           <Route path="/revenue-preview" element={<BillingRevenue />} />
-          
+
           {/* System Admin Panel Routes */}
           <Route path="/system-admin" element={<AdminGuard><SystemAdminLayout /></AdminGuard>}>
             <Route index element={<SystemDashboard />} />

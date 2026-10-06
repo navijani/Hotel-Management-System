@@ -20,20 +20,7 @@ export default function (pool, bookingRateLimit) {
       const currStr = String(currency || 'LKR').trim();
       const amountFormatted = Number(amount || 0).toFixed(2);
 
-      // Determine secret key (decode if base64 encoded by PayHere Portal)
-      let secretKey = merchant_key;
-      try {
-        if (merchant_key.endsWith('==') || merchant_key.endsWith('=')) {
-          const decoded = Buffer.from(merchant_key, 'base64').toString('utf8');
-          if (decoded && /^[\w-]+$/.test(decoded)) {
-            secretKey = decoded;
-          }
-        }
-      } catch {
-        secretKey = merchant_key;
-      }
-
-      const hashedKey = crypto.createHash('md5').update(secretKey).digest('hex').toUpperCase();
+      const hashedKey = crypto.createHash('md5').update(merchant_key).digest('hex').toUpperCase();
       const hashData = merchant_id + orderIdStr + amountFormatted + currStr + hashedKey;
       const hash = crypto.createHash('md5').update(hashData).digest('hex').toUpperCase();
 
@@ -66,7 +53,7 @@ export default function (pool, bookingRateLimit) {
 
         let guestId;
         const [existingGuest] = await connection.query(
-          'SELECT guest_id FROM GUEST WHERE identity_number = ?',
+          'SELECT guest_id FROM guest WHERE identity_number = ?',
           [identificationNo]
         );
 
@@ -74,7 +61,7 @@ export default function (pool, bookingRateLimit) {
           guestId = existingGuest[0].guest_id;
         } else {
           const [guestResult] = await connection.query(
-            'INSERT INTO GUEST (first_name, last_name, email, phone_number, identity_number) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO guest (first_name, last_name, email, phone_number, identity_number) VALUES (?, ?, ?, ?, ?)',
             [firstName, lastName, email, phone, identificationNo]
           );
           guestId = guestResult.insertId;
@@ -90,7 +77,7 @@ export default function (pool, bookingRateLimit) {
             `SELECT room_id FROM Room r 
              WHERE type = ? 
              AND NOT EXISTS (
-                SELECT 1 FROM BOOKING b 
+                SELECT 1 FROM Booking b 
                 WHERE b.room_id = r.room_id 
                 AND b.booking_status IN ('Booked', 'Checked-In')
                 AND (b.check_in_date < ? AND b.check_out_date > ?)
@@ -104,7 +91,7 @@ export default function (pool, bookingRateLimit) {
         } else {
           // Verify the specific room is not already booked for these dates
           const [overlap] = await connection.query(
-            `SELECT 1 FROM BOOKING 
+            `SELECT 1 FROM Booking 
              WHERE room_id = ? 
              AND booking_status IN ('Booked', 'Checked-In')
              AND (check_in_date < ? AND check_out_date > ?) LIMIT 1`,
@@ -116,7 +103,7 @@ export default function (pool, bookingRateLimit) {
         }
 
         const [bookingResult] = await connection.query(
-          'INSERT INTO BOOKING (guest_id, room_id, check_in_date, check_out_date, booking_status) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO Booking (guest_id, room_id, check_in_date, check_out_date, booking_status) VALUES (?, ?, ?, ?, ?)',
           [guestId, assignedRoomId, checkInDate, checkOutDate, 'Booked']
         );
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Typography, Box, Card, CardContent, Grid, Button, 
-  CircularProgress, Container, CardMedia, Chip, Divider 
-, TextField, MenuItem, Slider, Collapse, Paper, InputAdornment} from '@mui/material';
+import {
+  Typography, Box, Card, CardContent, Grid, Button,
+  CircularProgress, Container, CardMedia, Chip, Divider
+  , TextField, MenuItem, Slider, Collapse, Paper, InputAdornment
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import axios from 'axios';
@@ -203,7 +204,7 @@ const Rooms: React.FC = () => {
           Capacity: r.capacity || 2,
           Amenities: r.amenities || 'Free WiFi'
         }));
-        
+
         if (fetchedRooms.length === 0) {
           setRooms(mockRooms);
         } else {
@@ -218,14 +219,14 @@ const Rooms: React.FC = () => {
       });
   }, []);
 
-  
+
   const uniqueTypes = Array.from(new Set(rooms.map(r => r.RoomTypeID)));
-  
+
   return (
     <Box sx={{ bgcolor: '#fdfbf7', minHeight: '100vh', pb: 10 }}>
       {/* Hero Section */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           pt: { xs: 15, md: 20 },
           pb: { xs: 8, md: 10 },
           bgcolor: '#1a1a1a',
@@ -238,11 +239,11 @@ const Rooms: React.FC = () => {
         }}
       >
         <Container maxWidth="md">
-          <Typography 
-            variant="h2" 
-            gutterBottom 
-            sx={{ 
-              fontWeight: 800, 
+          <Typography
+            variant="h2"
+            gutterBottom
+            sx={{
+              fontWeight: 800,
               fontFamily: '"Playfair Display", serif',
               color: '#d4af37'
             }}
@@ -250,21 +251,21 @@ const Rooms: React.FC = () => {
             Our Accommodations
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 300, color: 'rgba(255,255,255,0.8)' }}>
-            Experience unparalleled luxury and comfort. Each of our rooms is meticulously designed 
+            Experience unparalleled luxury and comfort. Each of our rooms is meticulously designed
             to provide a serene sanctuary during your stay.
           </Typography>
         </Container>
       </Box>
 
-      
+
       {/* Filter Section */}
       <Container maxWidth="lg" sx={{ mt: -6, mb: 4, position: 'relative', zIndex: 10 }}>
         <Paper elevation={3} sx={{ p: 2, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'white' }}>
-          <TextField 
-            placeholder="Search rooms, amenities, or description..." 
-            variant="outlined" 
-            size="small" 
-            fullWidth 
+          <TextField
+            placeholder="Search rooms, amenities, or description..."
+            variant="outlined"
+            size="small"
+            fullWidth
             sx={{ mr: 2, '& .MuiOutlinedInput-root': { borderRadius: 8 } }}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -278,9 +279,9 @@ const Rooms: React.FC = () => {
               }
             }}
           />
-          <Button 
+          <Button
             variant={showFilters ? "contained" : "outlined"}
-            startIcon={<FilterListIcon />} 
+            startIcon={<FilterListIcon />}
             onClick={() => setShowFilters(!showFilters)}
             sx={{ borderRadius: 8, whiteSpace: 'nowrap', textTransform: 'none', px: 3, borderColor: '#d4af37', color: showFilters ? 'white' : '#d4af37', bgcolor: showFilters ? '#d4af37' : 'transparent', '&:hover': { bgcolor: showFilters ? '#b5952f' : 'rgba(212, 175, 55, 0.1)', borderColor: '#b5952f' } }}
           >
@@ -300,7 +301,7 @@ const Rooms: React.FC = () => {
                   ))}
                 </TextField>
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Typography variant="caption" color="text.secondary" gutterBottom>Status</Typography>
                 <TextField select fullWidth size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -310,16 +311,16 @@ const Rooms: React.FC = () => {
                   <MenuItem value="Occupied">Occupied</MenuItem>
                 </TextField>
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Typography variant="caption" color="text.secondary" gutterBottom>Min Capacity: {minCapacity} Persons</Typography>
-                <Slider 
-                  value={minCapacity} 
-                  onChange={(_, val) => setMinCapacity(val as number)} 
-                  step={1} 
-                  marks 
-                  min={1} 
-                  max={10} 
+                <Slider
+                  value={minCapacity}
+                  onChange={(_, val) => setMinCapacity(val as number)}
+                  step={1}
+                  marks
+                  min={1}
+                  max={10}
                   valueLabelDisplay="auto"
                   sx={{ color: '#d4af37' }}
                 />
@@ -327,12 +328,12 @@ const Rooms: React.FC = () => {
 
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Typography variant="caption" color="text.secondary" gutterBottom>Max Price: ${maxPrice}</Typography>
-                <Slider 
-                  value={maxPrice} 
-                  onChange={(_, val) => setMaxPrice(val as number)} 
-                  step={50} 
-                  min={50} 
-                  max={2000} 
+                <Slider
+                  value={maxPrice}
+                  onChange={(_, val) => setMaxPrice(val as number)}
+                  step={50}
+                  min={50}
+                  max={2000}
                   valueLabelDisplay="auto"
                   sx={{ color: '#d4af37' }}
                 />
@@ -349,7 +350,7 @@ const Rooms: React.FC = () => {
             <CircularProgress sx={{ color: '#d4af37' }} />
           </Box>
         ) : (
-          
+
           <Grid container spacing={4}>
             {rooms
               .filter(room => {
@@ -364,140 +365,140 @@ const Rooms: React.FC = () => {
               // Sort discounted items to the top of the search results
               .sort((a, b) => (b.Discount || 0) - (a.Discount || 0))
               .map((room) => {
-              const isAvailable = room.Status === 'Available';
-              const discountPercent = room.Discount || 0;
-              const discountedPrice = discountPercent > 0 ? Math.round(room.Price * (1 - discountPercent / 100)) : room.Price;
+                const isAvailable = room.Status === 'Available';
+                const discountPercent = room.Discount || 0;
+                const discountedPrice = discountPercent > 0 ? Math.round(room.Price * (1 - discountPercent / 100)) : room.Price;
 
-              return (
-                <Grid key={room.RoomID} size={{ xs: 12, md: 4 }}>
-                  <Card 
-                    elevation={0}
-                    sx={{ 
-                      height: '100%', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      borderRadius: 3,
-                      transition: 'all 0.3s ease',
-                      border: discountPercent > 0 ? '2px solid #d4af37' : '1px solid rgba(0,0,0,0.05)',
-                      bgcolor: 'white',
-                      position: 'relative',
-                      '&:hover': { 
-                        transform: 'translateY(-10px)', 
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
-                      } 
-                    }}
-                  >
-                    <Box sx={{ position: 'relative' }}>
-                      <CardMedia
-                        component="img"
-                        height="260"
-                        image={room.image}
-                        alt={`Room ${room.RoomNumber}`}
-                      />
-                      {discountPercent > 0 && (
-                        <Chip 
-                          label={`${discountPercent}% OFF`}
-                          sx={{ 
-                            position: 'absolute', 
-                            top: 16, 
-                            left: 16,
-                            fontWeight: 'bold',
-                            borderRadius: '50px',
-                            bgcolor: '#d4af37',
-                            color: 'white',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                          }} 
+                return (
+                  <Grid key={room.RoomID} size={{ xs: 12, md: 4 }}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderRadius: 3,
+                        transition: 'all 0.3s ease',
+                        border: discountPercent > 0 ? '2px solid #d4af37' : '1px solid rgba(0,0,0,0.05)',
+                        bgcolor: 'white',
+                        position: 'relative',
+                        '&:hover': {
+                          transform: 'translateY(-10px)',
+                          boxShadow: '0 20px 40px rgba(0,0,0,0.08)'
+                        }
+                      }}
+                    >
+                      <Box sx={{ position: 'relative' }}>
+                        <CardMedia
+                          component="img"
+                          height="260"
+                          image={room.image}
+                          alt={`Room ${room.RoomNumber}`}
                         />
-                      )}
-                      {(room.Status === 'Available' || room.Status === 'Maintenance') && (
-                        <Chip 
-                          label={room.Status} 
-                          sx={{ 
-                            position: 'absolute', 
-                            top: 16, 
-                            right: 16,
-                            fontWeight: 600,
-                            bgcolor: isAvailable ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 152, 0, 0.9)',
-                            color: isAvailable ? '#2e7d32' : 'white',
-                            backdropFilter: 'blur(4px)'
-                          }} 
-                        />
-                      )}
-                    </Box>
-                    <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Playfair Display", serif' }}>
-                          {room.RoomTypeID}
-                        </Typography>
-                        <Typography variant="h6" sx={{ color: '#d4af37', fontWeight: 'bold', textAlign: 'right' }}>
-                          {discountPercent > 0 ? (
-                            <>
-                              <Typography component="span" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.85em', mr: 1 }}>
+                        {discountPercent > 0 && (
+                          <Chip
+                            label={`${discountPercent}% OFF`}
+                            sx={{
+                              position: 'absolute',
+                              top: 16,
+                              left: 16,
+                              fontWeight: 'bold',
+                              borderRadius: '50px',
+                              bgcolor: '#d4af37',
+                              color: 'white',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                            }}
+                          />
+                        )}
+                        {(room.Status === 'Available' || room.Status === 'Maintenance') && (
+                          <Chip
+                            label={room.Status}
+                            sx={{
+                              position: 'absolute',
+                              top: 16,
+                              right: 16,
+                              fontWeight: 600,
+                              bgcolor: isAvailable ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 152, 0, 0.9)',
+                              color: isAvailable ? '#2e7d32' : 'white',
+                              backdropFilter: 'blur(4px)'
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Playfair Display", serif' }}>
+                            {room.RoomTypeID}
+                          </Typography>
+                          <Typography variant="h6" sx={{ color: '#d4af37', fontWeight: 'bold', textAlign: 'right' }}>
+                            {discountPercent > 0 ? (
+                              <>
+                                <Typography component="span" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.85em', mr: 1 }}>
+                                  ${room.Price}
+                                </Typography>
+                                ${discountedPrice}
+                                <Typography component="span" variant="caption" sx={{ color: '#e65100', display: 'block', fontWeight: 'bold' }}>
+                                  / night ({discountPercent}% off)
+                                </Typography>
+                              </>
+                            ) : (
+                              <>
                                 ${room.Price}
-                              </Typography>
-                              ${discountedPrice}
-                              <Typography component="span" variant="caption" sx={{ color: '#e65100', display: 'block', fontWeight: 'bold' }}>
-                                / night ({discountPercent}% off)
-                              </Typography>
-                            </>
-                          ) : (
-                            <>
-                              ${room.Price}
-                              <Typography component="span" variant="caption" sx={{ color: 'text.secondary', display: 'block', textAlign: 'right' }}>
-                                / night
-                              </Typography>
-                            </>
-                          )}
+                                <Typography component="span" variant="caption" sx={{ color: 'text.secondary', display: 'block', textAlign: 'right' }}>
+                                  / night
+                                </Typography>
+                              </>
+                            )}
+                          </Typography>
+                        </Box>
+
+                        <Typography color="text.secondary" sx={{ mb: 3, fontSize: '0.9rem' }}>
+                          Room {room.RoomNumber} • {room.Description}
                         </Typography>
-                      </Box>
-                      
-                      <Typography color="text.secondary" sx={{ mb: 3, fontSize: '0.9rem' }}>
-                        Room {room.RoomNumber} • {room.Description}
-                      </Typography>
 
-                      <Box sx={{ display: 'flex', gap: 2, mb: 3, color: 'text.secondary' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <BedIcon fontSize="small" />
-                          <Typography variant="caption">{room.BedType}</Typography>
+                        <Box sx={{ display: 'flex', gap: 2, mb: 3, color: 'text.secondary' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <BedIcon fontSize="small" />
+                            <Typography variant="caption">{room.BedType}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <AspectRatioIcon fontSize="small" />
+                            <Typography variant="caption">{room.RoomSize}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <WifiIcon fontSize="small" />
+                            <Typography variant="caption">{room.Amenities}</Typography>
+                          </Box>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <AspectRatioIcon fontSize="small" />
-                          <Typography variant="caption">{room.RoomSize}</Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <WifiIcon fontSize="small" />
-                          <Typography variant="caption">{room.Amenities}</Typography>
-                        </Box>
-                      </Box>
 
-                      <Divider sx={{ mb: 3 }} />
+                        <Divider sx={{ mb: 3 }} />
 
-                      <Button 
-                        variant="contained" 
-                        fullWidth 
-                        disabled={!isAvailable}
-                        onClick={() => navigate('/book', { state: { room: { ...room, Price: discountedPrice, OriginalPrice: room.Price } } })}
-                        sx={{ 
-                          mt: 'auto',
-                          py: 1.5,
-                          bgcolor: isAvailable ? '#1a1a1a' : '#e0e0e0',
-                          color: isAvailable ? 'white' : '#9e9e9e',
-                          fontWeight: 600,
-                          borderRadius: 2,
-                          textTransform: 'none',
-                          fontSize: '1rem',
-                          '&:hover': {
-                            bgcolor: isAvailable ? '#d4af37' : '#e0e0e0',
-                          }
-                        }}
-                      >
-                        {isAvailable ? 'Book This Room' : 'Currently Unavailable'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          disabled={!isAvailable}
+                          onClick={() => navigate('/book', { state: { room: { ...room, Price: discountedPrice, OriginalPrice: room.Price } } })}
+                          sx={{
+                            mt: 'auto',
+                            py: 1.5,
+                            bgcolor: isAvailable ? '#1a1a1a' : '#e0e0e0',
+                            color: isAvailable ? 'white' : '#9e9e9e',
+                            fontWeight: 600,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '1rem',
+                            '&:hover': {
+                              bgcolor: isAvailable ? '#d4af37' : '#e0e0e0',
+                            }
+                          }}
+                        >
+                          {isAvailable ? 'Book This Room' : 'Currently Unavailable'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
           </Grid>
         )}
       </Container>

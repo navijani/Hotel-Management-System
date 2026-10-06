@@ -237,8 +237,8 @@ const Home: React.FC = () => {
   return (
     <Box>
       {/* Hero Section */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           position: 'relative',
           color: 'white',
           pt: { xs: 12, md: 14 },
@@ -262,7 +262,7 @@ const Home: React.FC = () => {
         }}
       >
         {/* Hero Background */}
-        <Box 
+        <Box
           sx={{
             position: 'absolute',
             top: 0,
@@ -296,9 +296,9 @@ const Home: React.FC = () => {
           >
             <source src="/videos/hero-video.mp4?v=2" type="video/mp4" />
           </video>
-          
+
           {/* Modern Gradient Overlay */}
-          <Box 
+          <Box
             sx={{
               position: 'absolute',
               top: 0,
@@ -311,11 +311,11 @@ const Home: React.FC = () => {
           />
         </Box>
 
-        <Container 
-          maxWidth="lg" 
-          sx={{ 
-            position: 'relative', 
-            zIndex: 2, 
+        <Container
+          maxWidth="lg"
+          sx={{
+            position: 'relative',
+            zIndex: 2,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -352,20 +352,20 @@ const Home: React.FC = () => {
                   overflow: 'hidden'
                 }}
               >
-                <Chip 
-                  icon={<LocalOfferIcon sx={{ color: '#d4af37 !important' }} />} 
-                  label="Summer Special: 20% Off All Suites" 
+                <Chip
+                  icon={<LocalOfferIcon sx={{ color: '#d4af37 !important' }} />}
+                  label="Summer Special: 20% Off All Suites"
                   variant="outlined"
-                  sx={{ 
-                    mb: 3, 
-                    color: '#d4af37', 
+                  sx={{
+                    mb: 3,
+                    color: '#d4af37',
                     borderColor: 'rgba(212, 175, 55, 0.5)',
                     bgcolor: 'rgba(212, 175, 55, 0.1)',
                     fontWeight: 'bold',
                     animation: 'fadeInUp 1s ease-out forwards',
                     opacity: 0,
                     backdropFilter: 'blur(4px)'
-                  }} 
+                  }}
                 />
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, justifyContent: 'center', animation: 'fadeInUp 1s ease-out forwards', opacity: 0, animationDelay: '0.2s' }}>
@@ -382,7 +382,7 @@ const Home: React.FC = () => {
                   </Box>
                 </Box>
 
-                <Typography 
+                <Typography
                   variant="overline"
                   sx={{
                     display: 'block',
@@ -399,11 +399,11 @@ const Home: React.FC = () => {
                   Welcome To Paradise
                 </Typography>
 
-                <Typography 
-                  variant="h1" 
-                  gutterBottom 
-                  sx={{ 
-                    fontWeight: 900, 
+                <Typography
+                  variant="h1"
+                  gutterBottom
+                  sx={{
+                    fontWeight: 900,
                     fontSize: { xs: '2.4rem', sm: '3rem', md: '3.5rem' },
                     fontFamily: '"Playfair Display", serif',
                     lineHeight: 1.1,
@@ -419,10 +419,10 @@ const Home: React.FC = () => {
                 >
                   Experience <br /> Ultimate Luxury
                 </Typography>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    mb: 3, 
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 3,
                     fontWeight: 300,
                     color: 'rgba(255, 255, 255, 0.85)',
                     lineHeight: 1.8,
@@ -437,10 +437,10 @@ const Home: React.FC = () => {
                   Discover the perfect blend of comfort, elegance, and world-class service at our premium hotel branches across Sri Lanka.
                 </Typography>
 
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: { xs: 2, md: 4 }, 
-                  justifyContent: 'center', 
+                <Box sx={{
+                  display: 'flex',
+                  gap: { xs: 2, md: 4 },
+                  justifyContent: 'center',
                   mb: 4,
                   flexWrap: 'wrap',
                   animation: 'fadeInUp 1s ease-out forwards',
@@ -457,23 +457,23 @@ const Home: React.FC = () => {
                   ))}
                 </Box>
 
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    gap: 2, 
-                    justifyContent: 'center', 
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    justifyContent: 'center',
                     flexWrap: 'wrap',
                     animation: 'fadeInUp 1s ease-out forwards',
                     animationDelay: '1.2s',
                     opacity: 0,
                   }}
                 >
-                  <Button 
-                    variant="contained" 
-                    size="large" 
+                  <Button
+                    variant="contained"
+                    size="large"
                     onClick={handleProtectedStay}
                     endIcon={<ArrowForwardIcon />}
-                    sx={{ 
+                    sx={{
                       ...heroActionButtonSx,
                       px: 4.5,
                       background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
@@ -489,10 +489,10 @@ const Home: React.FC = () => {
                   >
                     Book Your Stay
                   </Button>
-                  <Button 
-                    variant="outlined" 
-                    size="large" 
-                    sx={{ 
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    sx={{
                       ...heroActionButtonSx,
                       px: 4.5,
                       color: 'white',
@@ -517,7 +517,7 @@ const Home: React.FC = () => {
                     variant="outlined"
                     size="large"
                     onClick={() => openAuthPanel('signup')}
-                    sx={{ 
+                    sx={{
                       ...heroActionButtonSx,
                       order: -1,
                       flexBasis: '100%',
@@ -706,7 +706,7 @@ const Home: React.FC = () => {
                   variant="filled"
                   slotProps={{
                     input: {
-                      startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ color: 'white' }}/></InputAdornment>,
+                      startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ color: 'white' }} /></InputAdornment>,
                       sx: { color: 'white', bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 2, '&:hover': { bgcolor: 'rgba(0,0,0,0.4)' }, '&::before': { display: 'none' }, '&::after': { display: 'none' } }
                     },
                     inputLabel: { style: { color: 'rgba(255,255,255,0.8)' } },
@@ -743,11 +743,11 @@ const Home: React.FC = () => {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
+                <Button
+                  fullWidth
+                  variant="contained"
                   onClick={() => navigate('/rooms')}
-                  sx={{ 
+                  sx={{
                     height: '56px',
                     borderRadius: 2,
                     background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
@@ -781,10 +781,10 @@ const Home: React.FC = () => {
             opacity: 0,
           }}
         >
-          <IconButton 
+          <IconButton
             onClick={toggleVideo}
-            sx={{ 
-              color: 'white', 
+            sx={{
+              color: 'white',
               bgcolor: 'rgba(0,0,0,0.3)',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255,255,255,0.2)',
@@ -796,7 +796,7 @@ const Home: React.FC = () => {
         </Box>
 
         {/* Scroll Indicator */}
-        <Box 
+        <Box
           sx={{
             position: 'absolute',
             bottom: 40,
@@ -903,14 +903,14 @@ const Home: React.FC = () => {
             ].map((branch, index) => (
               <Grid key={index} size={{ xs: 12, md: 4 }}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.3s', '&:hover': { transform: 'scale(1.02)' } }}>
-                  <Box 
-                    sx={{ 
-                      height: 200, 
+                  <Box
+                    sx={{
+                      height: 200,
                       bgcolor: 'grey.300',
                       backgroundImage: `url("${branch.img}")`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center'
-                    }} 
+                    }}
                   />
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -943,13 +943,13 @@ const Home: React.FC = () => {
           ].map((exp, index) => (
             <Grid key={index} size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.4s', borderRadius: 4, overflow: 'hidden', '&:hover': { transform: 'translateY(-10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' } }}>
-                <Box 
-                  sx={{ 
-                    height: 250, 
+                <Box
+                  sx={{
+                    height: 250,
                     backgroundImage: `url("${exp.img}")`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
-                  }} 
+                  }}
                 />
                 <CardContent sx={{ flexGrow: 1, textAlign: 'center', p: 4 }}>
                   <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -967,10 +967,10 @@ const Home: React.FC = () => {
 
       {/* Welcome Exclusive Deals Infinite Carousel Popup Modal (When User Lands on Main Page) */}
       {offers.length > 0 && (
-        <Dialog 
-          open={showWelcomePopup} 
-          onClose={() => setShowWelcomePopup(false)} 
-          maxWidth="md" 
+        <Dialog
+          open={showWelcomePopup}
+          onClose={() => setShowWelcomePopup(false)}
+          maxWidth="md"
           fullWidth
           slotProps={{
             backdrop: {
@@ -981,10 +981,10 @@ const Home: React.FC = () => {
               }
             },
             paper: {
-              sx: { 
-                borderRadius: '36px', 
-                overflow: 'hidden', 
-                bgcolor: 'rgba(255, 255, 255, 0.96)', 
+              sx: {
+                borderRadius: '36px',
+                overflow: 'hidden',
+                bgcolor: 'rgba(255, 255, 255, 0.96)',
                 backdropFilter: 'blur(30px)',
                 WebkitBackdropFilter: 'blur(30px)',
                 border: '1.5px solid rgba(212, 175, 55, 0.5)',
@@ -1012,10 +1012,10 @@ const Home: React.FC = () => {
 
           <DialogContent sx={{ p: 3, bgcolor: '#fbf9f5', overflow: 'hidden' }}>
             {/* Infinite Horizontal Scroll Track */}
-            <Box 
-              sx={{ 
-                position: 'relative', 
-                width: '100%', 
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
                 overflow: 'hidden',
                 py: 1,
                 '@keyframes marqueeScroll': {
@@ -1149,31 +1149,31 @@ const Home: React.FC = () => {
           </DialogContent>
 
           <DialogActions sx={{ p: 2.5, px: 3.5, bgcolor: '#f4f4f4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Button 
-              onClick={() => setShowWelcomePopup(false)} 
+            <Button
+              onClick={() => setShowWelcomePopup(false)}
               variant="outlined"
               sx={{ color: '#555', borderColor: '#ccc', borderRadius: '50px', px: 4, textTransform: 'none', fontWeight: 600, '&:hover': { borderColor: '#1a1a1a', bgcolor: 'transparent' } }}
             >
               Close
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={() => handleBookOffer(null)}
-              sx={{ 
-                background: 'linear-gradient(45deg, #1a1a1a 30%, #333 90%)', 
-                color: '#fff', 
-                px: 4, 
-                py: 1, 
-                borderRadius: '50px', 
+              sx={{
+                background: 'linear-gradient(45deg, #1a1a1a 30%, #333 90%)',
+                color: '#fff',
+                px: 4,
+                py: 1,
+                borderRadius: '50px',
                 fontWeight: 700,
                 textTransform: 'none',
                 fontSize: '0.95rem',
                 boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-                '&:hover': { 
+                '&:hover': {
                   background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
                   color: '#1a1a1a',
                   boxShadow: '0 6px 20px rgba(212, 175, 55, 0.4)',
-                } 
+                }
               }}
             >
               Explore All Rooms
@@ -1199,9 +1199,9 @@ const Home: React.FC = () => {
             {offers.map((offer) => (
               <Grid key={offer.id} size={{ xs: 12, md: 6 }}>
                 <Card sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, height: '100%', transition: '0.3s', borderRadius: 4, overflow: 'hidden', '&:hover': { transform: 'scale(1.02)', boxShadow: 6 } }}>
-                  <Box 
-                    sx={{ 
-                      width: { xs: '100%', sm: 200 }, 
+                  <Box
+                    sx={{
+                      width: { xs: '100%', sm: 200 },
                       height: { xs: 200, sm: 'auto' },
                       backgroundImage: `url("${offer.image || '/images/romantic.jpg'}")`,
                       backgroundSize: 'cover',
@@ -1210,9 +1210,9 @@ const Home: React.FC = () => {
                     }}
                   >
                     {offer.popup && (
-                      <Chip 
-                        label={offer.popup} 
-                        sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold', borderRadius: '50px' }} 
+                      <Chip
+                        label={offer.popup}
+                        sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold', borderRadius: '50px' }}
                       />
                     )}
                   </Box>
@@ -1223,8 +1223,8 @@ const Home: React.FC = () => {
                     <Typography color="text.secondary" sx={{ mb: 2 }}>
                       {offer.details}
                     </Typography>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       onClick={() => setSelectedOffer(offer)}
                       sx={{ alignSelf: 'flex-start', color: '#1a1a1a', borderColor: '#d4af37', borderRadius: '50px', px: 3, '&:hover': { borderColor: '#1a1a1a', bgcolor: 'rgba(212, 175, 55, 0.1)' } }}
                     >
@@ -1240,10 +1240,10 @@ const Home: React.FC = () => {
 
       {/* Offer Detail Dialog */}
       {selectedOffer && (
-        <Dialog 
-          open={Boolean(selectedOffer)} 
-          onClose={() => setSelectedOffer(null)} 
-          maxWidth="sm" 
+        <Dialog
+          open={Boolean(selectedOffer)}
+          onClose={() => setSelectedOffer(null)}
+          maxWidth="sm"
           fullWidth
           slotProps={{
             backdrop: {
@@ -1254,10 +1254,10 @@ const Home: React.FC = () => {
               }
             },
             paper: {
-              sx: { 
-                borderRadius: '36px', 
-                overflow: 'hidden', 
-                bgcolor: 'rgba(255, 255, 255, 0.94)', 
+              sx: {
+                borderRadius: '36px',
+                overflow: 'hidden',
+                bgcolor: 'rgba(255, 255, 255, 0.94)',
                 backdropFilter: 'blur(30px)',
                 WebkitBackdropFilter: 'blur(30px)',
                 border: '1.5px solid rgba(212, 175, 55, 0.5)',
@@ -1312,23 +1312,23 @@ const Home: React.FC = () => {
             <Button onClick={() => setSelectedOffer(null)} color="inherit" variant="outlined" sx={{ borderRadius: '50px', px: 4, py: 1, textTransform: 'none', fontWeight: 600, borderColor: '#bbb', '&:hover': { borderColor: '#1a1a1a', bgcolor: 'transparent' } }}>
               Close
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={() => handleBookOffer(selectedOffer)}
-              sx={{ 
-                background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', 
-                color: '#1a1a1a', 
-                px: 5, 
-                py: 1.2, 
-                borderRadius: '50px', 
+              sx={{
+                background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
+                color: '#1a1a1a',
+                px: 5,
+                py: 1.2,
+                borderRadius: '50px',
                 fontWeight: 800,
                 textTransform: 'none',
                 fontSize: '1rem',
                 boxShadow: '0 6px 20px rgba(212, 175, 55, 0.4)',
-                '&:hover': { 
+                '&:hover': {
                   background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
                   boxShadow: '0 8px 25px rgba(212, 175, 55, 0.6)',
-                } 
+                }
               }}
             >
               Book Now

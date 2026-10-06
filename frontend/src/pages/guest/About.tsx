@@ -8,11 +8,11 @@ const About: React.FC = () => {
   return (
     <Box sx={{ pt: { xs: 12, md: 16 }, pb: 8, bgcolor: '#f8fafc', minHeight: '100vh' }}>
       <Container maxWidth="lg">
-        <Typography 
-          variant="h2" 
-          align="center" 
+        <Typography
+          variant="h2"
+          align="center"
           gutterBottom
-          sx={{ 
+          sx={{
             fontFamily: '"Playfair Display", serif',
             fontWeight: 800,
             color: '#1a1a1a',
@@ -48,11 +48,11 @@ const About: React.FC = () => {
           </Grid>
         </Grid>
 
-        <Typography 
-          variant="h3" 
-          align="center" 
+        <Typography
+          variant="h3"
+          align="center"
           gutterBottom
-          sx={{ 
+          sx={{
             fontFamily: '"Playfair Display", serif',
             fontWeight: 700,
             color: '#1a1a1a',

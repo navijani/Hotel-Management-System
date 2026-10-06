@@ -44,7 +44,7 @@ const Profile: React.FC = () => {
   const [user, setUser] = useState<GuestUser>(() => {
     const rawProfile = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
     if (rawProfile) {
-      try { return JSON.parse(rawProfile); } catch (e) {}
+      try { return JSON.parse(rawProfile); } catch (e) { }
     }
     return {
       first_name: 'Guest',
@@ -67,7 +67,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const rawProfile = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
     if (rawProfile) {
-      try { setUser(JSON.parse(rawProfile)); } catch (e) {}
+      try { setUser(JSON.parse(rawProfile)); } catch (e) { }
     }
   }, []);
 
@@ -155,7 +155,7 @@ const Profile: React.FC = () => {
         <Grid container spacing={4}>
           <Grid size={{ xs: 12, md: 4 }}>
             <Paper elevation={0} sx={{ p: 4, borderRadius: 4, boxShadow: '0 12px 40px rgba(0,0,0,0.06)', textAlign: 'center', bgcolor: '#fff' }}>
-              <Avatar 
+              <Avatar
                 sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: '#d4af37', fontSize: '2.5rem', fontWeight: 'bold' }}
               >
                 {getFirstName()[0]}{getLastName()[0]}
@@ -186,18 +186,18 @@ const Profile: React.FC = () => {
                 Edit Phone & Info
               </Button>
 
-              <Button 
-                variant="outlined" 
-                color="error" 
-                fullWidth 
-                sx={{ mt: 2, borderRadius: 8, textTransform: 'none', borderColor: 'error.main', '&:hover': { bgcolor: 'error.main', color: '#fff' } }} 
-                onClick={() => { 
-                  sessionStorage.removeItem('guestAuthenticated'); 
-                  sessionStorage.removeItem('guestSignedIn'); 
-                  sessionStorage.removeItem('guestProfile'); 
+              <Button
+                variant="outlined"
+                color="error"
+                fullWidth
+                sx={{ mt: 2, borderRadius: 8, textTransform: 'none', borderColor: 'error.main', '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+                onClick={() => {
+                  sessionStorage.removeItem('guestAuthenticated');
+                  sessionStorage.removeItem('guestSignedIn');
+                  sessionStorage.removeItem('guestProfile');
                   sessionStorage.removeItem('guestUser');
-                  window.dispatchEvent(new Event('guestAuthChanged')); 
-                  window.location.href = '/'; 
+                  window.dispatchEvent(new Event('guestAuthChanged'));
+                  window.location.href = '/';
                 }}
               >
                 Logout Account
@@ -250,11 +250,11 @@ const Profile: React.FC = () => {
                 <Box sx={{ flexGrow: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="caption" color="text.secondary">Identity / NIC Number</Typography>
-                    <Chip 
-                      icon={<LockIcon sx={{ fontSize: '14px !important', color: '#666 !important' }} />} 
-                      label="Locked" 
-                      size="small" 
-                      sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#eee', color: '#555' }} 
+                    <Chip
+                      icon={<LockIcon sx={{ fontSize: '14px !important', color: '#666 !important' }} />}
+                      label="Locked"
+                      size="small"
+                      sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#eee', color: '#555' }}
                     />
                   </Box>
                   <Typography variant="body1" sx={{ fontWeight: 600, color: '#333' }}>
@@ -273,8 +273,8 @@ const Profile: React.FC = () => {
                 <Typography color="text.secondary">
                   Ready to book your next stay? View available luxury rooms now.
                 </Typography>
-                <Button 
-                  variant="contained" 
+                <Button
+                  variant="contained"
                   href="/rooms"
                   sx={{ mt: 2, borderRadius: 8, bgcolor: '#d4af37', color: '#fff', textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#b89628' } }}
                 >
