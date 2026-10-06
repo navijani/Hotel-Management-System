@@ -491,7 +491,7 @@ const staticPath = fs.existsSync(publicDistPath) ? publicDistPath : (fs.existsSy
 
 if (staticPath) {
   app.use(express.static(staticPath));
-  app.get('*', (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
       return next();
     }
