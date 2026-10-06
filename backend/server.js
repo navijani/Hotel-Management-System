@@ -11,6 +11,7 @@ import createRoomsRouter from './routes/rooms.js';
 import createBookingsRouter from './routes/bookings.js';
 import createBarRouter from './routes/bar.js';
 import createOffersRouter from './routes/offers.js';
+import createBillingRouter from './routes/billing.js';
 
 dotenv.config();
 
@@ -95,9 +96,9 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 20,
-  ssl: {
+  ssl: process.env.DB_SSL === 'false' ? false : {
     minVersion: 'TLSv1.2',
-    rejectUnauthorized: true,
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' || fs.existsSync('ca.pem'),
     ca: fs.existsSync('ca.pem') ? fs.readFileSync('ca.pem') : undefined
   }
 });
@@ -491,6 +492,9 @@ app.use('/api/admin/bar', barRouter);
 const offersRouter = createOffersRouter(pool, upload);
 app.use('/api/offers', offersRouter);
 app.use('/api/exclusive-offers', offersRouter);
+
+const billingRouter = createBillingRouter(pool);
+app.use('/api/billing', billingRouter);
 
 // Serve static frontend files in production (from public/ or ../frontend/dist)
 if (staticPath) {

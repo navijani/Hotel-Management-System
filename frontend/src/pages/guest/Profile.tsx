@@ -99,7 +99,7 @@ const Profile: React.FC = () => {
     const guestId = user.guest_id || 1;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/guest/${guestId}/profile`, {
+      const res = await fetch(`/api/guest/${guestId}/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

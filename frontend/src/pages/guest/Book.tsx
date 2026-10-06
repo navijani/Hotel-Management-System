@@ -84,7 +84,7 @@ const Book: React.FC = () => {
 
   useEffect(() => {
     if (selectedRoomId) {
-      axios.get(`http://localhost:5000/api/bookings/room/${selectedRoomId}/dates`)
+      axios.get(`/api/bookings/room/${selectedRoomId}/dates`)
         .then(res => {
           const dates = res.data.map((b: { check_in_date: string; check_out_date: string }) => ({
             start: dayjs(b.check_in_date).startOf('day'),
@@ -131,7 +131,7 @@ const Book: React.FC = () => {
         payhereOrderId: orderId
       };
 
-      const response = await axios.post('http://localhost:5000/api/bookings', payload);
+      const response = await axios.post('/api/bookings', payload);
       setSuccess('Booking confirmed successfully! Booking ID: ' + response.data.bookingId);
       setPayhereOrderId(orderId);
       setActiveStep(3); // Step 3 is Confirmation
@@ -160,7 +160,7 @@ const Book: React.FC = () => {
       const orderId = 'RESORT_' + Date.now();
 
       // Request PayHere Hash from backend
-      const hashRes = await axios.post('http://localhost:5000/api/bookings/payhere-hash', {
+      const hashRes = await axios.post('/api/bookings/payhere-hash', {
         order_id: orderId,
         amount: totalAmount,
         currency: 'LKR'
@@ -175,7 +175,7 @@ const Book: React.FC = () => {
         merchant_id: hashRes.data.merchant_id,
         return_url: window.location.origin + '/book',
         cancel_url: window.location.origin + '/book',
-        notify_url: 'http://localhost:5000/api/bookings/payhere-notify',
+        notify_url: window.location.origin + '/api/bookings/payhere-notify',
         order_id: orderId,
         items: `Resort Room Booking - ${selectedRoomType}`,
         amount: hashRes.data.amount,

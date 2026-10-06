@@ -21,12 +21,7 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      let res;
-      try {
-        res = await axios.post('/api/admin/signin', { username: email.trim(), password });
-      } catch (e) {
-        res = await axios.post('http://localhost:5000/api/admin/signin', { username: email.trim(), password });
-      }
+      const res = await axios.post('/api/admin/signin', { username: email.trim(), password });
 
       if (res.status === 200 || res.data?.message) {
         sessionStorage.setItem('adminAuthenticated', 'true');

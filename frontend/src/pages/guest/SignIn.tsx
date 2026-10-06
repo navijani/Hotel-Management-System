@@ -23,7 +23,7 @@ const SignIn: React.FC = () => {
 
     try {
       setLoading(true);
-      const res = await axios.post('http://localhost:5000/api/guest/signin', {
+      const res = await axios.post('/api/guest/signin', {
         email: email.trim(),
         password: password,
       });

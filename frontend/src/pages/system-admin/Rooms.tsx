@@ -64,7 +64,7 @@ const mockRooms: any[] = [
 
   const fetchRooms = () => {
     setLoading(true);
-    axios.get('http://localhost:5000/api/rooms')
+    axios.get('/api/rooms')
       .then(response => {
         setRooms(response.data);
         setLoading(false);
@@ -115,7 +115,7 @@ const mockRooms: any[] = [
     if (!isSuperAdmin) return;
     if (window.confirm('Are you sure you want to delete this room?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/rooms/${roomId}`);
+        await axios.delete(`/api/rooms/${roomId}`);
         fetchRooms();
       } catch (err: any) {
         alert('Failed to delete room');
@@ -154,11 +154,11 @@ const mockRooms: any[] = [
       }
 
       if (editingId) {
-        await axios.put(`http://localhost:5000/api/rooms/${editingId}`, data, {
+        await axios.put(`/api/rooms/${editingId}`, data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        await axios.post('http://localhost:5000/api/rooms', data, {
+        await axios.post('/api/rooms', data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       }

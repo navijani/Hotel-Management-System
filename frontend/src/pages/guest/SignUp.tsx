@@ -32,7 +32,7 @@ const SignUp: React.FC = () => {
     if (!idVal.trim()) return;
     try {
       setCheckingId(true);
-      const res = await axios.get(`http://localhost:5000/api/guest/check-id?identity_number=${encodeURIComponent(idVal.trim())}`);
+      const res = await axios.get(`/api/guest/check-id?identity_number=${encodeURIComponent(idVal.trim())}`);
       if (res.data && res.data.available === false) {
         setIdError('ID number already in use. Please choose a different ID.');
       } else {
@@ -77,7 +77,7 @@ const SignUp: React.FC = () => {
     try {
       setLoading(true);
       // Double check ID before submission
-      const checkRes = await axios.get(`http://localhost:5000/api/guest/check-id?identity_number=${encodeURIComponent(identityNumber.trim())}`);
+      const checkRes = await axios.get(`/api/guest/check-id?identity_number=${encodeURIComponent(identityNumber.trim())}`);
       if (checkRes.data && checkRes.data.available === false) {
         setIdError('ID number already in use. Please choose a different ID.');
         setError('ID number already in use. Please choose a different ID.');
@@ -85,7 +85,7 @@ const SignUp: React.FC = () => {
         return;
       }
 
-      await axios.post('http://localhost:5000/api/guest/signup', {
+      await axios.post('/api/guest/signup', {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim(),
@@ -97,7 +97,7 @@ const SignUp: React.FC = () => {
       setSuccess('Account created successfully! Auto-signing you in...');
 
       // Auto sign in
-      const signinRes = await axios.post('http://localhost:5000/api/guest/signin', {
+      const signinRes = await axios.post('/api/guest/signin', {
         email: email.trim(),
         password: password
       });

@@ -72,7 +72,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/offers?active_only=true');
+        const res = await axios.get('/api/offers?active_only=true');
         if (Array.isArray(res.data)) {
           setOffers(res.data);
           if (res.data.length > 0) {
@@ -151,7 +151,7 @@ const Home: React.FC = () => {
     setSigninMessage({ type: '', text: '' });
 
     try {
-      const response = await axios.post('http://localhost:5000/api/guest/signin', signinForm);
+      const response = await axios.post('/api/guest/signin', signinForm);
       window.sessionStorage.setItem('guestSignedIn', 'true');
       window.sessionStorage.setItem('guestProfile', JSON.stringify(response.data));
       setIsSignedIn(true);
@@ -182,14 +182,14 @@ const Home: React.FC = () => {
     }
 
     try {
-      const checkRes = await axios.get(`http://localhost:5000/api/guest/check-id?identity_number=${encodeURIComponent(signupForm.identity_number.trim())}`);
+      const checkRes = await axios.get(`/api/guest/check-id?identity_number=${encodeURIComponent(signupForm.identity_number.trim())}`);
       if (checkRes.data && checkRes.data.available === false) {
         setSignupMessage({ type: 'error', text: 'ID number already in use. Please choose a different ID.' });
         setIsSigningUp(false);
         return;
       }
 
-      await axios.post('http://localhost:5000/api/guest/signup', signupForm);
+      await axios.post('/api/guest/signup', signupForm);
       setSignupMessage({ type: 'success', text: 'Your account was created successfully! Switching to sign in...' });
       setSignupForm({ first_name: '', last_name: '', email: '', phone_number: '', identity_number: '', password: '' });
       setTimeout(() => {

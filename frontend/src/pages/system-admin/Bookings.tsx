@@ -40,7 +40,7 @@ const Bookings: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:5000/api/bookings');
+      const res = await axios.get('/api/bookings');
       setBookings(res.data);
     } catch (error) {
       console.error('Failed to fetch bookings:', error);
@@ -63,7 +63,7 @@ const Bookings: React.FC = () => {
   const handleSaveStatus = async () => {
     if (!selectedBooking) return;
     try {
-      await axios.put(`http://localhost:5000/api/bookings/${selectedBooking.booking_id}/status`, {
+      await axios.put(`/api/bookings/${selectedBooking.booking_id}/status`, {
         status: editStatus
       });
       fetchBookings();

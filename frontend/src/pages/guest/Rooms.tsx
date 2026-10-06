@@ -186,7 +186,7 @@ const Rooms: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    axios.get('http://localhost:5000/api/rooms')
+    axios.get('/api/rooms')
       .then(response => {
         // Map backend snake_case to pascal case if needed
         const fetchedRooms = response.data.map((r: any) => ({

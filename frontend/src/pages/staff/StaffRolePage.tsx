@@ -109,7 +109,7 @@ const localDateKey = (date: Date) => {
   const loadWorkspace = async () => {
     if (!staffId) return;
     try {
-      const response = await axios.get(`http://localhost:5000/api/staff/${staffId}/workspace`);
+      const response = await axios.get(`/api/staff/${staffId}/workspace`);
       setAttendance(response.data.attendance);
       setSalary(response.data.salary);
       setStaff(response.data.staff);
@@ -142,7 +142,7 @@ const localDateKey = (date: Date) => {
       const payload = action === 'check-in'
         ? { check_in_location: location, location }
         : { check_out_location: location, location };
-      const response = await axios.post(`http://localhost:5000/api/staff/${staffId}/attendance/${action}`, payload);
+      const response = await axios.post(`/api/staff/${staffId}/attendance/${action}`, payload);
       await loadWorkspace();
       setMessage({ type: 'success', text: response.data.message || (action === 'check-in' ? 'You are checked in.' : 'You are checked out.') });
     } catch (error) {
@@ -155,7 +155,7 @@ const localDateKey = (date: Date) => {
     if (!staffId || !attendanceToday) return;
     try {
       setBusy(!attendanceToday.is_busy);
-      await axios.patch(`http://localhost:5000/api/staff/${staffId}/attendance/busy`, { is_busy: !attendanceToday.is_busy });
+      await axios.patch(`/api/staff/${staffId}/attendance/busy`, { is_busy: !attendanceToday.is_busy });
       await loadWorkspace();
     } catch {
       setMessage({ type: 'error', text: 'Busy status could not be updated.' });
@@ -166,7 +166,7 @@ const localDateKey = (date: Date) => {
     event.preventDefault();
     if (!staffId) return;
     try {
-      await axios.patch(`http://localhost:5000/api/staff/${staffId}/profile`, settings);
+      await axios.patch(`/api/staff/${staffId}/profile`, settings);
       sessionStorage.setItem('staffProfile', JSON.stringify({ ...profile, username: settings.username }));
       setStaff({ username: settings.username, mobile_number: settings.mobile_number });
       setSettings((current) => ({ ...current, password: '' }));
