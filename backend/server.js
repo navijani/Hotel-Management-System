@@ -77,6 +77,11 @@ const upload = multer({
   }
 });
 
+// Detect static frontend build path (public/ in production Docker or ../frontend/dist in local)
+const publicDistPath = path.join(process.cwd(), 'public');
+const relativeDistPath = path.join(process.cwd(), '../frontend/dist');
+const staticPath = fs.existsSync(publicDistPath) ? publicDistPath : (fs.existsSync(relativeDistPath) ? relativeDistPath : null);
+
 // Serve uploads directory statically
 app.use('/uploads', express.static('uploads'));
 
@@ -97,7 +102,10 @@ const pool = mysql.createPool({
   }
 });
 
-app.get('/', (req, res) => {
+app.get('/', (req, res, next) => {
+  if (staticPath) {
+    return next();
+  }
   res.status(200).send('Hotel Management backend is running. Use /api/test or open the frontend app on port 5173.');
 });
 
@@ -485,10 +493,6 @@ app.use('/api/offers', offersRouter);
 app.use('/api/exclusive-offers', offersRouter);
 
 // Serve static frontend files in production (from public/ or ../frontend/dist)
-const publicDistPath = path.join(process.cwd(), 'public');
-const relativeDistPath = path.join(process.cwd(), '../frontend/dist');
-const staticPath = fs.existsSync(publicDistPath) ? publicDistPath : (fs.existsSync(relativeDistPath) ? relativeDistPath : null);
-
 if (staticPath) {
   app.use(express.static(staticPath));
   app.use((req, res, next) => {
