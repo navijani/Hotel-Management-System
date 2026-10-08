@@ -13,6 +13,20 @@ export default function (pool, upload) {
     }
   });
 
+  // GET /api/rooms/:id
+  router.get('/:id', async (req, res) => {
+    try {
+      const [rows] = await pool.query('SELECT * FROM Room WHERE room_id = ?', [req.params.id]);
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'Room not found' });
+      }
+      res.json(rows[0]);
+    } catch (error) {
+      console.error('Fetch single room error:', error);
+      res.status(500).json({ error: 'Failed to fetch room' });
+    }
+  });
+
   // POST /api/rooms
   router.post('/', upload.single('image'), async (req, res) => {
     try {

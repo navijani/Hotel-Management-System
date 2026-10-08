@@ -137,6 +137,30 @@ export default function (pool, bookingRateLimit) {
     }
   });
 
+  // GET /api/bookings/guest/:guestId (Fetch bookings for a specific guest)
+  router.get('/guest/:guestId', async (req, res) => {
+    try {
+      const guestId = req.params.guestId;
+      const identityNo = String(req.query.identity_number || '').trim();
+      const email = String(req.query.email || '').trim();
+
+      const [bookings] = await pool.query(
+        `SELECT b.booking_id, b.check_in_date, b.check_out_date, b.booking_status, b.created_at,
+                r.room_number, r.type AS room_type, r.price_per_night, r.image AS room_image
+         FROM Booking b
+         LEFT JOIN Room r ON b.room_id = r.room_id
+         LEFT JOIN guest g ON b.guest_id = g.guest_id
+         WHERE b.guest_id = ? OR (g.identity_number IS NOT NULL AND g.identity_number = ?) OR (g.email IS NOT NULL AND g.email = ?)
+         ORDER BY b.booking_id DESC`,
+        [guestId, identityNo, email]
+      );
+      res.json(bookings);
+    } catch (error) {
+      console.error('Error fetching guest bookings:', error);
+      res.status(500).json({ error: 'Failed to fetch guest reservations' });
+    }
+  });
+
   // PUT /api/bookings/:id/status
   router.put('/:id/status', async (req, res) => {
     try {

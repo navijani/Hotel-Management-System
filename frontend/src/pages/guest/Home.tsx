@@ -87,13 +87,43 @@ const Home: React.FC = () => {
     fetchOffers();
   }, []);
 
-  const handleBookOffer = (_offer?: ExclusiveOffer | null) => {
+  const handleBookOffer = (targetOffer?: ExclusiveOffer | null) => {
+    const offerToBook = targetOffer || selectedOffer || welcomePopupOffer;
     setShowWelcomePopup(false);
     setSelectedOffer(null);
-    if (isSignedIn) {
-      navigate('/rooms');
+
+    if (offerToBook && offerToBook.room_id) {
+      axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
+        const roomData = res.data;
+        const discountVal = offerToBook.discount || roomData.discount || 0;
+        const originalPrice = Number(roomData.price_per_night || 150);
+        const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+
+        navigate('/book', {
+          state: {
+            room: {
+              RoomID: roomData.room_id,
+              RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
+              RoomTypeID: roomData.type || 'Special Offer Room',
+              Price: finalPrice,
+              OriginalPrice: originalPrice,
+              BedType: roomData.bed_type || 'Premium Bedding',
+              image: roomData.image || (offerToBook.image ? offerToBook.image : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop')
+            },
+            roomId: offerToBook.room_id,
+            roomType: roomData.type || 'Special Offer Room'
+          }
+        });
+      }).catch(() => {
+        navigate('/book', {
+          state: {
+            roomId: offerToBook.room_id,
+            roomType: offerToBook.topic || 'Special Offer Room'
+          }
+        });
+      });
     } else {
-      navigate('/signup');
+      navigate('/rooms');
     }
   };
 

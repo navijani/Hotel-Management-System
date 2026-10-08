@@ -41,6 +41,18 @@ interface GuestUser {
   identityNumber?: string;
 }
 
+interface Reservation {
+  booking_id: number;
+  check_in_date: string;
+  check_out_date: string;
+  booking_status: string;
+  created_at?: string;
+  room_number?: string;
+  room_type?: string;
+  price_per_night?: number;
+  room_image?: string;
+}
+
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<GuestUser>(() => {
@@ -57,6 +69,9 @@ const Profile: React.FC = () => {
     };
   });
 
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loadingReservations, setLoadingReservations] = useState<boolean>(true);
+
   // Edit Modal State
   const [openEdit, setOpenEdit] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
@@ -68,9 +83,38 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     const rawProfile = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
+    let currentUser = user;
     if (rawProfile) {
-      try { setUser(JSON.parse(rawProfile)); } catch (e) { }
+      try {
+        currentUser = JSON.parse(rawProfile);
+        setUser(currentUser);
+      } catch (e) { }
     }
+
+    const fetchReservations = async () => {
+      setLoadingReservations(true);
+      try {
+        const guestId = currentUser.guest_id || 0;
+        const identityNo = currentUser.identity_number || currentUser.identityNumber || '';
+        const email = currentUser.email || '';
+
+        const params = new URLSearchParams();
+        if (identityNo) params.append('identity_number', identityNo);
+        if (email) params.append('email', email);
+
+        const res = await fetch(`/api/bookings/guest/${guestId}?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setReservations(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error('Error fetching reservations:', err);
+      } finally {
+        setLoadingReservations(false);
+      }
+    };
+
+    fetchReservations();
   }, []);
 
   const getFirstName = () => user.first_name || user.firstName || 'Guest';
@@ -268,21 +312,93 @@ const Profile: React.FC = () => {
             </Paper>
 
             <Paper elevation={0} sx={{ p: 4, mt: 4, borderRadius: 4, boxShadow: '0 12px 40px rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#1a1a2e' }}>
-                My Reservations
-              </Typography>
-              <Box sx={{ bgcolor: '#f8fafc', p: 3, borderRadius: 3, textAlign: 'center', border: '1px dashed #cbd5e1' }}>
-                <Typography color="text.secondary">
-                  Ready to book your next stay? View available luxury rooms now.
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                  My Reservations
                 </Typography>
                 <Button
-                  variant="contained"
+                  size="small"
+                  variant="outlined"
                   onClick={() => navigate('/rooms')}
-                  sx={{ mt: 2, borderRadius: 8, bgcolor: '#d4af37', color: '#fff', textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#b89628' } }}
+                  sx={{ borderRadius: 8, borderColor: '#d4af37', color: '#1a1a2e', textTransform: 'none', fontWeight: 600 }}
                 >
-                  Book a Room Now
+                  + Book Another Room
                 </Button>
               </Box>
+
+              {loadingReservations ? (
+                <Box sx={{ textCenter: 'center', py: 4, textAlign: 'center' }}>
+                  <CircularProgress size={32} sx={{ color: '#d4af37' }} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Loading your reservations...</Typography>
+                </Box>
+              ) : reservations.length > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                  {reservations.map((res) => {
+                    const checkInDate = new Date(res.check_in_date);
+                    const checkOutDate = new Date(res.check_out_date);
+                    const diffDays = Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24)));
+                    const rate = Number(res.price_per_night || 150);
+                    const totalCost = diffDays * rate;
+
+                    let statusColor = '#10b981';
+                    if (res.booking_status === 'Checked-Out') statusColor = '#64748b';
+                    if (res.booking_status === 'Cancelled') statusColor = '#ef4444';
+
+                    return (
+                      <Paper
+                        key={res.booking_id}
+                        variant="outlined"
+                        sx={{ p: 2.5, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#f8fafc', transition: '0.2s', '&:hover': { boxShadow: '0 4px 15px rgba(0,0,0,0.05)' } }}
+                      >
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid size={{ xs: 12, sm: 8 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                              <Chip
+                                label={`#RES-${res.booking_id}`}
+                                size="small"
+                                sx={{ bgcolor: '#1a1a2e', color: '#fff', fontWeight: 'bold', fontSize: '0.75rem' }}
+                              />
+                              <Chip
+                                label={res.booking_status || 'Booked'}
+                                size="small"
+                                sx={{ bgcolor: statusColor, color: '#fff', fontWeight: 'bold', fontSize: '0.75rem' }}
+                              />
+                            </Box>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+                              {res.room_type || 'Deluxe Room'} {res.room_number ? `(${res.room_number})` : ''}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                              📅 {checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} &rarr; {checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ({diffDays} Night{diffDays > 1 ? 's' : ''})
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 4 }} sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Total Reservation Amount</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 800, color: '#d4af37' }}>
+                              ${totalCost.toLocaleString()}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Paper>
+                    );
+                  })}
+                </Box>
+              ) : (
+                <Box sx={{ bgcolor: '#f8fafc', p: 4, borderRadius: 3, textAlign: 'center', border: '1px dashed #cbd5e1' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 0.5 }}>
+                    No Reservations Found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    You have no active or previous room bookings linked to this account. Ready for your luxury escape?
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate('/rooms')}
+                    sx={{ borderRadius: 8, bgcolor: '#d4af37', color: '#fff', textTransform: 'none', fontWeight: 700, px: 4, '&:hover': { bgcolor: '#b89628' } }}
+                  >
+                    Book a Room Now
+                  </Button>
+                </Box>
+              )}
             </Paper>
           </Grid>
         </Grid>

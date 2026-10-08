@@ -118,7 +118,10 @@ const ExclusiveOffers: React.FC = () => {
       const res = await fetch(`${API_BASE}/api/rooms`);
       if (res.ok) {
         const data = await res.json();
-        setRooms(Array.isArray(data) ? data : []);
+        const availableOnly = Array.isArray(data)
+          ? data.filter((r: RoomOption) => (r.status || '').toLowerCase() !== 'under maintenance')
+          : [];
+        setRooms(availableOnly);
       }
     } catch (err) {
       console.error('Failed to fetch rooms for offers management:', err);
@@ -289,7 +292,7 @@ const ExclusiveOffers: React.FC = () => {
   };
 
   const currentSelectedRoom = rooms.find(r => r.room_id === selectedRoomId);
-  const filteredRooms = rooms.filter(r => !selectedBranchId || r.branch_id === selectedBranchId || rooms.every(room => !room.branch_id));
+  const filteredRooms = rooms.filter(r => (!selectedBranchId || r.branch_id === selectedBranchId || rooms.every(room => !room.branch_id)) && (r.status || '').toLowerCase() !== 'under maintenance');
 
   return (
     <Box sx={{ p: 1 }}>
