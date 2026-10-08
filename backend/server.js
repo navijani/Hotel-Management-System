@@ -4,10 +4,17 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
+import { fileURLToPath } from 'url';
+import createRoomsRouter from './routes/rooms.js';
+import createBookingsRouter from './routes/bookings.js';
+import createBarRouter from './routes/bar.js';
+import createOffersRouter from './routes/offers.js';
+import createBillingRouter from './routes/billing.js';
 
-dotenv.config();
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -16,6 +23,25 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Global API Rate Limiter
+const globalRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 300, // 300 requests per 15 min
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this IP. Please try again later.' },
+});
+
+// Authentication & Account Creation Rate Limiter (Brute-force protection)
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 15, // 15 login/signup attempts per 15 min
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts. Please try again later.' },
+});
+
+// Booking Rate Limiter
 const bookingRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -24,9 +50,20 @@ const bookingRateLimit = rateLimit({
   message: { error: 'Too many booking attempts. Please try again later.' },
 });
 
+// Apply global rate limiting to all API endpoints
+app.use('/api/', globalRateLimit);
+
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads', { recursive: true });
+}
+
 // Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    if (!fs.existsSync('uploads')) {
+      fs.mkdirSync('uploads', { recursive: true });
+    }
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
@@ -34,7 +71,18 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024,  // 50MB max file size
+    fieldSize: 50 * 1024 * 1024  // 50MB max text field size (for base64 image strings)
+  }
+});
+
+// Detect static frontend build path (public/ in production Docker or ../frontend/dist in local)
+const publicDistPath = path.join(process.cwd(), 'public');
+const relativeDistPath = path.join(process.cwd(), '../frontend/dist');
+const staticPath = fs.existsSync(publicDistPath) ? publicDistPath : (fs.existsSync(relativeDistPath) ? relativeDistPath : null);
 
 // Serve uploads directory statically
 app.use('/uploads', express.static('uploads'));
@@ -49,13 +97,17 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 20,
-  ssl: {
+  ssl: process.env.DB_SSL === 'false' ? false : {
     minVersion: 'TLSv1.2',
-    rejectUnauthorized: true
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' || fs.existsSync('ca.pem'),
+    ca: fs.existsSync('ca.pem') ? fs.readFileSync('ca.pem') : undefined
   }
 });
 
-app.get('/', (req, res) => {
+app.get('/', (req, res, next) => {
+  if (staticPath) {
+    return next();
+  }
   res.status(200).send('Hotel Management backend is running. Use /api/test or open the frontend app on port 5173.');
 });
 
@@ -69,8 +121,8 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
-app.post('/api/admin/signin', (req, res) => {
-  const username = process.env.ADMIN_USERNAME ;
+app.post('/api/admin/signin', authRateLimit, (req, res) => {
+  const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
 
   if (req.body.username?.trim() !== username || req.body.password !== password) {
@@ -80,7 +132,30 @@ app.post('/api/admin/signin', (req, res) => {
   res.json({ message: 'Administrator login successful.' });
 });
 
-app.post('/api/guest/signup', async (req, res) => {
+app.get('/api/guest/check-id', async (req, res) => {
+  try {
+    const { identity_number } = req.query;
+    if (!identity_number || typeof identity_number !== 'string' || !identity_number.trim()) {
+      return res.status(400).json({ error: 'Identity number is required.' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT guest_id FROM GUEST WHERE identity_number = ? LIMIT 1',
+      [identity_number.trim()]
+    );
+
+    if (rows.length > 0) {
+      return res.json({ available: false, error: 'ID number already in use. Please choose a different ID.' });
+    }
+
+    res.json({ available: true });
+  } catch (error) {
+    console.error('Check ID error:', error);
+    res.status(500).json({ error: 'Unable to verify ID number.' });
+  }
+});
+
+app.post('/api/guest/signup', authRateLimit, async (req, res) => {
   try {
     const { first_name, last_name, email, phone_number, identity_number, password } = req.body;
     const requiredFields = [first_name, last_name, email, phone_number, identity_number, password];
@@ -93,13 +168,14 @@ app.post('/api/guest/signup', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
 
-    const [existingGuests] = await pool.query(
-      'SELECT guest_id FROM GUEST WHERE email = ? OR identity_number = ? LIMIT 1',
-      [email.trim(), identity_number.trim()]
-    );
+    const [existingEmail] = await pool.query('SELECT guest_id FROM GUEST WHERE email = ? LIMIT 1', [email.trim()]);
+    if (existingEmail.length > 0) {
+      return res.status(409).json({ error: 'An account with that email address already exists.' });
+    }
 
-    if (existingGuests.length > 0) {
-      return res.status(409).json({ error: 'An account with that email or identity number already exists.' });
+    const [existingId] = await pool.query('SELECT guest_id FROM GUEST WHERE identity_number = ? LIMIT 1', [identity_number.trim()]);
+    if (existingId.length > 0) {
+      return res.status(409).json({ error: 'ID number already in use. Please choose a different ID.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -115,13 +191,13 @@ app.post('/api/guest/signup', async (req, res) => {
   } catch (error) {
     console.error('Guest signup error:', error);
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'An account with those details already exists.' });
+      return res.status(409).json({ error: 'ID number or email already in use. Please choose a different ID.' });
     }
     res.status(500).json({ error: 'Unable to create guest account.' });
   }
 });
 
-app.post('/api/guest/signin', async (req, res) => {
+app.post('/api/guest/signin', authRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -130,13 +206,13 @@ app.post('/api/guest/signin', async (req, res) => {
     }
 
     const [rows] = await pool.query(
-      'SELECT guest_id, first_name, last_name, email, password FROM GUEST WHERE email = ? LIMIT 1',
+      'SELECT guest_id, first_name, last_name, email, phone_number, identity_number, password FROM GUEST WHERE email = ? LIMIT 1',
       [email.trim()]
     );
     const guest = rows[0];
 
     if (!guest || !(await bcrypt.compare(password, guest.password))) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Account not found or password incorrect. Please check your credentials.' });
     }
 
     res.json({
@@ -144,6 +220,8 @@ app.post('/api/guest/signin', async (req, res) => {
       first_name: guest.first_name,
       last_name: guest.last_name,
       email: guest.email,
+      phone_number: guest.phone_number,
+      identity_number: guest.identity_number,
     });
   } catch (error) {
     console.error('Guest signin error:', error);
@@ -151,28 +229,92 @@ app.post('/api/guest/signin', async (req, res) => {
   }
 });
 
-app.post('/api/staff/signup', async (req, res) => {
+app.patch('/api/guest/:id/profile', async (req, res) => {
+  try {
+    const guestId = Number(req.params.id);
+    const { phone_number, first_name, last_name } = req.body;
+
+    if (!phone_number || typeof phone_number !== 'string' || !phone_number.trim()) {
+      return res.status(400).json({ error: 'Phone number is required.' });
+    }
+
+    const values = [phone_number.trim()];
+    let query = 'UPDATE GUEST SET phone_number = ?';
+
+    if (first_name && typeof first_name === 'string' && first_name.trim()) {
+      query += ', first_name = ?';
+      values.push(first_name.trim());
+    }
+
+    if (last_name && typeof last_name === 'string' && last_name.trim()) {
+      query += ', last_name = ?';
+      values.push(last_name.trim());
+    }
+
+    query += ' WHERE guest_id = ?';
+    values.push(guestId);
+
+    const [result] = await pool.query(query, values);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Guest account not found.' });
+    }
+
+    const [updatedRows] = await pool.query(
+      'SELECT guest_id, first_name, last_name, email, phone_number, identity_number FROM GUEST WHERE guest_id = ? LIMIT 1',
+      [guestId]
+    );
+
+    res.json({ message: 'Profile updated successfully.', guest: updatedRows[0] });
+  } catch (error) {
+    console.error('Guest profile update error:', error);
+    res.status(500).json({ error: 'Unable to update profile.' });
+  }
+});
+
+app.post('/api/staff', authRateLimit, async (req, res) => {
   try {
     const { username, password, role } = req.body;
-    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter'];
+    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
 
-    if (!username || !password || !allowedRoles.includes(role)) {
+    if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
       return res.status(400).json({ error: 'Username, password, and a valid role are required.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, FALSE)', [username.trim(), passwordHash, role]);
-    res.status(201).json({ message: 'Registration submitted. An administrator must approve your account before you can sign in.' });
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), passwordHash, role]);
+    res.status(201).json({ message: 'User added successfully.', id: result.insertId });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'That username is already registered.' });
     }
-    console.error('Staff signup error:', error);
+    console.error('Staff creation error:', error);
     res.status(500).json({ error: 'Unable to create staff account.' });
   }
 });
 
-app.post('/api/staff/signin', async (req, res) => {
+// Alias for backwards compatibility
+app.post('/api/staff/signup', authRateLimit, async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    const allowedRoles = ['cleaning', 'bar', 'therapist', 'waiter', 'admin'];
+
+    if (!username?.trim() || !password || !role || !allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Username, password, and a valid role are required.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), passwordHash, role]);
+    res.status(201).json({ message: 'Staff account created successfully.', id: result.insertId });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'That username is already registered.' });
+    }
+    console.error('Staff creation error:', error);
+    res.status(500).json({ error: 'Unable to create staff account.' });
+  }
+});
+
+app.post('/api/staff/signin', authRateLimit, async (req, res) => {
   try {
     const { username, password, role } = req.body;
     const [rows] = await pool.query('SELECT id, username, password, role, active FROM Staff WHERE username = ? AND role = ? LIMIT 1', [username?.trim(), role]);
@@ -182,7 +324,7 @@ app.post('/api/staff/signin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid staff credentials.' });
     }
     if (!staff.active) {
-      return res.status(403).json({ error: 'Your account is waiting for administrator approval.' });
+      return res.status(403).json({ error: 'Your account has been deactivated. Please contact an administrator.' });
     }
 
     res.json({ id: staff.id, staff_id: staff.id, username: staff.username, role: staff.role });
@@ -336,95 +478,43 @@ app.patch('/api/staff/:id/status', async (req, res) => {
   }
 });
 
-app.get('/api/rooms', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM Room');
-    res.json(rows);
-  } catch (error) {
-    console.error('Database query error:', error);
-    res.status(500).json({ error: 'Failed to fetch rooms' });
-  }
-});
+// (Replaced by roomsRouter)
 
-app.post('/api/rooms', upload.single('image'), async (req, res) => {
-  try {
-    const { room_number, type, capacity, price_per_night, status } = req.body;
-    let image_url = '';
+const roomsRouter = createRoomsRouter(pool, upload);
+app.use('/api/rooms', roomsRouter);
 
-    if (req.file) {
-      image_url = `http://localhost:5000/uploads/${req.file.filename}`;
-    } else if (req.body.image_url) {
-      image_url = req.body.image_url;
+const bookingsRouter = createBookingsRouter(pool, bookingRateLimit);
+app.use('/api/bookings', bookingsRouter);
+
+const barRouter = createBarRouter(pool, upload);
+app.use('/api/bar', barRouter);
+app.use('/api/admin/bar', barRouter);
+
+const offersRouter = createOffersRouter(pool, upload);
+app.use('/api/offers', offersRouter);
+app.use('/api/exclusive-offers', offersRouter);
+
+const billingRouter = createBillingRouter(pool);
+app.use('/api/billing', billingRouter);
+
+// Serve static frontend files in production (from public/ or ../frontend/dist)
+if (staticPath) {
+  app.use(express.static(staticPath));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
     }
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+}
 
-    const [result] = await pool.query(
-      'INSERT INTO Room (room_number, type, capacity, price_per_night, status, image) VALUES (?, ?, ?, ?, ?, ?)',
-      [room_number, type, capacity, price_per_night, status || 'Available', image_url]
-    );
-
-    res.status(201).json({ message: 'Room created successfully', roomId: result.insertId, room: req.body });
-  } catch (error) {
-    console.error('Create room error:', error);
-    res.status(500).json({ error: 'Failed to create room' });
-  }
-});
-
-app.post('/api/bookings', bookingRateLimit, async (req, res) => {
-  try {
-    const { firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate, roomType } = req.body;
-
-    if ([firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate, roomType].some((value) => typeof value !== 'string' || !value.trim())) {
-      return res.status(400).json({ error: 'All booking fields are required.' });
-    }
-
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
-
-      let guestId;
-      const [existingGuest] = await connection.query(
-        'SELECT guest_id FROM GUEST WHERE identity_number = ?',
-        [identificationNo]
-      );
-
-      if (existingGuest.length > 0) {
-        guestId = existingGuest[0].guest_id;
-      } else {
-        const [guestResult] = await connection.query(
-          'INSERT INTO GUEST (first_name, last_name, email, phone_number, identity_number) VALUES (?, ?, ?, ?, ?)',
-          [firstName, lastName, email, phone, identificationNo]
-        );
-        guestId = guestResult.insertId;
-      }
-
-      const [availableRooms] = await connection.query(
-        'SELECT room_id FROM Room WHERE type = ? AND status = ? LIMIT 1',
-        [roomType, 'Available']
-      );
-      if (availableRooms.length === 0) {
-        const noRoomError = new Error('No room is available for the selected type.');
-        noRoomError.statusCode = 409;
-        throw noRoomError;
-      }
-      const roomId = availableRooms[0].room_id;
-
-      const [bookingResult] = await connection.query(
-        'INSERT INTO BOOKING (guest_id, room_id, check_in_date, check_out_date, booking_status) VALUES (?, ?, ?, ?, ?)',
-        [guestId, roomId, checkInDate, checkOutDate, 'Booked']
-      );
-
-      await connection.commit();
-      res.status(201).json({ message: 'Booking successful', bookingId: bookingResult.insertId });
-    } catch (dbError) {
-      await connection.rollback();
-      throw dbError;
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error('Booking error:', error);
-    res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Failed to create booking' });
-  }
+// Global Error Handler (Catches Multer, JSON parsing, and general server errors)
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  const status = err.statusCode || err.status || 500;
+  res.status(status).json({
+    error: err.message || 'An unexpected server error occurred.'
+  });
 });
 
 // ==========================================

@@ -81,27 +81,27 @@ const StaffRolePage: React.FC<{ role: StaffRole }> = ({ role }) => {
   const [settings, setSettings] = useState({ username: profile.username || '', mobile_number: profile.mobile_number || '', password: '' });
   const [orders, setOrders] = useState(orderSets[role]);
 
-const timeToDate = (time: string, reference: Date) => {
-  const [hours, minutes, seconds = 0] = time.split(':').map(Number);
-  const value = new Date(reference);
-  value.setHours(hours, minutes, seconds, 0);
-  return value;
-};
+  const timeToDate = (time: string, reference: Date) => {
+    const [hours, minutes, seconds = 0] = time.split(':').map(Number);
+    const value = new Date(reference);
+    value.setHours(hours, minutes, seconds, 0);
+    return value;
+  };
 
-const formatDuration = (seconds: number) => {
-  const totalSeconds = Math.max(0, Math.floor(seconds));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const remainingSeconds = totalSeconds % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-};
+  const formatDuration = (seconds: number) => {
+    const totalSeconds = Math.max(0, Math.floor(seconds));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainingSeconds = totalSeconds % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+  };
 
-const localDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+  const localDateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const [message, setMessage] = useState({ type: '', text: '' });
   const [busy, setBusy] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -109,7 +109,7 @@ const localDateKey = (date: Date) => {
   const loadWorkspace = async () => {
     if (!staffId) return;
     try {
-      const response = await axios.get(`http://localhost:5000/api/staff/${staffId}/workspace`);
+      const response = await axios.get(`/api/staff/${staffId}/workspace`);
       setAttendance(response.data.attendance);
       setSalary(response.data.salary);
       setStaff(response.data.staff);
@@ -142,7 +142,7 @@ const localDateKey = (date: Date) => {
       const payload = action === 'check-in'
         ? { check_in_location: location, location }
         : { check_out_location: location, location };
-      const response = await axios.post(`http://localhost:5000/api/staff/${staffId}/attendance/${action}`, payload);
+      const response = await axios.post(`/api/staff/${staffId}/attendance/${action}`, payload);
       await loadWorkspace();
       setMessage({ type: 'success', text: response.data.message || (action === 'check-in' ? 'You are checked in.' : 'You are checked out.') });
     } catch (error) {
@@ -155,7 +155,7 @@ const localDateKey = (date: Date) => {
     if (!staffId || !attendanceToday) return;
     try {
       setBusy(!attendanceToday.is_busy);
-      await axios.patch(`http://localhost:5000/api/staff/${staffId}/attendance/busy`, { is_busy: !attendanceToday.is_busy });
+      await axios.patch(`/api/staff/${staffId}/attendance/busy`, { is_busy: !attendanceToday.is_busy });
       await loadWorkspace();
     } catch {
       setMessage({ type: 'error', text: 'Busy status could not be updated.' });
@@ -166,7 +166,7 @@ const localDateKey = (date: Date) => {
     event.preventDefault();
     if (!staffId) return;
     try {
-      await axios.patch(`http://localhost:5000/api/staff/${staffId}/profile`, settings);
+      await axios.patch(`/api/staff/${staffId}/profile`, settings);
       sessionStorage.setItem('staffProfile', JSON.stringify({ ...profile, username: settings.username }));
       setStaff({ username: settings.username, mobile_number: settings.mobile_number });
       setSettings((current) => ({ ...current, password: '' }));

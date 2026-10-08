@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip, Alert } from '@mui/material';
+import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import WifiIcon from '@mui/icons-material/Wifi';
@@ -14,6 +14,20 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import CloseIcon from '@mui/icons-material/Close';
+
+interface ExclusiveOffer {
+  id: number;
+  popup: string;
+  topic: string;
+  details: string;
+  more_details: string;
+  image: string | null;
+  active: boolean;
+  room_id?: number | null;
+  branch_id?: number | null;
+  discount?: number;
+}
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -41,7 +55,78 @@ const Home: React.FC = () => {
   const [signinForm, setSigninForm] = useState({ email: '', password: '' });
   const [signinMessage, setSigninMessage] = useState({ type: '', text: '' });
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [offers, setOffers] = useState<ExclusiveOffer[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<ExclusiveOffer | null>(null);
+  const [, setWelcomePopupOffer] = useState<ExclusiveOffer | null>(null);
+  const [showWelcomePopup, setShowWelcomePopup] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.log('Video autoplay prevented or loading:', err);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const res = await axios.get('/api/offers?active_only=true');
+        if (Array.isArray(res.data)) {
+          setOffers(res.data);
+          if (res.data.length > 0) {
+            setWelcomePopupOffer(res.data[0]);
+            setShowWelcomePopup(true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load exclusive offers:', err);
+      }
+    };
+    fetchOffers();
+  }, []);
+
+  const handleBookOffer = (targetOffer?: ExclusiveOffer | null) => {
+    const offerToBook = targetOffer || selectedOffer || welcomePopupOffer;
+    setShowWelcomePopup(false);
+    setSelectedOffer(null);
+
+    if (offerToBook && offerToBook.room_id) {
+      axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
+        const roomData = res.data;
+        const discountVal = offerToBook.discount || roomData.discount || 0;
+        const originalPrice = Number(roomData.price_per_night || 150);
+        const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+
+        navigate('/book', {
+          state: {
+            room: {
+              RoomID: roomData.room_id,
+              RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
+              RoomTypeID: roomData.type || 'Special Offer Room',
+              Price: finalPrice,
+              OriginalPrice: originalPrice,
+              BedType: roomData.bed_type || 'Premium Bedding',
+              image: roomData.image || (offerToBook.image ? offerToBook.image : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop')
+            },
+            roomId: offerToBook.room_id,
+            roomType: roomData.type || 'Special Offer Room'
+          }
+        });
+      }).catch(() => {
+        navigate('/book', {
+          state: {
+            roomId: offerToBook.room_id,
+            roomType: offerToBook.topic || 'Special Offer Room'
+          }
+        });
+      });
+    } else {
+      navigate('/rooms');
+    }
+  };
+
 
   useEffect(() => {
     const panel = searchParams.get('panel');
@@ -96,7 +181,7 @@ const Home: React.FC = () => {
     setSigninMessage({ type: '', text: '' });
 
     try {
-      const response = await axios.post('http://localhost:5000/api/guest/signin', signinForm);
+      const response = await axios.post('/api/guest/signin', signinForm);
       window.sessionStorage.setItem('guestSignedIn', 'true');
       window.sessionStorage.setItem('guestProfile', JSON.stringify(response.data));
       setIsSignedIn(true);
@@ -120,10 +205,26 @@ const Home: React.FC = () => {
     setIsSigningUp(true);
     setSignupMessage({ type: '', text: '' });
 
+    if (!signupForm.identity_number.trim()) {
+      setSignupMessage({ type: 'error', text: 'ID number is required.' });
+      setIsSigningUp(false);
+      return;
+    }
+
     try {
-      await axios.post('http://localhost:5000/api/guest/signup', signupForm);
-      setSignupMessage({ type: 'success', text: 'Your account was created. You can now sign in.' });
+      const checkRes = await axios.get(`/api/guest/check-id?identity_number=${encodeURIComponent(signupForm.identity_number.trim())}`);
+      if (checkRes.data && checkRes.data.available === false) {
+        setSignupMessage({ type: 'error', text: 'ID number already in use. Please choose a different ID.' });
+        setIsSigningUp(false);
+        return;
+      }
+
+      await axios.post('/api/guest/signup', signupForm);
+      setSignupMessage({ type: 'success', text: 'Your account was created successfully! Switching to sign in...' });
       setSignupForm({ first_name: '', last_name: '', email: '', phone_number: '', identity_number: '', password: '' });
+      setTimeout(() => {
+        openAuthPanel('signin');
+      }, 1500);
     } catch (error) {
       const message = axios.isAxiosError(error) ? error.response?.data?.error : 'Unable to create your account.';
       setSignupMessage({ type: 'error', text: message || 'Unable to create your account.' });
@@ -138,7 +239,7 @@ const Home: React.FC = () => {
       return;
     }
 
-    openAuthPanel('signin');
+    navigate('/signup');
   };
 
   const heroActionButtonSx = {
@@ -146,7 +247,7 @@ const Home: React.FC = () => {
     py: 1.5,
     fontSize: '0.98rem',
     fontWeight: 700,
-    borderRadius: '50px',
+    borderRadius: '100px',
     textTransform: 'none',
     transition: 'all 0.3s ease-in-out',
   };
@@ -166,12 +267,12 @@ const Home: React.FC = () => {
   return (
     <Box>
       {/* Hero Section */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           position: 'relative',
           color: 'white',
-          pt: { xs: 10, md: 12 },
-          pb: { xs: 8, md: 12 },
+          pt: { xs: 12, md: 14 },
+          pb: { xs: 8, md: 6 },
           px: 2,
           textAlign: 'center',
           overflow: 'hidden',
@@ -190,18 +291,17 @@ const Home: React.FC = () => {
           }
         }}
       >
-        {/* Video Background Container */}
+        {/* Hero Background */}
         <Box
           sx={{
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: -2,
-            pointerEvents: 'none',
-            overflow: 'hidden',
-            backgroundColor: '#0a0a0a'
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            backgroundColor: '#0a0a0a',
+            overflow: 'hidden'
           }}
         >
           <video
@@ -210,6 +310,7 @@ const Home: React.FC = () => {
             loop
             muted
             playsInline
+            key="hero-video-v3"
             style={{
               position: 'absolute',
               top: '50%',
@@ -218,34 +319,33 @@ const Home: React.FC = () => {
               height: '100%',
               objectFit: 'cover',
               transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-              zIndex: -2,
+              zIndex: 0,
               opacity: 0.85,
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
-            <source src="/videos/hero-video.mp4" type="video/mp4" />
+            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4?v=2`} type="video/mp4" />
           </video>
-        </Box>
-        
-        {/* Modern Gradient Overlay */}
-        <Box 
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(212, 175, 55, 0.2) 100%)',
-            zIndex: -1
-          }}
-        />
 
-        <Container 
-          maxWidth="lg" 
-          sx={{ 
-            position: 'relative', 
-            zIndex: 1, 
+          {/* Modern Gradient Overlay */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(212, 175, 55, 0.2) 100%)',
+              zIndex: 1
+            }}
+          />
+        </Box>
+
+        <Container
+          maxWidth="lg"
+          sx={{
+            position: 'relative',
+            zIndex: 2,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -264,12 +364,12 @@ const Home: React.FC = () => {
                 transformStyle: 'preserve-3d',
                 transition: 'transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                minHeight: { xs: '730px', md: '760px' },
+                display: 'grid',
               }}
             >
               <Box
                 sx={{
-                  p: { xs: 3, md: 5 },
+                  p: { xs: 3, md: 4 },
                   borderRadius: 8,
                   bgcolor: 'rgba(15, 23, 42, 0.4)',
                   backdropFilter: 'blur(16px)',
@@ -277,26 +377,25 @@ const Home: React.FC = () => {
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
                   width: '100%',
-                  position: 'absolute',
-                  inset: 0,
+                  gridArea: '1 / 1',
                   backfaceVisibility: 'hidden',
                   overflow: 'hidden'
                 }}
               >
-                <Chip 
-                  icon={<LocalOfferIcon sx={{ color: '#d4af37 !important' }} />} 
-                  label="Summer Special: 20% Off All Suites" 
+                <Chip
+                  icon={<LocalOfferIcon sx={{ color: '#d4af37 !important' }} />}
+                  label="Summer Special: 20% Off All Suites"
                   variant="outlined"
-                  sx={{ 
-                    mb: 3, 
-                    color: '#d4af37', 
+                  sx={{
+                    mb: 3,
+                    color: '#d4af37',
                     borderColor: 'rgba(212, 175, 55, 0.5)',
                     bgcolor: 'rgba(212, 175, 55, 0.1)',
                     fontWeight: 'bold',
                     animation: 'fadeInUp 1s ease-out forwards',
                     opacity: 0,
                     backdropFilter: 'blur(4px)'
-                  }} 
+                  }}
                 />
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, justifyContent: 'center', animation: 'fadeInUp 1s ease-out forwards', opacity: 0, animationDelay: '0.2s' }}>
@@ -313,7 +412,7 @@ const Home: React.FC = () => {
                   </Box>
                 </Box>
 
-                <Typography 
+                <Typography
                   variant="overline"
                   sx={{
                     display: 'block',
@@ -330,15 +429,15 @@ const Home: React.FC = () => {
                   Welcome To Paradise
                 </Typography>
 
-                <Typography 
-                  variant="h1" 
-                  gutterBottom 
-                  sx={{ 
-                    fontWeight: 900, 
-                    fontSize: { xs: '2.6rem', sm: '3.4rem', md: '4.2rem' },
+                <Typography
+                  variant="h1"
+                  gutterBottom
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: { xs: '2.4rem', sm: '3rem', md: '3.5rem' },
                     fontFamily: '"Playfair Display", serif',
                     lineHeight: 1.1,
-                    mb: 3,
+                    mb: 2,
                     background: 'linear-gradient(to right, #ffffff, #d4af37)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -350,10 +449,10 @@ const Home: React.FC = () => {
                 >
                   Experience <br /> Ultimate Luxury
                 </Typography>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    mb: 3, 
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 3,
                     fontWeight: 300,
                     color: 'rgba(255, 255, 255, 0.85)',
                     lineHeight: 1.8,
@@ -368,11 +467,11 @@ const Home: React.FC = () => {
                   Discover the perfect blend of comfort, elegance, and world-class service at our premium hotel branches across Sri Lanka.
                 </Typography>
 
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: { xs: 2, md: 4 }, 
-                  justifyContent: 'center', 
-                  mb: 5,
+                <Box sx={{
+                  display: 'flex',
+                  gap: { xs: 2, md: 4 },
+                  justifyContent: 'center',
+                  mb: 4,
                   flexWrap: 'wrap',
                   animation: 'fadeInUp 1s ease-out forwards',
                   animationDelay: '1s',
@@ -388,23 +487,23 @@ const Home: React.FC = () => {
                   ))}
                 </Box>
 
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    gap: 2, 
-                    justifyContent: 'center', 
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    justifyContent: 'center',
                     flexWrap: 'wrap',
                     animation: 'fadeInUp 1s ease-out forwards',
                     animationDelay: '1.2s',
                     opacity: 0,
                   }}
                 >
-                  <Button 
-                    variant="contained" 
-                    size="large" 
+                  <Button
+                    variant="contained"
+                    size="large"
                     onClick={handleProtectedStay}
                     endIcon={<ArrowForwardIcon />}
-                    sx={{ 
+                    sx={{
                       ...heroActionButtonSx,
                       px: 4.5,
                       background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
@@ -420,10 +519,10 @@ const Home: React.FC = () => {
                   >
                     Book Your Stay
                   </Button>
-                  <Button 
-                    variant="outlined" 
-                    size="large" 
-                    sx={{ 
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    sx={{
                       ...heroActionButtonSx,
                       px: 4.5,
                       color: 'white',
@@ -444,35 +543,12 @@ const Home: React.FC = () => {
                   >
                     Explore More
                   </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={() => openAuthPanel('signup')}
-                    sx={{ 
-                      ...heroActionButtonSx,
-                      order: -1,
-                      flexBasis: '100%',
-                      px: 4,
-                      color: '#d4af37',
-                      borderColor: 'rgba(212, 175, 55, 0.6)',
-                      borderWidth: '2px',
-                      bgcolor: 'rgba(212, 175, 55, 0.08)',
-                      '&:hover': {
-                        borderWidth: '2px',
-                        borderColor: '#d4af37',
-                        bgcolor: 'rgba(212, 175, 55, 0.18)',
-                        transform: 'translateY(-4px)'
-                      }
-                    }}
-                  >
-                    Sign Up
-                  </Button>
                 </Box>
               </Box>
 
               <Box
                 sx={{
-                  p: { xs: 4, md: 8 },
+                  p: { xs: 4, md: 4 },
                   borderRadius: 8,
                   bgcolor: 'rgba(15, 23, 42, 0.45)',
                   backdropFilter: 'blur(18px)',
@@ -480,8 +556,7 @@ const Home: React.FC = () => {
                   border: '1px solid rgba(212, 175, 55, 0.22)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
                   width: '100%',
-                  position: 'absolute',
-                  inset: 0,
+                  gridArea: '1 / 1',
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                   overflow: 'hidden',
@@ -508,7 +583,7 @@ const Home: React.FC = () => {
                     sx={{
                       fontWeight: 900,
                       mb: 2,
-                      fontSize: { xs: '2.3rem', md: '3.5rem' },
+                      fontSize: { xs: '2rem', md: '2.8rem' },
                       fontFamily: '"Playfair Display", serif',
                       background: 'linear-gradient(to right, #ffffff, #d4af37)',
                       WebkitBackgroundClip: 'text',
@@ -521,7 +596,7 @@ const Home: React.FC = () => {
                   <Typography
                     sx={{
                       color: 'rgba(255,255,255,0.82)',
-                      mb: 5,
+                      mb: 3,
                       lineHeight: 1.9,
                       fontSize: { xs: '1rem', md: '1.15rem' },
                     }}
@@ -571,18 +646,12 @@ const Home: React.FC = () => {
                         <Button type="submit" variant="contained" size="large" disabled={isSigningIn} sx={{ ...heroActionButtonSx, px: 5, background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a1a', boxShadow: '0 8px 25px -8px #d4af37' }}>
                           {isSigningIn ? 'Signing in...' : 'Sign In'}
                         </Button>
-                        <Button type="button" variant="outlined" size="large" onClick={() => openAuthPanel('signup')} sx={{ ...heroActionButtonSx, px: 4, color: 'white', borderColor: 'rgba(255,255,255,0.45)', borderWidth: '2px' }}>
-                          Sign Up
-                        </Button>
                       </Box>
                     </Box>
                   ) : (
                     <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', animation: 'fadeInUp 0.6s ease-out' }}>
                       <Button variant="contained" size="large" onClick={() => openAuthPanel('signin')} sx={{ ...heroActionButtonSx, px: 5, background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a1a', boxShadow: '0 8px 25px -8px #d4af37' }}>
                         Sign In
-                      </Button>
-                      <Button variant="outlined" size="large" onClick={() => openAuthPanel('signup')} sx={{ ...heroActionButtonSx, px: 4, color: 'white', borderColor: 'rgba(255,255,255,0.45)', borderWidth: '2px' }}>
-                        Sign Up
                       </Button>
                     </Box>
                   )}
@@ -613,7 +682,7 @@ const Home: React.FC = () => {
           {/* Quick Availability Search Bar */}
           <Box
             sx={{
-              mt: { xs: 4, md: 6 },
+              mt: { xs: 2, md: 3 },
               p: 2,
               borderRadius: 4,
               bgcolor: 'rgba(255, 255, 255, 0.1)',
@@ -638,7 +707,7 @@ const Home: React.FC = () => {
                   variant="filled"
                   slotProps={{
                     input: {
-                      startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ color: 'white' }}/></InputAdornment>,
+                      startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ color: 'white' }} /></InputAdornment>,
                       sx: { color: 'white', bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 2, '&:hover': { bgcolor: 'rgba(0,0,0,0.4)' }, '&::before': { display: 'none' }, '&::after': { display: 'none' } }
                     },
                     inputLabel: { style: { color: 'rgba(255,255,255,0.8)' } },
@@ -675,11 +744,11 @@ const Home: React.FC = () => {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 3 }}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
+                <Button
+                  fullWidth
+                  variant="contained"
                   onClick={() => navigate('/rooms')}
-                  sx={{ 
+                  sx={{
                     height: '56px',
                     borderRadius: 2,
                     background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
@@ -713,10 +782,10 @@ const Home: React.FC = () => {
             opacity: 0,
           }}
         >
-          <IconButton 
+          <IconButton
             onClick={toggleVideo}
-            sx={{ 
-              color: 'white', 
+            sx={{
+              color: 'white',
               bgcolor: 'rgba(0,0,0,0.3)',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255,255,255,0.2)',
@@ -728,7 +797,7 @@ const Home: React.FC = () => {
         </Box>
 
         {/* Scroll Indicator */}
-        <Box 
+        <Box
           sx={{
             position: 'absolute',
             bottom: 40,
@@ -829,20 +898,20 @@ const Home: React.FC = () => {
           </Typography>
           <Grid container spacing={4}>
             {[
-              { name: 'Colombo', img: '/images/colombo.jpg' },
-              { name: 'Kandy', img: '/images/kandy.jpg' },
-              { name: 'Galle', img: '/images/galle.jpg' }
+              { name: 'Colombo', img: `${import.meta.env.BASE_URL}images/colombo.jpg` },
+              { name: 'Kandy', img: `${import.meta.env.BASE_URL}images/kandy.jpg` },
+              { name: 'Galle', img: `${import.meta.env.BASE_URL}images/galle.jpg` }
             ].map((branch, index) => (
               <Grid key={index} size={{ xs: 12, md: 4 }}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.3s', '&:hover': { transform: 'scale(1.02)' } }}>
-                  <Box 
-                    sx={{ 
-                      height: 200, 
+                  <Box
+                    sx={{
+                      height: 200,
                       bgcolor: 'grey.300',
                       backgroundImage: `url("${branch.img}")`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center'
-                    }} 
+                    }}
                   />
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -869,19 +938,19 @@ const Home: React.FC = () => {
         </Typography>
         <Grid container spacing={4}>
           {[
-            { title: 'Fine Dining', img: '/images/fine_dining.jpg', desc: 'Savor exquisite dishes crafted by world-renowned chefs.' },
-            { title: 'Rooftop Bar', img: '/images/rooftop_bar.jpg', desc: 'Enjoy signature cocktails with panoramic sunset views.' },
-            { title: 'Spa & Wellness', img: '/images/spa_wellness.jpg', desc: 'Rejuvenate your body and mind with our holistic treatments.' }
+            { title: 'Fine Dining', img: `${import.meta.env.BASE_URL}images/fine_dining.jpg`, desc: 'Savor exquisite dishes crafted by world-renowned chefs.' },
+            { title: 'Rooftop Bar', img: `${import.meta.env.BASE_URL}images/rooftop_bar.jpg`, desc: 'Enjoy signature cocktails with panoramic sunset views.' },
+            { title: 'Spa & Wellness', img: `${import.meta.env.BASE_URL}images/spa_wellness.jpg`, desc: 'Rejuvenate your body and mind with our holistic treatments.' }
           ].map((exp, index) => (
             <Grid key={index} size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.4s', borderRadius: 4, overflow: 'hidden', '&:hover': { transform: 'translateY(-10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' } }}>
-                <Box 
-                  sx={{ 
-                    height: 250, 
+                <Box
+                  sx={{
+                    height: 250,
                     backgroundImage: `url("${exp.img}")`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
-                  }} 
+                  }}
                 />
                 <CardContent sx={{ flexGrow: 1, textAlign: 'center', p: 4 }}>
                   <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -897,6 +966,223 @@ const Home: React.FC = () => {
         </Grid>
       </Container>
 
+      {/* Welcome Exclusive Deals Infinite Carousel Popup Modal (When User Lands on Main Page) */}
+      {offers.length > 0 && (
+        <Dialog
+          open={showWelcomePopup}
+          onClose={() => setShowWelcomePopup(false)}
+          maxWidth="md"
+          fullWidth
+          slotProps={{
+            backdrop: {
+              sx: {
+                bgcolor: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+              }
+            },
+            paper: {
+              sx: {
+                borderRadius: '36px',
+                overflow: 'hidden',
+                bgcolor: 'rgba(255, 255, 255, 0.96)',
+                backdropFilter: 'blur(30px)',
+                WebkitBackdropFilter: 'blur(30px)',
+                border: '1.5px solid rgba(212, 175, 55, 0.5)',
+                boxShadow: '0 35px 70px -15px rgba(0, 0, 0, 0.65)',
+              }
+            }
+          }}
+        >
+          <DialogTitle sx={{ bgcolor: '#1a1a1a', color: '#fff', py: 2.5, px: 3.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <LocalOfferIcon sx={{ color: '#d4af37', fontSize: 28 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', letterSpacing: 0.5, fontSize: '1.1rem', fontFamily: '"Playfair Display", serif' }}>
+                  Exclusive Deals & Special Offers
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#d4af37', fontWeight: 600 }}>
+                  {offers.length} Exclusive Package{offers.length > 1 ? 's' : ''} Available Now &bull; Hover card to pause scroll
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => setShowWelcomePopup(false)} sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' } }}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent sx={{ p: 3, bgcolor: '#fbf9f5', overflow: 'hidden' }}>
+            {/* Infinite Horizontal Scroll Track */}
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                overflow: 'hidden',
+                py: 1,
+                '@keyframes marqueeScroll': {
+                  '0%': { transform: 'translateX(0)' },
+                  '100%': { transform: 'translateX(-50%)' }
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  width: 'max-content',
+                  animation: 'marqueeScroll 24s linear infinite',
+                  '&:hover': {
+                    animationPlayState: 'paused',
+                  }
+                }}
+              >
+                {(offers.length === 1 ? [...offers, ...offers, ...offers, ...offers] : [...offers, ...offers]).map((offer, idx) => (
+                  <Card
+                    key={`${offer.id}-${idx}`}
+                    sx={{
+                      width: 320,
+                      minWidth: 320,
+                      mr: 2.5,
+                      borderRadius: '24px',
+                      overflow: 'hidden',
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+                      border: '1px solid rgba(212, 175, 55, 0.3)',
+                      bgcolor: '#ffffff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-6px)',
+                        boxShadow: '0 16px 36px rgba(212, 175, 55, 0.25)',
+                        borderColor: '#d4af37'
+                      }
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: 160,
+                        backgroundImage: `url("${offer.image || `${import.meta.env.BASE_URL}images/romantic.jpg`}")`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        position: 'relative',
+                        bgcolor: '#eee'
+                      }}
+                    >
+                      {offer.popup && (
+                        <Chip
+                          label={offer.popup}
+                          sx={{
+                            position: 'absolute',
+                            top: 12,
+                            left: 12,
+                            bgcolor: '#d4af37',
+                            color: '#ffffff',
+                            fontWeight: 'bold',
+                            borderRadius: '50px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                          }}
+                        />
+                      )}
+                      {offer.discount && offer.discount > 0 && (!offer.popup || (!offer.popup.toLowerCase().includes(`${offer.discount}%`) && !offer.popup.toLowerCase().includes('off'))) ? (
+                        <Chip
+                          label={`${offer.discount}% OFF`}
+                          sx={{
+                            position: 'absolute',
+                            top: 12,
+                            right: 12,
+                            bgcolor: '#e65100',
+                            color: '#ffffff',
+                            fontWeight: 'bold',
+                            borderRadius: '50px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                          }}
+                        />
+                      ) : null}
+                    </Box>
+
+                    <CardContent sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem', mb: 0.8, color: '#1a1a1a', fontFamily: '"Playfair Display", serif' }}>
+                          {offer.topic}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, mb: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {offer.details}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ pt: 1, borderTop: '1px dashed #eee', display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => {
+                            setShowWelcomePopup(false);
+                            setSelectedOffer(offer);
+                          }}
+                          sx={{ borderRadius: '50px', borderColor: '#bbb', color: '#444', textTransform: 'none', fontWeight: 600, '&:hover': { borderColor: '#d4af37', color: '#1a1a1a' } }}
+                        >
+                          Details
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => handleBookOffer(offer)}
+                          sx={{
+                            background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
+                            color: '#1a1a1a',
+                            borderRadius: '50px',
+                            fontWeight: 800,
+                            textTransform: 'none',
+                            px: 2.5,
+                            boxShadow: '0 4px 12px rgba(212, 175, 55, 0.4)',
+                            '&:hover': {
+                              background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
+                              boxShadow: '0 6px 16px rgba(212, 175, 55, 0.6)',
+                            }
+                          }}
+                        >
+                          Book Now
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 2.5, px: 3.5, bgcolor: '#f4f4f4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Button
+              onClick={() => setShowWelcomePopup(false)}
+              variant="outlined"
+              sx={{ color: '#555', borderColor: '#ccc', borderRadius: '50px', px: 4, textTransform: 'none', fontWeight: 600, '&:hover': { borderColor: '#1a1a1a', bgcolor: 'transparent' } }}
+            >
+              Close
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleBookOffer(null)}
+              sx={{
+                background: 'linear-gradient(45deg, #1a1a1a 30%, #333 90%)',
+                color: '#fff',
+                px: 4,
+                py: 1,
+                borderRadius: '50px',
+                fontWeight: 700,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
+                  color: '#1a1a1a',
+                  boxShadow: '0 6px 20px rgba(212, 175, 55, 0.4)',
+                }
+              }}
+            >
+              Explore All Rooms
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
       {/* Special Offers Section */}
       <Container sx={{ py: 8 }}>
         <Typography variant="h3" gutterBottom sx={{ textAlign: 'center', fontWeight: 'bold', mb: 2 }}>
@@ -905,44 +1191,152 @@ const Home: React.FC = () => {
         <Typography variant="subtitle1" color="text.secondary" sx={{ textAlign: 'center', mb: 6 }}>
           Indulge in our carefully curated packages for an unforgettable experience.
         </Typography>
-        <Grid container spacing={4}>
-          {[
-            { title: 'Romantic Getaway', discount: '15% Off', img: '/images/romantic.jpg', desc: 'Enjoy a romantic weekend with complimentary champagne and late checkout.' },
-            { title: 'Business Retreat', discount: 'Free Upgrades', img: '/images/business.jpg', desc: 'Seamlessly blend work and relaxation with premium Wi-Fi and lounge access.' }
-          ].map((offer, index) => (
-            <Grid key={index} size={{ xs: 12, md: 6 }}>
-              <Card sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, height: '100%', transition: '0.3s', '&:hover': { transform: 'scale(1.02)', boxShadow: 6 } }}>
-                <Box 
-                  sx={{ 
-                    width: { xs: '100%', sm: 200 }, 
-                    height: { xs: 200, sm: 'auto' },
-                    backgroundImage: `url("${offer.img}")`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    position: 'relative'
-                  }}
-                >
-                  <Chip 
-                    label={offer.discount} 
-                    sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold' }} 
-                  />
-                </Box>
-                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: 3 }}>
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    {offer.title}
-                  </Typography>
-                  <Typography color="text.secondary" sx={{ mb: 2 }}>
-                    {offer.desc}
-                  </Typography>
-                  <Button variant="outlined" sx={{ alignSelf: 'flex-start', color: '#1a1a1a', borderColor: '#d4af37', '&:hover': { borderColor: '#1a1a1a', bgcolor: 'rgba(212, 175, 55, 0.1)' } }}>
-                    View Details
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        {offers.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography color="text.secondary">No special offers available at the moment. Please check back soon!</Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={4}>
+            {offers.map((offer) => (
+              <Grid key={offer.id} size={{ xs: 12, md: 6 }}>
+                <Card sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, height: '100%', transition: '0.3s', borderRadius: 4, overflow: 'hidden', '&:hover': { transform: 'scale(1.02)', boxShadow: 6 } }}>
+                  <Box
+                    sx={{
+                      width: { xs: '100%', sm: 200 },
+                      height: { xs: 200, sm: 'auto' },
+                      backgroundImage: `url("${offer.image || `${import.meta.env.BASE_URL}images/romantic.jpg`}")`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      position: 'relative'
+                    }}
+                  >
+                    {offer.popup && (
+                      <Chip
+                        label={offer.popup}
+                        sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#d4af37', color: 'white', fontWeight: 'bold', borderRadius: '50px' }}
+                      />
+                    )}
+                  </Box>
+                  <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: 3 }}>
+                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', fontFamily: '"Playfair Display", serif' }}>
+                      {offer.topic}
+                    </Typography>
+                    <Typography color="text.secondary" sx={{ mb: 2 }}>
+                      {offer.details}
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      onClick={() => setSelectedOffer(offer)}
+                      sx={{ alignSelf: 'flex-start', color: '#1a1a1a', borderColor: '#d4af37', borderRadius: '50px', px: 3, '&:hover': { borderColor: '#1a1a1a', bgcolor: 'rgba(212, 175, 55, 0.1)' } }}
+                    >
+                      View Details
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </Container>
+
+      {/* Offer Detail Dialog */}
+      {selectedOffer && (
+        <Dialog
+          open={Boolean(selectedOffer)}
+          onClose={() => setSelectedOffer(null)}
+          maxWidth="sm"
+          fullWidth
+          slotProps={{
+            backdrop: {
+              sx: {
+                bgcolor: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+              }
+            },
+            paper: {
+              sx: {
+                borderRadius: '36px',
+                overflow: 'hidden',
+                bgcolor: 'rgba(255, 255, 255, 0.94)',
+                backdropFilter: 'blur(30px)',
+                WebkitBackdropFilter: 'blur(30px)',
+                border: '1.5px solid rgba(212, 175, 55, 0.5)',
+                boxShadow: '0 35px 70px -15px rgba(0, 0, 0, 0.65)',
+              }
+            }
+          }}
+        >
+          <DialogTitle sx={{ bgcolor: '#1a1a1a', color: '#fff', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 2.5, px: 3.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+              <LocalOfferIcon sx={{ color: '#d4af37', fontSize: 24 }} />
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontFamily: '"Playfair Display", serif' }}>
+                {selectedOffer.topic}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {selectedOffer.popup && (
+                <Chip label={selectedOffer.popup} size="small" sx={{ bgcolor: '#d4af37', color: '#fff', fontWeight: 'bold', borderRadius: '50px' }} />
+              )}
+              <IconButton size="small" onClick={() => setSelectedOffer(null)} sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ p: 3.5, bgcolor: 'transparent' }}>
+            {selectedOffer.image && (
+              <Box
+                component="img"
+                src={selectedOffer.image}
+                alt={selectedOffer.topic}
+                sx={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: '24px', mb: 2.5, boxShadow: '0 10px 25px rgba(0,0,0,0.15)' }}
+              />
+            )}
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, fontFamily: '"Playfair Display", serif' }}>
+              Overview
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
+              {selectedOffer.details}
+            </Typography>
+            {selectedOffer.more_details && (
+              <>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, fontFamily: '"Playfair Display", serif' }}>
+                  Inclusions & Terms
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', bgcolor: 'rgba(212, 175, 55, 0.08)', p: 3, borderRadius: '24px', border: '1px solid rgba(212, 175, 55, 0.25)' }}>
+                  {selectedOffer.more_details}
+                </Typography>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, bgcolor: 'rgba(245, 245, 245, 0.9)', display: 'flex', justifyContent: 'space-between' }}>
+            <Button onClick={() => setSelectedOffer(null)} color="inherit" variant="outlined" sx={{ borderRadius: '50px', px: 4, py: 1, textTransform: 'none', fontWeight: 600, borderColor: '#bbb', '&:hover': { borderColor: '#1a1a1a', bgcolor: 'transparent' } }}>
+              Close
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleBookOffer(selectedOffer)}
+              sx={{
+                background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
+                color: '#1a1a1a',
+                px: 5,
+                py: 1.2,
+                borderRadius: '50px',
+                fontWeight: 800,
+                textTransform: 'none',
+                fontSize: '1rem',
+                boxShadow: '0 6px 20px rgba(212, 175, 55, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
+                  boxShadow: '0 8px 25px rgba(212, 175, 55, 0.6)',
+                }
+              }}
+            >
+              Book Now
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Testimonials */}
       <Box sx={{ bgcolor: '#1a1a1a', color: 'white', py: 8 }}>
@@ -1004,38 +1398,7 @@ const Home: React.FC = () => {
         </Grid>
       </Container>
 
-      {/* Newsletter */}
-      <Box sx={{ py: 8, bgcolor: '#f3e5ab' }}>
-        <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1a1a1a' }}>
-            Join Our Newsletter
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(0,0,0,0.7)', mb: 4 }}>
-            Subscribe to receive exclusive offers, travel inspiration, and updates from our luxury hotels.
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <TextField 
-              fullWidth 
-              placeholder="Your Email Address" 
-              variant="outlined" 
-              sx={{ bgcolor: 'white', borderRadius: 1 }}
-            />
-            <Button 
-              variant="contained" 
-              size="large"
-              sx={{ 
-                bgcolor: '#1a1a1a', 
-                color: 'white', 
-                px: 4, 
-                py: { xs: 2, sm: 0 },
-                '&:hover': { bgcolor: '#333' }
-              }}
-            >
-              Subscribe
-            </Button>
-          </Box>
-        </Container>
-      </Box>
+
 
     </Box>
   );

@@ -27,6 +27,7 @@ import {
   RoomService as ServiceIcon,
   BarChart as ReportIcon,
   LocalBar as BarIcon,
+  LocalOffer as OfferIcon,
   Notifications as NotificationsIcon,
   ExitToApp as LogoutIcon,
 } from '@mui/icons-material';
@@ -48,15 +49,17 @@ const MainLayout: React.FC = () => {
   };
 
   const handleSignOut = () => {
+    window.sessionStorage.removeItem('adminAuthenticated');
     window.sessionStorage.removeItem('hmsAdminSignedIn');
-    navigate('/admin/signin', { replace: true });
+    navigate('/admin', { replace: true });
   };
 
   const menuItems = [
-    { text: 'Reception', icon: <DashboardIcon />, path: '/admin' },
-    { text: 'Service Logging', icon: <ServiceIcon />, path: '/admin/service' },
-    { text: 'Management', icon: <ReportIcon />, path: '/admin/management' },
-    { text: 'Bar Inventory', icon: <BarIcon />, path: '/admin/bar' },
+    { text: 'Reception', icon: <DashboardIcon />, path: '/admin/dashboard' },
+    { text: 'Service Logging', icon: <ServiceIcon />, path: '/admin/dashboard/service' },
+    { text: 'Management', icon: <ReportIcon />, path: '/admin/dashboard/management' },
+    { text: 'Bar Inventory', icon: <BarIcon />, path: '/admin/dashboard/bar' },
+    { text: 'Exclusive Offers', icon: <OfferIcon />, path: '/admin/dashboard/offers' },
   ];
 
   const drawer = (
@@ -73,7 +76,7 @@ const MainLayout: React.FC = () => {
           return (
             <Fade in={true} timeout={300 + (index * 150)} key={item.text}>
               <ListItem disablePadding sx={{ mb: 1 }}>
-                <ListItemButton 
+                <ListItemButton
                   onClick={() => navigate(item.path)}
                   sx={{
                     borderRadius: 2,
@@ -88,12 +91,12 @@ const MainLayout: React.FC = () => {
                   }}
                 >
                   <ListItemIcon sx={{ color: isActive ? '#d4af37' : 'inherit', minWidth: 40, transition: 'color 0.3s ease' }}>{item.icon}</ListItemIcon>
-                  <ListItemText 
+                  <ListItemText
                     primary={
                       <Typography sx={{ fontWeight: isActive ? 600 : 500, transition: 'all 0.3s ease' }}>
                         {item.text}
                       </Typography>
-                    } 
+                    }
                   />
                 </ListItemButton>
               </ListItem>
@@ -135,9 +138,9 @@ const MainLayout: React.FC = () => {
               value={branch}
               onChange={handleBranchChange}
               size="small"
-              sx={{ 
-                ml: { xs: 0, sm: 2 }, 
-                bgcolor: '#f5f5f5', 
+              sx={{
+                ml: { xs: 0, sm: 2 },
+                bgcolor: '#f5f5f5',
                 borderRadius: 2,
                 '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
                 transition: 'all 0.2s',
@@ -155,7 +158,7 @@ const MainLayout: React.FC = () => {
               <NotificationsIcon />
             </Badge>
           </IconButton>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 2, gap: 1 }}>
             <Avatar sx={{ width: 32, height: 32, bgcolor: '#1a1a1a', transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.1)', cursor: 'pointer' } }}>AD</Avatar>
             <Typography variant="body2" sx={{ display: { xs: 'none', md: 'block' }, fontWeight: 600 }}>
@@ -177,12 +180,12 @@ const MainLayout: React.FC = () => {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, 
+            keepMounted: true,
           }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: drawerWidth,
               borderRight: 'none',
               boxShadow: '4px 0 24px rgba(0,0,0,0.05)'
@@ -195,8 +198,8 @@ const MainLayout: React.FC = () => {
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: drawerWidth,
               borderRight: '1px solid rgba(0,0,0,0.05)',
               bgcolor: '#fafafa'
@@ -209,10 +212,10 @@ const MainLayout: React.FC = () => {
       </Box>
       <Box
         component="main"
-        sx={{ 
-          flexGrow: 1, 
-          p: 3, 
-          width: { sm: `calc(100% - ${drawerWidth}px)` }, 
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: 8,
           bgcolor: '#f8f9fa',
           minHeight: '100vh'
