@@ -351,7 +351,7 @@ const ExclusiveOffers: React.FC = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
             <Box
               component="img"
-              src="/images/guide_offer.png"
+              src={`${import.meta.env.BASE_URL}images/guide_offer.png`}
               alt="Exclusive Offer Layout Guide"
               sx={{
                 width: '100%',
@@ -364,7 +364,7 @@ const ExclusiveOffers: React.FC = () => {
                 p: 1.5
               }}
               onError={(e: any) => {
-                e.target.src = '/images/romantic.jpg';
+                e.target.src = `${import.meta.env.BASE_URL}images/romantic.jpg`;
               }}
             />
           </Box>
@@ -413,7 +413,7 @@ const ExclusiveOffers: React.FC = () => {
                       <TableCell>
                         <Box
                           component="img"
-                          src={offer.image || '/images/romantic.jpg'}
+                          src={offer.image || `${import.meta.env.BASE_URL}images/romantic.jpg`}
                           alt={offer.topic}
                           sx={{ width: 60, height: 45, objectFit: 'cover', borderRadius: 1.5, border: '1px solid #eee' }}
                         />
@@ -619,7 +619,7 @@ const ExclusiveOffers: React.FC = () => {
                     sx={{
                       width: '100%',
                       height: 140,
-                      backgroundImage: `url("${imagePreview || currentSelectedRoom?.image || '/images/romantic.jpg'}")`,
+                      backgroundImage: `url("${imagePreview || currentSelectedRoom?.image || `${import.meta.env.BASE_URL}images/romantic.jpg`}")`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       position: 'relative',
