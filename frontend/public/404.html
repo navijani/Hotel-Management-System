@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Hotel Management System</title>
+  <script type="text/javascript">
+    // GitHub Pages SPA Routing Fix (spa-github-pages)
+    var segmentCount = 1;
+    var l = window.location;
+
+    // 1. If someone visits https://navijani.github.io/rooms directly (missing /Hotel-Management-System subpath)
+    if (!l.pathname.toLowerCase().startsWith('/hotel-management-system')) {
+      var targetPath = '/Hotel-Management-System' + (l.pathname.startsWith('/') ? '' : '/') + l.pathname + l.search + l.hash;
+      l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + targetPath);
+    } else {
+      // 2. SPA Deep Route Refreshes (e.g., /Hotel-Management-System/rooms or /Hotel-Management-System/book)
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    }
+  </script>
+</head>
+
+<body>
+</body>
+
+</html>
