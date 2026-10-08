@@ -9,7 +9,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "predeploy": "npm run build",
+    "predeploy": "npx cross-env VITE_BASE_PATH=/Hotel-Management-System/ npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
