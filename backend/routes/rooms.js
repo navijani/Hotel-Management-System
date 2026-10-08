@@ -16,7 +16,7 @@ export default function (pool, upload) {
   // POST /api/rooms
   router.post('/', upload.single('image'), async (req, res) => {
     try {
-      const { room_number, type, capacity, price_per_night, status, description, bed_type, room_size, amenities } = req.body;
+      const { room_number, branch, type, capacity, price_per_night, status, description, bed_type, room_size, amenities } = req.body;
       let image_url = '';
 
       if (req.file) {
@@ -26,8 +26,8 @@ export default function (pool, upload) {
       }
 
       const [result] = await pool.query(
-        'INSERT INTO Room (room_number, type, capacity, price_per_night, status, image, description, bed_type, room_size, amenities, branch_id, room_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
-        [room_number, type, capacity, price_per_night, status || 'Available', image_url, description, bed_type, room_size, amenities]
+        'INSERT INTO Room (room_number, branch, type, capacity, price_per_night, status, image, description, bed_type, room_size, amenities, branch_id, room_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
+        [room_number, branch || 'Colombo', type, capacity, price_per_night, status || 'Available', image_url, description, bed_type, room_size, amenities]
       );
 
       res.status(201).json({ message: 'Room created successfully', roomId: result.insertId, room: req.body });
@@ -40,10 +40,10 @@ export default function (pool, upload) {
   // PUT /api/rooms/:id
   router.put('/:id', upload.single('image'), async (req, res) => {
     try {
-      const { room_number, type, capacity, price_per_night, status, description, bed_type, room_size, amenities } = req.body;
+      const { room_number, branch, type, capacity, price_per_night, status, description, bed_type, room_size, amenities } = req.body;
       const roomId = req.params.id;
-      let query = 'UPDATE Room SET room_number = ?, type = ?, capacity = ?, price_per_night = ?, status = ?, description = ?, bed_type = ?, room_size = ?, amenities = ?';
-      const values = [room_number, type, capacity, price_per_night, status, description, bed_type, room_size, amenities];
+      let query = 'UPDATE Room SET room_number = ?, branch = ?, type = ?, capacity = ?, price_per_night = ?, status = ?, description = ?, bed_type = ?, room_size = ?, amenities = ?';
+      const values = [room_number, branch || 'Colombo', type, capacity, price_per_night, status, description, bed_type, room_size, amenities];
 
       if (req.file) {
         query += ', image = ?';

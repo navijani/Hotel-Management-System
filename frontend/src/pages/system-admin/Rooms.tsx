@@ -13,6 +13,7 @@ import axios from 'axios';
 interface Room {
   room_id: number;
   room_number: string;
+  branch?: string;
   type: string;
   capacity: number;
   price_per_night: number;
@@ -21,6 +22,7 @@ interface Room {
 
 const initialForm = {
   room_number: '',
+  branch: 'Colombo',
   type: 'Standard',
   capacity: 2,
   price_per_night: 150,
@@ -142,6 +144,7 @@ const Rooms: React.FC = () => {
     try {
       const data = new FormData();
       data.append('room_number', formData.room_number);
+      data.append('branch', formData.branch);
       data.append('type', formData.type);
       data.append('capacity', formData.capacity.toString());
       data.append('price_per_night', formData.price_per_night.toString());
@@ -275,7 +278,7 @@ const Rooms: React.FC = () => {
                           Room {room.room_number}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 500 }}>
-                          {room.type || 'Standard'}
+                          {room.branch ? room.branch + ' - ' : ''}{room.type || 'Standard'}
                         </Typography>
                       </Box>
                     </Box>
@@ -334,6 +337,13 @@ const Rooms: React.FC = () => {
         <DialogContent dividers>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth select label="Branch" name="branch" value={formData.branch} onChange={handleChange}>
+                <MenuItem value="Colombo">Colombo</MenuItem>
+                <MenuItem value="Kandy">Kandy</MenuItem>
+                <MenuItem value="Galle">Galle</MenuItem>
+              </TextField>
+            </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth required label="Room Number" name="room_number" value={formData.room_number} onChange={handleChange} />
             </Grid>
