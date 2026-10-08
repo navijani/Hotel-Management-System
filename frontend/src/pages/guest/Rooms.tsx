@@ -17,6 +17,7 @@ const mockRooms = [
     RoomID: 'm1',
     RoomNumber: '101',
     RoomTypeID: 'Deluxe Ocean View',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 250,
     image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop',
@@ -29,6 +30,7 @@ const mockRooms = [
     RoomID: 'm2',
     RoomNumber: '102',
     RoomTypeID: 'Premium Suite',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 450,
     image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1000&auto=format&fit=crop',
@@ -41,6 +43,7 @@ const mockRooms = [
     RoomID: 'm3',
     RoomNumber: '103',
     RoomTypeID: 'Standard Garden',
+    Branch: 'Colombo',
     Status: 'Occupied',
     Price: 150,
     image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1000&auto=format&fit=crop',
@@ -53,6 +56,7 @@ const mockRooms = [
     RoomID: 'm4',
     RoomNumber: '104',
     RoomTypeID: 'Executive Suite',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 550,
     image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop',
@@ -65,6 +69,7 @@ const mockRooms = [
     RoomID: 'm5',
     RoomNumber: '105',
     RoomTypeID: 'Family Room',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 200,
     image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=1000&auto=format&fit=crop',
@@ -77,6 +82,7 @@ const mockRooms = [
     RoomID: 'm6',
     RoomNumber: '106',
     RoomTypeID: 'Presidential Suite',
+    Branch: 'Colombo',
     Status: 'Occupied',
     Price: 1200,
     image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop',
@@ -89,6 +95,7 @@ const mockRooms = [
     RoomID: 'm7',
     RoomNumber: '107',
     RoomTypeID: 'Standard City View',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 130,
     image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1000&auto=format&fit=crop',
@@ -101,6 +108,7 @@ const mockRooms = [
     RoomID: 'm8',
     RoomNumber: '108',
     RoomTypeID: 'Deluxe Twin',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 180,
     image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1000&auto=format&fit=crop',
@@ -113,6 +121,7 @@ const mockRooms = [
     RoomID: 'm9',
     RoomNumber: '109',
     RoomTypeID: 'Penthouse Suite',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 850,
     image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=1000&auto=format&fit=crop',
@@ -125,6 +134,7 @@ const mockRooms = [
     RoomID: 'm10',
     RoomNumber: '110',
     RoomTypeID: 'Cozy Single',
+    Branch: 'Colombo',
     Status: 'Occupied',
     Price: 90,
     image: 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?q=80&w=1000&auto=format&fit=crop',
@@ -137,6 +147,7 @@ const mockRooms = [
     RoomID: 'm11',
     RoomNumber: '201',
     RoomTypeID: 'Oceanfront Villa',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 650,
     image: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=1000&auto=format&fit=crop',
@@ -149,6 +160,7 @@ const mockRooms = [
     RoomID: 'm12',
     RoomNumber: '202',
     RoomTypeID: 'Honeymoon Suite',
+    Branch: 'Colombo',
     Status: 'Available',
     Price: 500,
     image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1000&auto=format&fit=crop',
@@ -161,6 +173,7 @@ const mockRooms = [
     RoomID: 'm13',
     RoomNumber: '203',
     RoomTypeID: 'Business Studio',
+    Branch: 'Colombo',
     Status: 'Occupied',
     Price: 220,
     image: 'https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=1000&auto=format&fit=crop',
@@ -181,6 +194,7 @@ const Rooms: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [branchFilter, setBranchFilter] = useState('All');
   const [maxPrice, setMaxPrice] = useState<number>(1500);
   const [minCapacity, setMinCapacity] = useState<number>(1);
 
@@ -194,6 +208,7 @@ const Rooms: React.FC = () => {
           RoomID: r.room_id || r.RoomID,
           RoomNumber: r.room_number || r.RoomNumber || 'TBD',
           RoomTypeID: r.type || r.RoomTypeID || 'Standard',
+            Branch: r.branch || r.Branch || 'Colombo',
           Status: r.status || r.current_status || r.Status || 'Available',
           Price: r.price_per_night || r.Price || 120,
           Discount: Number(r.discount || r.Discount || 0),
@@ -358,6 +373,7 @@ const Rooms: React.FC = () => {
                 if (searchQuery && !room.RoomNumber.toLowerCase().includes(searchQuery.toLowerCase()) && !room.RoomTypeID.toLowerCase().includes(searchQuery.toLowerCase()) && !room.Description.toLowerCase().includes(searchQuery.toLowerCase()) && !room.Amenities.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                 if (statusFilter !== 'All' && room.Status !== statusFilter) return false;
                 if (typeFilter !== 'All' && room.RoomTypeID !== typeFilter) return false;
+                if (branchFilter !== 'All' && room.Branch !== branchFilter) return false;
                 if (room.Price > maxPrice) return false;
                 if (room.Capacity < minCapacity) return false;
                 return true;
@@ -427,7 +443,10 @@ const Rooms: React.FC = () => {
                       </Box>
                       <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                          <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Playfair Display", serif' }}>
+                          <Typography variant="caption" sx={{ color: '#d4af37', fontWeight: 600, letterSpacing: 1, display: 'block', mb: 0.5 }}>
+                              {room.Branch} Branch
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Playfair Display", serif' }}>
                             {room.RoomTypeID}
                           </Typography>
                           <Typography variant="h6" sx={{ color: '#d4af37', fontWeight: 'bold', textAlign: 'right' }}>

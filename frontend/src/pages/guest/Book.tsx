@@ -61,6 +61,7 @@ const Book: React.FC = () => {
 
   const selectedRoomId = room?.RoomID || fallbackId || null;
   const selectedRoomType = room?.RoomTypeID || fallbackType || 'Standard';
+  const selectedBranch = room?.Branch || 'Colombo';
   const selectedPrice = room?.Price || 150;
   const selectedImage = room?.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop';
 
@@ -246,9 +247,10 @@ const Book: React.FC = () => {
                   <Typography variant="overline" sx={{ color: '#d4af37', fontWeight: 800, letterSpacing: 1.5 }}>
                     Your Selection
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 800, mt: 1, mb: 2, color: '#1a1a2e', fontFamily: '"Playfair Display", serif' }}>
-                    {selectedRoomType}
-                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#d4af37', fontWeight: 700, letterSpacing: 1, display: 'block', mb: 0.5 }}>{selectedBranch} Branch</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 800, mt: 0, mb: 2, color: '#1a1a2e', fontFamily: '"Playfair Display", serif' }}>
+                      {selectedRoomType}
+                    </Typography>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, color: 'text.secondary' }}>
                     <MeetingRoomIcon sx={{ mr: 1.5, color: '#4facfe' }} fontSize="small" />
