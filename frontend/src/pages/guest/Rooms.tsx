@@ -307,8 +307,18 @@ const Rooms: React.FC = () => {
         <Collapse in={showFilters}>
           <Paper elevation={2} sx={{ p: 4, mt: 2, borderRadius: 3, bgcolor: 'white' }}>
             <Grid container spacing={4}>
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Typography variant="caption" color="text.secondary" gutterBottom>Room Type</Typography>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" gutterBottom>Branch</Typography>
+                  <TextField select fullWidth size="small" value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)}>
+                    <MenuItem value="All">All Branches</MenuItem>
+                    <MenuItem value="Colombo">Colombo</MenuItem>
+                    <MenuItem value="Kandy">Kandy</MenuItem>
+                    <MenuItem value="Galle">Galle</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" gutterBottom>Room Type</Typography>
                 <TextField select fullWidth size="small" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                   <MenuItem value="All">All Types</MenuItem>
                   {uniqueTypes.map(type => (
