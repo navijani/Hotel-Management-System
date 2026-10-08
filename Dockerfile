@@ -10,8 +10,10 @@ RUN npm ci
 
 # Copy frontend source code and build
 COPY frontend/ ./
-ARG VITE_API_URL=""
+ARG VITE_API_URL="https://hotel-management-system-zjeb.onrender.com"
+ARG VITE_BASE_PATH="/"
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
 RUN npm run build
 
 # ==========================================
