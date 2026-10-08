@@ -17,7 +17,7 @@ import {
 import InventoryIcon from '@mui/icons-material/Inventory';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api';
 const staffSessionKey = 'hmsStaffSession';
 
 type StaffSession = {
