@@ -53,7 +53,7 @@ const StaffGuard: React.FC<{ role: string; children: ReactNode }> = ({ role, chi
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           {/* Website Routes with Top Navigation */}
           <Route path="/" element={<GuestLayout />}>
