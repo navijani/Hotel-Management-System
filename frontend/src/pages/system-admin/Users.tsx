@@ -44,7 +44,7 @@ const Users: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get<StaffUser[]>('http://localhost:5000/api/staff');
+      const response = await axios.get<StaffUser[]>('/api/staff');
       setUsers(response.data);
     } catch {
       setError('Unable to load users from database.');
@@ -80,7 +80,7 @@ const Users: React.FC = () => {
     setAddError('');
 
     try {
-      await axios.post('http://localhost:5000/api/staff', {
+      await axios.post('/api/staff', {
         username: newUsername.trim(),
         password: newPassword,
         role: newRole,
@@ -104,7 +104,7 @@ const Users: React.FC = () => {
     if (!deleteTarget) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/staff/${deleteTarget.id}`);
+      await axios.delete(`/api/staff/${deleteTarget.id}`);
       setSuccess(`User "${deleteTarget.username}" removed successfully.`);
       setDeleteTarget(null);
       await fetchUsers();

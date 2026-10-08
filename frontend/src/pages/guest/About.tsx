@@ -8,11 +8,11 @@ const About: React.FC = () => {
   return (
     <Box sx={{ pt: { xs: 12, md: 16 }, pb: 8, bgcolor: '#f8fafc', minHeight: '100vh' }}>
       <Container maxWidth="lg">
-        <Typography 
-          variant="h2" 
-          align="center" 
+        <Typography
+          variant="h2"
+          align="center"
           gutterBottom
-          sx={{ 
+          sx={{
             fontFamily: '"Playfair Display", serif',
             fontWeight: 800,
             color: '#1a1a1a',
@@ -22,7 +22,7 @@ const About: React.FC = () => {
           About Paradise Resorts
         </Typography>
 
-        <Grid container spacing={6} alignItems="center" sx={{ mb: 8 }}>
+        <Grid container spacing={6} sx={{ alignItems: 'center', mb: 8 }}>
           <Grid size={{ xs: 12, md: 6 }}>
             <Box
               component="img"
@@ -39,20 +39,20 @@ const About: React.FC = () => {
             <Typography variant="h4" gutterBottom sx={{ fontFamily: '"Playfair Display", serif', fontWeight: 600 }}>
               Our Story
             </Typography>
-            <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
+            <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8, mb: 2 }}>
               Founded in 1995, Paradise Resorts began with a simple vision: to create a sanctuary where luxury meets nature. Over the decades, we have grown from a single boutique hotel to a collection of award-winning resorts across the most breathtaking locations.
             </Typography>
-            <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
+            <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8, mb: 2 }}>
               Our commitment to exceptional hospitality, sustainable practices, and creating unforgettable experiences remains the cornerstone of everything we do. We believe in anticipating your needs and exceeding your expectations.
             </Typography>
           </Grid>
         </Grid>
 
-        <Typography 
-          variant="h3" 
-          align="center" 
+        <Typography
+          variant="h3"
+          align="center"
           gutterBottom
-          sx={{ 
+          sx={{
             fontFamily: '"Playfair Display", serif',
             fontWeight: 700,
             color: '#1a1a1a',

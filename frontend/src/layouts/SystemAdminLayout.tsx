@@ -63,7 +63,7 @@ const SystemAdminLayout: React.FC = () => {
           const isActive = location.pathname === item.path || (item.path !== '/system-admin' && location.pathname.startsWith(item.path));
           return (
             <ListItem disablePadding sx={{ mb: 1 }} key={item.text}>
-              <ListItemButton 
+              <ListItemButton
                 onClick={() => navigate(item.path)}
                 sx={{
                   borderRadius: 2,
@@ -79,12 +79,12 @@ const SystemAdminLayout: React.FC = () => {
                 <ListItemIcon sx={{ color: isActive ? '#4facfe' : 'inherit', minWidth: 40 }}>
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary={
                     <Typography sx={{ fontWeight: isActive ? 600 : 400 }}>
                       {item.text}
                     </Typography>
-                  } 
+                  }
                 />
               </ListItemButton>
             </ListItem>
@@ -92,14 +92,14 @@ const SystemAdminLayout: React.FC = () => {
         })}
       </List>
       <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2 }}>
-         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mb: 2 }} />
-         <ListItemButton 
-            onClick={() => navigate('/')}
-            sx={{ borderRadius: 2, color: '#a0a0b0', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: '#fff' } }}
-          >
-            <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><LogoutIcon /></ListItemIcon>
-            <ListItemText primary="Back to Site" />
-          </ListItemButton>
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mb: 2 }} />
+        <ListItemButton
+          onClick={() => navigate('/')}
+          sx={{ borderRadius: 2, color: '#a0a0b0', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: '#fff' } }}
+        >
+          <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><LogoutIcon /></ListItemIcon>
+          <ListItemText primary="Back to Site" />
+        </ListItemButton>
       </Box>
     </Box>
   );
@@ -165,10 +165,10 @@ const SystemAdminLayout: React.FC = () => {
       </Box>
       <Box
         component="main"
-        sx={{ 
-          flexGrow: 1, 
-          p: 4, 
-          width: { sm: `calc(100% - ${drawerWidth}px)` }, 
+        sx={{
+          flexGrow: 1,
+          p: 4,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: 8,
           bgcolor: '#f4f6f8',
           minHeight: '100vh'

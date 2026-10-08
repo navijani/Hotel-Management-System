@@ -13,14 +13,14 @@ import {
   Divider,
   TextField
 } from '@mui/material';
-import { 
-  ArrowRightAlt, 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Email, 
-  Phone, 
-  LocationOn 
+import {
+  ArrowRightAlt,
+  Facebook,
+  Twitter,
+  Instagram,
+  Email,
+  Phone,
+  LocationOn
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 
@@ -122,11 +122,11 @@ const GuestLayout: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#ffffff' }}>
       <CssBaseline />
-      <AppBar 
-        position="fixed" 
+      <AppBar
+        position="fixed"
         elevation={scrolled ? 8 : 0}
-        sx={{ 
-          bgcolor: scrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.8)', 
+        sx={{
+          bgcolor: scrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.8)',
           backdropFilter: 'blur(25px)',
           color: 'text.primary',
           borderBottom: scrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
@@ -137,18 +137,18 @@ const GuestLayout: React.FC = () => {
         }}
       >
         <Container maxWidth="xl">
-          <Toolbar sx={{ 
-            minHeight: scrolled ? '65px' : '80px', 
+          <Toolbar sx={{
+            minHeight: scrolled ? '65px' : '80px',
             transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
             px: { xs: 0, md: 2 }
           }}>
-            <Typography 
-              variant="h4" 
-              component="div" 
-              sx={{ 
-                flexGrow: 1, 
-                cursor: 'pointer', 
-                fontWeight: 800, 
+            <Typography
+              variant="h4"
+              component="div"
+              sx={{
+                flexGrow: 1,
+                cursor: 'pointer',
+                fontWeight: 800,
                 fontFamily: '"Playfair Display", serif',
                 letterSpacing: '1.5px',
                 color: '#1a1a1a',
@@ -160,22 +160,22 @@ const GuestLayout: React.FC = () => {
               }}
               onClick={() => navigate('/')}
             >
-              <Box component="span" sx={{ 
-                color: '#d4af37', 
+              <Box component="span" sx={{
+                color: '#d4af37',
                 mr: 1,
                 textShadow: scrolled ? 'none' : '1px 1px 2px rgba(0,0,0,0.05)'
               }}>
                 Paradise
-              </Box> 
+              </Box>
               <Box component="span" sx={{ fontWeight: 400 }}>Resorts</Box>
             </Typography>
-            
+
             <Box sx={{ display: 'flex', gap: { xs: 2, md: 5 }, alignItems: 'center' }}>
-              
-              <Button 
+
+              <Button
                 onClick={() => navigate('/rooms')}
-                sx={{ 
-                  ...navItemStyle, 
+                sx={{
+                  ...navItemStyle,
                   color: location.pathname === '/rooms' ? '#d4af37' : navItemStyle.color,
                   '&::after': {
                     ...navItemStyle['&::after'],
@@ -186,7 +186,7 @@ const GuestLayout: React.FC = () => {
                 Rooms
               </Button>
               {!isSignedIn ? (
-                <Button 
+                <Button
                   onClick={() => navigate('/signin')}
                   sx={navItemStyle}
                 >
@@ -194,13 +194,13 @@ const GuestLayout: React.FC = () => {
                 </Button>
               ) : (
                 <>
-                  <Button 
+                  <Button
                     onClick={() => navigate('/profile')}
                     sx={navItemStyle}
                   >
                     Profile
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleLogout}
                     sx={navItemStyle}
                   >
@@ -208,17 +208,17 @@ const GuestLayout: React.FC = () => {
                   </Button>
                 </>
               )}
-              <Button 
+              <Button
                 onClick={() => navigate('/portal')}
                 sx={navItemStyle}
               >
                 Staff
               </Button>
-              <Button 
+              <Button
                 variant="contained"
                 onClick={handleBookNow}
                 endIcon={<ArrowRightAlt sx={{ transition: 'transform 0.3s', ml: 0.5 }} />}
-                sx={{ 
+                sx={{
                   background: 'linear-gradient(45deg, #111111 30%, #333333 90%)',
                   color: 'white',
                   borderRadius: '0px',
@@ -249,18 +249,18 @@ const GuestLayout: React.FC = () => {
           </Toolbar>
         </Container>
       </AppBar>
-      
+
       <Box component="main" sx={{ flexGrow: 1 }}>
         <Outlet />
       </Box>
-      
+
       <Box component="footer" sx={{ bgcolor: '#111111', color: '#f8fafc', pt: { xs: 8, md: 10 }, pb: 4, mt: 'auto', borderTop: '2px solid #d4af37' }}>
         <Container maxWidth="xl">
           <Grid container spacing={6} sx={{ mb: 6 }}>
             {/* Brand Column */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"Playfair Display", serif', letterSpacing: '1px', mb: 3 }}>
-                <Box component="span" sx={{ color: '#d4af37', mr: 1 }}>Paradise</Box> 
+                <Box component="span" sx={{ color: '#d4af37', mr: 1 }}>Paradise</Box>
                 <Box component="span" sx={{ fontWeight: 400 }}>Resorts</Box>
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.7, mb: 4, lineHeight: 1.8, maxWidth: '90%' }}>
@@ -311,19 +311,19 @@ const GuestLayout: React.FC = () => {
                 Subscribe to our newsletter for exclusive offers, travel inspiration, and the latest resort news.
               </Typography>
               <Box component="form" sx={{ display: 'flex', gap: 1 }}>
-                <TextField 
-                  variant="outlined" 
-                  size="small" 
-                  placeholder="Your email address" 
+                <TextField
+                  variant="outlined"
+                  size="small"
+                  placeholder="Your email address"
                   fullWidth
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.05)', 
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.05)',
                     borderRadius: 0,
                     '& input': { color: '#fff', fontSize: '0.9rem' },
                     '& fieldset': { borderColor: 'rgba(212,175,55,0.3)', borderRadius: 0 },
                     '&:hover fieldset': { borderColor: '#d4af37 !important' },
                     '&.Mui-focused fieldset': { borderColor: '#d4af37 !important' }
-                  }} 
+                  }}
                 />
                 <Button variant="contained" sx={{ bgcolor: '#d4af37', color: '#1a1a1a', borderRadius: 0, fontWeight: 'bold', '&:hover': { bgcolor: '#e5c158' } }}>
                   SUBSCRIBE
@@ -333,7 +333,7 @@ const GuestLayout: React.FC = () => {
           </Grid>
 
           <Divider sx={{ borderColor: 'rgba(212,175,55,0.2)', mb: 3 }} />
-          
+
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
             <Typography variant="caption" sx={{ opacity: 0.6 }}>
               © {new Date().getFullYear()} Paradise Resorts. All rights reserved.

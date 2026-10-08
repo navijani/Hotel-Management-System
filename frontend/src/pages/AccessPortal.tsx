@@ -34,7 +34,7 @@ const AccessPortal: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/staff/signin', { username: email.trim(), password, role });
+      const response = await axios.post('/api/staff/signin', { username: email.trim(), password, role });
       sessionStorage.setItem('staffRole', role);
       sessionStorage.setItem('staffId', String(response.data.staff_id || response.data.id));
       sessionStorage.setItem('staffProfile', JSON.stringify(response.data));
@@ -51,11 +51,11 @@ const AccessPortal: React.FC = () => {
   };
 
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh', 
-        pt: { xs: 14, md: 18 }, 
-        pb: { xs: 8, md: 12 }, 
+    <Box
+      sx={{
+        minHeight: '100vh',
+        pt: { xs: 14, md: 18 },
+        pb: { xs: 8, md: 12 },
         bgcolor: '#f8f9fa',
         display: 'flex',
         alignItems: 'center',
@@ -64,10 +64,10 @@ const AccessPortal: React.FC = () => {
       }}
     >
       <Container maxWidth="sm">
-        <Card 
-          sx={{ 
-            borderRadius: 4, 
-            border: '1px solid #e0d6bd', 
+        <Card
+          sx={{
+            borderRadius: 4,
+            border: '1px solid #e0d6bd',
             boxShadow: '0 16px 40px rgba(0, 0, 0, 0.08)',
             overflow: 'hidden'
           }}
@@ -90,10 +90,10 @@ const AccessPortal: React.FC = () => {
             </Typography>
 
             <Stack component="form" spacing={3} onSubmit={handleStaffSubmit}>
-              <TextField 
-                select 
-                label="Staff Role / Department" 
-                value={role} 
+              <TextField
+                select
+                label="Staff Role / Department"
+                value={role}
                 onChange={(event) => setRole(event.target.value as StaffRole)}
                 fullWidth
               >
@@ -104,35 +104,35 @@ const AccessPortal: React.FC = () => {
                 ))}
               </TextField>
 
-              <TextField 
-                label="Username or Email" 
-                type="text" 
-                value={email} 
-                onChange={(event) => setEmail(event.target.value)} 
+              <TextField
+                label="Username or Email"
+                type="text"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 fullWidth
                 required
               />
 
-              <TextField 
-                label="Password" 
-                type="password" 
-                value={password} 
-                onChange={(event) => setPassword(event.target.value)} 
+              <TextField
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 fullWidth
                 required
               />
 
               {error && <Alert severity="error">{error}</Alert>}
 
-              <Button 
-                type="submit" 
-                variant="contained" 
+              <Button
+                type="submit"
+                variant="contained"
                 size="large"
                 disabled={loading}
                 startIcon={<LockOutlinedIcon />}
-                sx={{ 
+                sx={{
                   py: 1.5,
-                  bgcolor: '#d4af37', 
+                  bgcolor: '#d4af37',
                   color: '#1a1a1a',
                   fontWeight: 700,
                   fontSize: '1rem',

@@ -58,6 +58,7 @@ function App() {
           {/* Website Routes with Top Navigation */}
           <Route path="/" element={<GuestLayout />}>
             <Route index element={<Home />} />
+            <Route path="about" element={<About />} />
             <Route path="rooms" element={<Rooms />} />
             <Route path="book" element={<Book />} />
             <Route path="portal" element={<AccessPortal />} />
@@ -85,7 +86,7 @@ function App() {
           <Route path="/billing-preview" element={<BillingOverview />} />
           <Route path="/invoice-preview" element={<BillingInvoice />} />
           <Route path="/revenue-preview" element={<BillingRevenue />} />
-          
+
           {/* System Admin Panel Routes */}
           <Route path="/system-admin" element={<AdminGuard><SystemAdminLayout /></AdminGuard>}>
             <Route index element={<SystemDashboard />} />

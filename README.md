@@ -101,6 +101,23 @@ The backend currently exposes the following endpoints:
 
 ## 💳 Payment Testing
 
+PayHere does not authorize requests from an unregistered `localhost` origin, and its
+`notify_url` must be publicly reachable. For local testing, register the public
+frontend URL in the PayHere Merchant Portal, use the Merchant Secret generated for
+that URL, and expose the backend through a tunnel as well. Then create
+`frontend/.env.local` with:
+
+```env
+VITE_PAYHERE_RETURN_URL=https://your-public-frontend.example/book
+VITE_PAYHERE_CANCEL_URL=https://your-public-frontend.example/book
+VITE_PAYHERE_NOTIFY_URL=https://your-public-backend.example/api/bookings/payhere-notify
+```
+
+Restart Vite after changing these values. `PAYHERE_MERCHANT_ID` is account-wide, but
+`PAYHERE_MERCHANT_KEY` must be the Merchant Secret for the registered frontend domain.
+The frontend uses the sandbox flag from the backend, so use sandbox credentials while
+testing and the matching sandbox payment cards below.
+
 Use the sandbox payment cards below to simulate different payment outcomes during testing.
 
 > For the cardholder name, CVV, and expiry date, any valid test values will work.

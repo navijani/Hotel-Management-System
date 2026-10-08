@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
 
   const loadStaff = async () => {
     try {
-      const response = await axios.get<StaffMember[]>('http://localhost:5000/api/staff');
+      const response = await axios.get<StaffMember[]>('/api/staff');
       setStaff(response.data);
     } catch {
       setError('Unable to load staff accounts.');
@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
 
   const handleRemoveStaff = async (id: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/staff/${id}`);
+      await axios.delete(`/api/staff/${id}`);
       await loadStaff();
     } catch {
       setError('Unable to remove staff member.');

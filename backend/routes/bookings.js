@@ -1,7 +1,43 @@
 import express from 'express';
+import crypto from 'crypto';
+
 const router = express.Router();
 
 export default function (pool, bookingRateLimit) {
+  // POST /api/bookings/payhere-hash
+  router.post('/payhere-hash', (req, res) => {
+    try {
+      const { order_id, amount, currency } = req.body;
+      const merchant_id = String(process.env.PAYHERE_MERCHANT_ID || '').trim();
+      const merchant_key = String(process.env.PAYHERE_MERCHANT_KEY || '').trim();
+      const isSandbox = process.env.PAYHERE_SANDBOX ? process.env.PAYHERE_SANDBOX !== 'false' : true;
+
+      if (!merchant_id || !merchant_key) {
+        return res.status(500).json({ error: 'PayHere credentials missing in environment variables (PAYHERE_MERCHANT_ID / PAYHERE_MERCHANT_KEY).' });
+      }
+
+      const orderIdStr = String(order_id || `RESORT_${Date.now()}`);
+      const currStr = String(currency || 'LKR').trim();
+      const amountFormatted = Number(amount || 0).toFixed(2);
+
+      const hashedKey = crypto.createHash('md5').update(merchant_key).digest('hex').toUpperCase();
+      const hashData = merchant_id + orderIdStr + amountFormatted + currStr + hashedKey;
+      const hash = crypto.createHash('md5').update(hashData).digest('hex').toUpperCase();
+
+      res.json({
+        merchant_id,
+        hash,
+        amount: amountFormatted,
+        currency: currStr,
+        order_id: orderIdStr,
+        sandbox: isSandbox
+      });
+    } catch (error) {
+      console.error('PayHere hash error:', error);
+      res.status(500).json({ error: error.message || 'Failed to generate PayHere hash.' });
+    }
+  });
+
   // POST /api/bookings
   router.post('/', bookingRateLimit, async (req, res) => {
     try {
@@ -17,7 +53,7 @@ export default function (pool, bookingRateLimit) {
 
         let guestId;
         const [existingGuest] = await connection.query(
-          'SELECT guest_id FROM GUEST WHERE identity_number = ?',
+          'SELECT guest_id FROM guest WHERE identity_number = ?',
           [identificationNo]
         );
 
@@ -25,7 +61,7 @@ export default function (pool, bookingRateLimit) {
           guestId = existingGuest[0].guest_id;
         } else {
           const [guestResult] = await connection.query(
-            'INSERT INTO GUEST (first_name, last_name, email, phone_number, identity_number) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO guest (first_name, last_name, email, phone_number, identity_number) VALUES (?, ?, ?, ?, ?)',
             [firstName, lastName, email, phone, identificationNo]
           );
           guestId = guestResult.insertId;
@@ -41,7 +77,7 @@ export default function (pool, bookingRateLimit) {
             `SELECT room_id FROM Room r 
              WHERE type = ? 
              AND NOT EXISTS (
-                SELECT 1 FROM BOOKING b 
+                SELECT 1 FROM Booking b 
                 WHERE b.room_id = r.room_id 
                 AND b.booking_status IN ('Booked', 'Checked-In')
                 AND (b.check_in_date < ? AND b.check_out_date > ?)
@@ -55,7 +91,7 @@ export default function (pool, bookingRateLimit) {
         } else {
           // Verify the specific room is not already booked for these dates
           const [overlap] = await connection.query(
-            `SELECT 1 FROM BOOKING 
+            `SELECT 1 FROM Booking 
              WHERE room_id = ? 
              AND booking_status IN ('Booked', 'Checked-In')
              AND (check_in_date < ? AND check_out_date > ?) LIMIT 1`,
@@ -67,7 +103,7 @@ export default function (pool, bookingRateLimit) {
         }
 
         const [bookingResult] = await connection.query(
-          'INSERT INTO BOOKING (guest_id, room_id, check_in_date, check_out_date, booking_status) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO Booking (guest_id, room_id, check_in_date, check_out_date, booking_status) VALUES (?, ?, ?, ?, ?)',
           [guestId, assignedRoomId, checkInDate, checkOutDate, 'Booked']
         );
 
