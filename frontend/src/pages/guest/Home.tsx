@@ -294,7 +294,7 @@ const Home: React.FC = () => {
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
-            <source src="/videos/hero-video.mp4?v=2" type="video/mp4" />
+            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
           </video>
 
           {/* Modern Gradient Overlay */}

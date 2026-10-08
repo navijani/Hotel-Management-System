@@ -209,12 +209,6 @@ const GuestLayout: React.FC = () => {
                 </>
               )}
               <Button
-                onClick={() => navigate('/portal')}
-                sx={navItemStyle}
-              >
-                Staff
-              </Button>
-              <Button
                 variant="contained"
                 onClick={handleBookNow}
                 endIcon={<ArrowRightAlt sx={{ transition: 'transform 0.3s', ml: 0.5 }} />}
