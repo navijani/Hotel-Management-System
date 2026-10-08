@@ -108,7 +108,7 @@ const GuestLayout: React.FC = () => {
       return;
     }
 
-    navigate('/?panel=auth&mode=choice');
+    navigate('/signup');
   };
 
   const handleLogout = () => {
