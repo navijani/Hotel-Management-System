@@ -170,12 +170,17 @@ const Book: React.FC = () => {
         throw new Error('PayHere Payment SDK is loading... Please ensure payhere.js is loaded.');
       }
 
+      const basePath = import.meta.env.VITE_BASE_PATH || '/';
+      const normalizedBase = basePath.endsWith('/') ? basePath : basePath + '/';
+      const originUrl = window.location.origin + normalizedBase;
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+
       const payment = {
         sandbox: hashRes.data.sandbox !== undefined ? hashRes.data.sandbox : true,
         merchant_id: hashRes.data.merchant_id,
-        return_url: import.meta.env.VITE_PAYHERE_RETURN_URL || window.location.origin + '/book',
-        cancel_url: import.meta.env.VITE_PAYHERE_CANCEL_URL || window.location.origin + '/book',
-        notify_url: import.meta.env.VITE_PAYHERE_NOTIFY_URL || window.location.origin + '/api/bookings/payhere-notify',
+        return_url: import.meta.env.VITE_PAYHERE_RETURN_URL || originUrl + 'book',
+        cancel_url: import.meta.env.VITE_PAYHERE_CANCEL_URL || originUrl + 'book',
+        notify_url: import.meta.env.VITE_PAYHERE_NOTIFY_URL || apiUrl + '/api/bookings/payhere-notify',
         order_id: orderId,
         items: `Resort Room Booking - ${selectedRoomType}`,
         amount: hashRes.data.amount,

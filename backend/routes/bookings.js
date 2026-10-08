@@ -12,10 +12,6 @@ export default function (pool, bookingRateLimit) {
       const merchant_key = String(process.env.PAYHERE_MERCHANT_KEY || '').trim();
       const isSandbox = process.env.PAYHERE_SANDBOX ? process.env.PAYHERE_SANDBOX !== 'false' : true;
 
-      if (!merchant_id || !merchant_key) {
-        return res.status(500).json({ error: 'PayHere credentials missing in environment variables (PAYHERE_MERCHANT_ID / PAYHERE_MERCHANT_KEY).' });
-      }
-
       const orderIdStr = String(order_id || `RESORT_${Date.now()}`);
       const currStr = String(currency || 'LKR').trim();
       const amountFormatted = Number(amount || 0).toFixed(2);
