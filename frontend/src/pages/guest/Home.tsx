@@ -93,7 +93,7 @@ const Home: React.FC = () => {
     if (isSignedIn) {
       navigate('/rooms');
     } else {
-      openAuthPanel('signin');
+      navigate('/signup');
     }
   };
 
@@ -209,7 +209,7 @@ const Home: React.FC = () => {
       return;
     }
 
-    openAuthPanel('signin');
+    navigate('/signup');
   };
 
   const heroActionButtonSx = {
@@ -513,29 +513,6 @@ const Home: React.FC = () => {
                   >
                     Explore More
                   </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={() => openAuthPanel('signup')}
-                    sx={{
-                      ...heroActionButtonSx,
-                      order: -1,
-                      flexBasis: '100%',
-                      px: 4,
-                      color: '#d4af37',
-                      borderColor: 'rgba(212, 175, 55, 0.6)',
-                      borderWidth: '2px',
-                      bgcolor: 'rgba(212, 175, 55, 0.08)',
-                      '&:hover': {
-                        borderWidth: '2px',
-                        borderColor: '#d4af37',
-                        bgcolor: 'rgba(212, 175, 55, 0.18)',
-                        transform: 'translateY(-4px)'
-                      }
-                    }}
-                  >
-                    Sign Up
-                  </Button>
                 </Box>
               </Box>
 
@@ -639,18 +616,12 @@ const Home: React.FC = () => {
                         <Button type="submit" variant="contained" size="large" disabled={isSigningIn} sx={{ ...heroActionButtonSx, px: 5, background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a1a', boxShadow: '0 8px 25px -8px #d4af37' }}>
                           {isSigningIn ? 'Signing in...' : 'Sign In'}
                         </Button>
-                        <Button type="button" variant="outlined" size="large" onClick={() => openAuthPanel('signup')} sx={{ ...heroActionButtonSx, px: 4, color: 'white', borderColor: 'rgba(255,255,255,0.45)', borderWidth: '2px' }}>
-                          Sign Up
-                        </Button>
                       </Box>
                     </Box>
                   ) : (
                     <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', animation: 'fadeInUp 0.6s ease-out' }}>
                       <Button variant="contained" size="large" onClick={() => openAuthPanel('signin')} sx={{ ...heroActionButtonSx, px: 5, background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a1a', boxShadow: '0 8px 25px -8px #d4af37' }}>
                         Sign In
-                      </Button>
-                      <Button variant="outlined" size="large" onClick={() => openAuthPanel('signup')} sx={{ ...heroActionButtonSx, px: 4, color: 'white', borderColor: 'rgba(255,255,255,0.45)', borderWidth: '2px' }}>
-                        Sign Up
                       </Button>
                     </Box>
                   )}
