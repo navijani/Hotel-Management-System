@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -41,6 +42,7 @@ interface GuestUser {
 }
 
 const Profile: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<GuestUser>(() => {
     const rawProfile = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
     if (rawProfile) {
@@ -275,7 +277,7 @@ const Profile: React.FC = () => {
                 </Typography>
                 <Button
                   variant="contained"
-                  href="/rooms"
+                  onClick={() => navigate('/rooms')}
                   sx={{ mt: 2, borderRadius: 8, bgcolor: '#d4af37', color: '#fff', textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#b89628' } }}
                 >
                   Book a Room Now
