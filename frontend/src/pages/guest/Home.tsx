@@ -294,7 +294,7 @@ const Home: React.FC = () => {
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
-            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
+            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4?v=2`} type="video/mp4" />
           </video>
 
           {/* Modern Gradient Overlay */}
@@ -868,9 +868,9 @@ const Home: React.FC = () => {
           </Typography>
           <Grid container spacing={4}>
             {[
-              { name: 'Colombo', img: '/images/colombo.jpg' },
-              { name: 'Kandy', img: '/images/kandy.jpg' },
-              { name: 'Galle', img: '/images/galle.jpg' }
+              { name: 'Colombo', img: `${import.meta.env.BASE_URL}images/colombo.jpg` },
+              { name: 'Kandy', img: `${import.meta.env.BASE_URL}images/kandy.jpg` },
+              { name: 'Galle', img: `${import.meta.env.BASE_URL}images/galle.jpg` }
             ].map((branch, index) => (
               <Grid key={index} size={{ xs: 12, md: 4 }}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.3s', '&:hover': { transform: 'scale(1.02)' } }}>
@@ -908,9 +908,9 @@ const Home: React.FC = () => {
         </Typography>
         <Grid container spacing={4}>
           {[
-            { title: 'Fine Dining', img: '/images/fine_dining.jpg', desc: 'Savor exquisite dishes crafted by world-renowned chefs.' },
-            { title: 'Rooftop Bar', img: '/images/rooftop_bar.jpg', desc: 'Enjoy signature cocktails with panoramic sunset views.' },
-            { title: 'Spa & Wellness', img: '/images/spa_wellness.jpg', desc: 'Rejuvenate your body and mind with our holistic treatments.' }
+            { title: 'Fine Dining', img: `${import.meta.env.BASE_URL}images/fine_dining.jpg`, desc: 'Savor exquisite dishes crafted by world-renowned chefs.' },
+            { title: 'Rooftop Bar', img: `${import.meta.env.BASE_URL}images/rooftop_bar.jpg`, desc: 'Enjoy signature cocktails with panoramic sunset views.' },
+            { title: 'Spa & Wellness', img: `${import.meta.env.BASE_URL}images/spa_wellness.jpg`, desc: 'Rejuvenate your body and mind with our holistic treatments.' }
           ].map((exp, index) => (
             <Grid key={index} size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.4s', borderRadius: 4, overflow: 'hidden', '&:hover': { transform: 'translateY(-10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' } }}>
@@ -1030,7 +1030,7 @@ const Home: React.FC = () => {
                     <Box
                       sx={{
                         height: 160,
-                        backgroundImage: `url("${offer.image || '/images/romantic.jpg'}")`,
+                        backgroundImage: `url("${offer.image || `${import.meta.env.BASE_URL}images/romantic.jpg`}")`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         position: 'relative',
@@ -1174,7 +1174,7 @@ const Home: React.FC = () => {
                     sx={{
                       width: { xs: '100%', sm: 200 },
                       height: { xs: 200, sm: 'auto' },
-                      backgroundImage: `url("${offer.image || '/images/romantic.jpg'}")`,
+                      backgroundImage: `url("${offer.image || `${import.meta.env.BASE_URL}images/romantic.jpg`}")`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       position: 'relative'

@@ -111,14 +111,6 @@ const GuestLayout: React.FC = () => {
     navigate('/signup');
   };
 
-  const handleLogout = () => {
-    window.sessionStorage.removeItem('guestSignedIn');
-    window.sessionStorage.removeItem('guestProfile');
-    setIsSignedIn(false);
-    window.dispatchEvent(new Event('guestAuthChanged'));
-    navigate('/');
-  };
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#ffffff' }}>
       <CssBaseline />
@@ -199,12 +191,6 @@ const GuestLayout: React.FC = () => {
                     sx={navItemStyle}
                   >
                     Profile
-                  </Button>
-                  <Button
-                    onClick={handleLogout}
-                    sx={navItemStyle}
-                  >
-                    Sign Out
                   </Button>
                 </>
               )}
