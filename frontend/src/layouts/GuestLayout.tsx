@@ -150,7 +150,7 @@ const GuestLayout: React.FC = () => {
                 transformOrigin: 'left center',
                 transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
-              onClick={() => navigate('/')}
+              onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }}
             >
               <Box component="span" sx={{
                 color: '#d4af37',

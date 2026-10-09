@@ -94,7 +94,7 @@ const SystemAdminLayout: React.FC = () => {
       <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2 }}>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mb: 2 }} />
         <ListItemButton
-          onClick={() => navigate('/')}
+          onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }}
           sx={{ borderRadius: 2, color: '#a0a0b0', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: '#fff' } }}
         >
           <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><LogoutIcon /></ListItemIcon>
