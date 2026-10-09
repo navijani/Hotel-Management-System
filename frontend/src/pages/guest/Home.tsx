@@ -334,6 +334,11 @@ const Home: React.FC = () => {
             muted
             playsInline
             key="hero-video-v3"
+            poster={`${import.meta.env.BASE_URL}images/colombo.jpg`}
+            onError={(e) => {
+              // If video fails, hide it so the poster image remains visible
+              (e.currentTarget as HTMLVideoElement).style.display = 'none';
+            }}
             style={{
               position: 'absolute',
               top: '50%',
@@ -347,7 +352,12 @@ const Home: React.FC = () => {
               filter: 'contrast(1.1) saturate(1.2)'
             }}
           >
-            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4?v=2`} type="video/mp4" />
+            {/* Primary CDN: Luxury resort pool - Pexels (free, no attribution needed) */}
+            <source src="https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_25fps.mp4" type="video/mp4" />
+            {/* Secondary CDN: Luxury hotel interior */}
+            <source src="https://videos.pexels.com/video-files/1739010/1739010-hd_1920_1080_24fps.mp4" type="video/mp4" />
+            {/* Final fallback: local file */}
+            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
           </video>
 
           {/* Modern Gradient Overlay */}
