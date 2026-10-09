@@ -92,15 +92,23 @@ const Home: React.FC = () => {
     setShowWelcomePopup(false);
     setSelectedOffer(null);
 
-    if (offerToBook && offerToBook.room_id) {
-      axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
-        const roomData = res.data;
-        const discountVal = offerToBook.discount || roomData.discount || 0;
-        const originalPrice = Number(roomData.price_per_night || 150);
-        const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+    if (!offerToBook) {
+      navigate('/rooms');
+      return;
+    }
 
-        navigate('/book', {
-          state: {
+    const doNavigateToBook = (bookingState: object) => {
+      navigate('/book', { state: bookingState });
+    };
+
+    const resolveAndNavigate = () => {
+      if (offerToBook.room_id) {
+        axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
+          const roomData = res.data;
+          const discountVal = offerToBook.discount || roomData.discount || 0;
+          const originalPrice = Number(roomData.price_per_night || 150);
+          const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+          const bookingState = {
             room: {
               RoomID: roomData.room_id,
               RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
@@ -112,19 +120,34 @@ const Home: React.FC = () => {
             },
             roomId: offerToBook.room_id,
             roomType: roomData.type || 'Special Offer Room'
-          }
-        });
-      }).catch(() => {
-        navigate('/book', {
-          state: {
+          };
+          doNavigateToBook(bookingState);
+        }).catch(() => {
+          doNavigateToBook({
             roomId: offerToBook.room_id,
             roomType: offerToBook.topic || 'Special Offer Room'
-          }
+          });
         });
-      });
-    } else {
-      navigate('/rooms');
+      } else {
+        navigate('/rooms');
+      }
+    };
+
+    // If user is NOT signed in, save offer as pending intent then redirect to sign-in
+    const signedIn = window.sessionStorage.getItem('guestSignedIn') === 'true';
+    if (!signedIn) {
+      sessionStorage.setItem('pendingBookingIntent', JSON.stringify({
+        offerId: offerToBook.id,
+        room_id: offerToBook.room_id,
+        topic: offerToBook.topic,
+        discount: offerToBook.discount,
+        image: offerToBook.image,
+      }));
+      navigate('/signin');
+      return;
     }
+
+    resolveAndNavigate();
   };
 
 

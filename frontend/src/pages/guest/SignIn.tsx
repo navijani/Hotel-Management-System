@@ -35,6 +35,42 @@ const SignIn: React.FC = () => {
       window.dispatchEvent(new Event('guestAuthChanged'));
       window.dispatchEvent(new Event('authChange'));
 
+      // Check if there is a pending booking intent saved before sign-in
+      const pendingRaw = sessionStorage.getItem('pendingBookingIntent');
+      if (pendingRaw) {
+        sessionStorage.removeItem('pendingBookingIntent');
+        try {
+          const intent = JSON.parse(pendingRaw);
+          if (intent.room_id) {
+            const roomRes = await axios.get(`/api/rooms/${intent.room_id}`);
+            const roomData = roomRes.data;
+            const discountVal = intent.discount || roomData.discount || 0;
+            const originalPrice = Number(roomData.price_per_night || 150);
+            const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+            setTimeout(() => {
+              navigate('/book', {
+                state: {
+                  room: {
+                    RoomID: roomData.room_id,
+                    RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
+                    RoomTypeID: roomData.type || 'Special Offer Room',
+                    Price: finalPrice,
+                    OriginalPrice: originalPrice,
+                    BedType: roomData.bed_type || 'Premium Bedding',
+                    image: roomData.image || (intent.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop'),
+                  },
+                  roomId: intent.room_id,
+                  roomType: roomData.type || 'Special Offer Room',
+                }
+              });
+            }, 800);
+            return;
+          }
+        } catch (_) {
+          // fallback to profile if room fetch fails
+        }
+      }
+
       setTimeout(() => {
         navigate('/profile');
       }, 1000);
