@@ -120,12 +120,17 @@ function App() {
           </Route>
 
           {/* Staff Department Desks */}
+          <Route path="/staff/receptionist/*" element={<Navigate to="/reception" replace />} />
+          <Route path="/staff/receptionist" element={<Navigate to="/reception" replace />} />
           <Route path="/staff/housekeeping" element={<StaffGuard roles={['Housekeeping', 'cleaning']}><HousekeepingStaff /></StaffGuard>} />
           <Route path="/staff/cleaning" element={<StaffGuard roles={['cleaning', 'Housekeeping']}><CleaningStaff /></StaffGuard>} />
           <Route path="/staff/bar" element={<StaffGuard roles={['bar', 'Admin']}><BarKeepingStaff /></StaffGuard>} />
           <Route path="/staff/bar-items" element={<StaffGuard roles={['bar', 'waiter', 'Admin']}><BarItemsStaff /></StaffGuard>} />
           <Route path="/staff/therapist" element={<StaffGuard roles={['therapist']}><TherapistStaff /></StaffGuard>} />
           <Route path="/staff/waiter" element={<StaffGuard roles={['waiter']}><WaiterStaff /></StaffGuard>} />
+
+          {/* Catch-all Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

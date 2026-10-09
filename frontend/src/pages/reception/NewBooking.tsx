@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, TextField, Button, Grid, Paper, Stepper, Step, StepLabel, CircularProgress, Alert,
-  Divider, CardMedia, Chip, MenuItem,
+  Divider, CardMedia, Chip, MenuItem, RadioGroup, FormControlLabel, Radio, FormControl, FormLabel,
 } from '@mui/material';
 import {
   MeetingRoom as MeetingRoomIcon,
@@ -11,6 +11,8 @@ import {
   CreditCard as CreditCardIcon,
   Security as SecurityIcon,
   VerifiedUser as VerifiedUserIcon,
+  LocalAtm as LocalAtmIcon,
+  PointOfSale as PointOfSaleIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -36,10 +38,10 @@ interface RoomRow {
   discount?: number | null;
 }
 
+type PaymentMethodType = 'CASH' | 'CARD' | 'PAYHERE';
+
 const fallbackImage = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop';
 
-// Reception version of the online booking page (Book.tsx): same steps, same PayHere flow,
-// same /api/bookings request. The only difference is that the receptionist picks the room.
 const NewBooking: React.FC = () => {
   const navigate = useNavigate();
 
@@ -48,6 +50,7 @@ const NewBooking: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [payhereOrderId, setPayhereOrderId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('CASH');
   const [rooms, setRooms] = useState<RoomRow[]>([]);
   const [bookedDates, setBookedDates] = useState<{ start: Dayjs; end: Dayjs }[]>([]);
 
@@ -141,6 +144,36 @@ const NewBooking: React.FC = () => {
     return 0;
   };
 
+  // Direct Booking Confirmation for Cash or Physical POS Card
+  const handleDirectPaymentConfirm = async (method: 'CASH' | 'CARD') => {
+    setLoading(true);
+    setError('');
+    const refOrder = `${method}_${Date.now()}`;
+    try {
+      const payload = {
+        ...formData,
+        checkInDate: formData.checkInDate ? formData.checkInDate.format('YYYY-MM-DD') : '',
+        checkOutDate: formData.checkOutDate ? formData.checkOutDate.format('YYYY-MM-DD') : '',
+        paymentStatus: 'PAID',
+        paymentMethod: method === 'CASH' ? 'Cash' : 'Card',
+        payhereOrderId: refOrder,
+      };
+
+      const response = await axios.post('/api/bookings', payload);
+      setSuccess(String(response.data.bookingId));
+      setPayhereOrderId(refOrder);
+      setActiveStep(3);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error || 'Failed to save booking. Please try again.');
+      } else {
+        setError('Failed to save booking. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Confirm booking ONLY after PayHere payment passes
   const confirmBookingWithPayment = async (orderId: string) => {
     setLoading(true);
@@ -151,6 +184,7 @@ const NewBooking: React.FC = () => {
         checkInDate: formData.checkInDate ? formData.checkInDate.format('YYYY-MM-DD') : '',
         checkOutDate: formData.checkOutDate ? formData.checkOutDate.format('YYYY-MM-DD') : '',
         paymentStatus: 'PAID',
+        paymentMethod: 'Online',
         payhereOrderId: orderId,
       };
 
@@ -182,7 +216,6 @@ const NewBooking: React.FC = () => {
       setLoading(true);
       const orderId = 'RESORT_' + Date.now();
 
-      // Request PayHere Hash from backend
       const hashRes = await axios.post('/api/bookings/payhere-hash', {
         order_id: orderId,
         amount: totalAmount,
@@ -213,31 +246,35 @@ const NewBooking: React.FC = () => {
         country: 'Sri Lanka',
       };
 
-      // Official PayHere Callbacks
       window.payhere.onCompleted = function onCompleted(completedOrderId: string) {
-        console.log('PayHere payment completed successfully. OrderID:', completedOrderId);
         confirmBookingWithPayment(completedOrderId || orderId);
       };
 
       window.payhere.onDismissed = function onDismissed() {
-        console.log('PayHere payment window dismissed.');
-        setError('PayHere Payment was cancelled. Booking was not completed until payment passes.');
+        setError('PayHere Payment was cancelled.');
         setLoading(false);
       };
 
       window.payhere.onError = function onError(payhereErr: any) {
-        console.error('PayHere Payment Error:', payhereErr);
         setError('PayHere Payment Error: ' + (typeof payhereErr === 'string' ? payhereErr : JSON.stringify(payhereErr)));
         setLoading(false);
       };
 
-      // Launch Official PayHere Sandbox SDK Popup
       window.payhere.startPayment(payment);
     } catch (err: any) {
-      console.error('PayHere initiation error:', err);
       const msg = err.response?.data?.error || err.message || 'Failed to initialize PayHere gateway.';
       setError(msg);
       setLoading(false);
+    }
+  };
+
+  const handlePaymentSubmit = () => {
+    if (paymentMethod === 'CASH') {
+      void handleDirectPaymentConfirm('CASH');
+    } else if (paymentMethod === 'CARD') {
+      void handleDirectPaymentConfirm('CARD');
+    } else {
+      void handlePayHereCheckout();
     }
   };
 
@@ -246,10 +283,11 @@ const NewBooking: React.FC = () => {
     setSuccess('');
     setPayhereOrderId('');
     setError('');
+    setPaymentMethod('CASH');
     setActiveStep(0);
   };
 
-  const steps = ['Guest Details', 'Room & Dates', 'PayHere Payment', 'Confirmation'];
+  const steps = ['Guest Details', 'Room & Dates', 'Payment Method', 'Confirmation'];
   const nights = formData.checkOutDate && formData.checkInDate ? formData.checkOutDate.diff(formData.checkInDate, 'day') : 0;
 
   return (
@@ -309,14 +347,14 @@ const NewBooking: React.FC = () => {
           </Paper>
         </Grid>
 
-        {/* Right Column: Booking & PayHere Workflow */}
+        {/* Right Column: Booking Workflow */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, boxShadow: '0 12px 40px rgba(0,0,0,0.06)' }}>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1, fontFamily: '"Playfair Display", serif' }}>
-              Reception Booking & PayHere Payment
+              Reception Desk Booking
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 4 }}>
-              Complete the steps below. Booking is finalized ONLY after successful PayHere payment verification.
+              Register new guest bookings and process payments via Cash, POS Card Terminal, or PayHere Gateway.
             </Typography>
 
             <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 5 }}>
@@ -392,7 +430,7 @@ const NewBooking: React.FC = () => {
                       const price = Math.round(Number(room.price_per_night) * (100 - Number(room.discount || 0)) / 100);
                       return (
                         <MenuItem key={room.room_id} value={room.room_id}>
-                          {room.room_number} - {room.type} - ${price}/night - {room.status}
+                          Room {room.room_number} - {room.type} (${price}/night) [{room.status}]
                         </MenuItem>
                       );
                     })}
@@ -467,23 +505,23 @@ const NewBooking: React.FC = () => {
                       '&:hover': { background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)' },
                     }}
                   >
-                    Proceed to PayHere Payment
+                    Proceed to Payment Method
                   </Button>
                 </Box>
               </Box>
             )}
 
-            {/* Step 2: PayHere Official Sandbox Gateway */}
+            {/* Step 2: Select Payment Method */}
             {activeStep === 2 && (
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <PaymentIcon sx={{ color: '#d4af37', fontSize: 32 }} />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
-                      Step 3: Official PayHere Payment Gateway
+                      Step 3: Select Payment Method
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Resort booking is strictly finalized ONLY after successful payment verification.
+                      Select how the guest is settling the booking fee at reception.
                     </Typography>
                   </Box>
                 </Box>
@@ -513,29 +551,143 @@ const NewBooking: React.FC = () => {
                   </Grid>
                 </Paper>
 
-                {/* PayHere Sandbox Credentials Guidance */}
-                <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: '#f0f7ff', border: '1px solid #b3d7ff', borderRadius: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <SecurityIcon sx={{ color: '#0066cc' }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#004085' }}>
-                      PayHere Official Sandbox Test Cards (Use in PayHere Popup):
-                    </Typography>
-                  </Box>
-                  <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Visa Test Card</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>4532 0000 0000 0000</Typography>
+                {/* Payment Options Selection */}
+                <FormControl component="fieldset" sx={{ width: '100%', mb: 4 }}>
+                  <FormLabel component="legend" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 2 }}>
+                    Reception Settlement Option
+                  </FormLabel>
+                  <RadioGroup
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodType)}
+                  >
+                    <Paper
+                      elevation={0}
+                      onClick={() => setPaymentMethod('CASH')}
+                      sx={{
+                        p: 2.5,
+                        mb: 2,
+                        borderRadius: 3,
+                        border: '2px solid',
+                        borderColor: paymentMethod === 'CASH' ? '#10b981' : '#e2e8f0',
+                        bgcolor: paymentMethod === 'CASH' ? '#f0fdf4' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <FormControlLabel
+                        value="CASH"
+                        control={<Radio color="success" />}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
+                            <LocalAtmIcon sx={{ color: '#10b981', fontSize: 28 }} />
+                            <Box>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+                                Cash Payment
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                Receive physical cash directly at the front desk counter.
+                              </Typography>
+                            </Box>
+                          </Box>
+                        }
+                        sx={{ width: '100%', m: 0 }}
+                      />
+                    </Paper>
+
+                    <Paper
+                      elevation={0}
+                      onClick={() => setPaymentMethod('CARD')}
+                      sx={{
+                        p: 2.5,
+                        mb: 2,
+                        borderRadius: 3,
+                        border: '2px solid',
+                        borderColor: paymentMethod === 'CARD' ? '#4facfe' : '#e2e8f0',
+                        bgcolor: paymentMethod === 'CARD' ? '#f0f9ff' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <FormControlLabel
+                        value="CARD"
+                        control={<Radio color="primary" />}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
+                            <PointOfSaleIcon sx={{ color: '#0284c7', fontSize: 28 }} />
+                            <Box>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+                                Card Payment (POS / Terminal)
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                Swipe or dip guest card on the physical card machine at reception.
+                              </Typography>
+                            </Box>
+                          </Box>
+                        }
+                        sx={{ width: '100%', m: 0 }}
+                      />
+                    </Paper>
+
+                    <Paper
+                      elevation={0}
+                      onClick={() => setPaymentMethod('PAYHERE')}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 3,
+                        border: '2px solid',
+                        borderColor: paymentMethod === 'PAYHERE' ? '#d4af37' : '#e2e8f0',
+                        bgcolor: paymentMethod === 'PAYHERE' ? '#fffdf0' : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <FormControlLabel
+                        value="PAYHERE"
+                        control={<Radio sx={{ color: '#d4af37', '&.Mui-checked': { color: '#d4af37' } }} />}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
+                            <CreditCardIcon sx={{ color: '#d4af37', fontSize: 28 }} />
+                            <Box>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1a1a2e' }}>
+                                PayHere Gateway Popup
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                Launch online PayHere portal for remote card or sandbox testing.
+                              </Typography>
+                            </Box>
+                          </Box>
+                        }
+                        sx={{ width: '100%', m: 0 }}
+                      />
+                    </Paper>
+                  </RadioGroup>
+                </FormControl>
+
+                {/* Optional guidance box when PayHere is selected */}
+                {paymentMethod === 'PAYHERE' && (
+                  <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: '#f0f7ff', border: '1px solid #b3d7ff', borderRadius: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                      <SecurityIcon sx={{ color: '#0066cc' }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#004085' }}>
+                        PayHere Official Sandbox Test Cards:
+                      </Typography>
+                    </Box>
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Visa Test Card</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>4532 0000 0000 0000</Typography>
+                      </Grid>
+                      <Grid size={{ xs: 6, sm: 3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Expiry Date</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>12 / 28</Typography>
+                      </Grid>
+                      <Grid size={{ xs: 6, sm: 3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>CVV / OTP</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>123 / 123456</Typography>
+                      </Grid>
                     </Grid>
-                    <Grid size={{ xs: 6, sm: 3 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Expiry Date</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>12 / 28</Typography>
-                    </Grid>
-                    <Grid size={{ xs: 6, sm: 3 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>CVV / OTP</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>123 / 123456</Typography>
-                    </Grid>
-                  </Grid>
-                </Paper>
+                  </Paper>
+                )}
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4 }}>
                   <Button onClick={handleBack} disabled={loading} size="large" sx={{ color: '#64748b', fontWeight: 600 }}>
@@ -543,12 +695,16 @@ const NewBooking: React.FC = () => {
                   </Button>
                   <Button
                     variant="contained"
-                    onClick={handlePayHereCheckout}
+                    onClick={handlePaymentSubmit}
                     size="large"
                     disabled={loading}
-                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CreditCardIcon />}
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : paymentMethod === 'CASH' ? <LocalAtmIcon /> : <CreditCardIcon />}
                     sx={{
-                      background: 'linear-gradient(45deg, #0066cc 30%, #004085 90%)',
+                      background: paymentMethod === 'CASH'
+                        ? 'linear-gradient(45deg, #10b981 30%, #059669 90%)'
+                        : paymentMethod === 'CARD'
+                          ? 'linear-gradient(45deg, #0284c7 30%, #0369a1 90%)'
+                          : 'linear-gradient(45deg, #d4af37 30%, #b89528 90%)',
                       color: '#fff',
                       px: 5,
                       py: 1.5,
@@ -556,11 +712,16 @@ const NewBooking: React.FC = () => {
                       textTransform: 'none',
                       fontWeight: 800,
                       fontSize: '1.05rem',
-                      boxShadow: '0 6px 20px rgba(0, 102, 204, 0.4)',
-                      '&:hover': { background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)', color: '#1a1a2e' },
+                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
                     }}
                   >
-                    {loading ? 'Launching PayHere Popup...' : 'Pay via Official PayHere Gateway'}
+                    {loading
+                      ? 'Processing Booking...'
+                      : paymentMethod === 'CASH'
+                        ? 'Record Cash Payment & Confirm'
+                        : paymentMethod === 'CARD'
+                          ? 'Record Card Payment & Confirm'
+                          : 'Pay via PayHere Gateway'}
                   </Button>
                 </Box>
               </Box>
@@ -573,15 +734,15 @@ const NewBooking: React.FC = () => {
                   <CheckCircleIcon sx={{ fontSize: 64, color: '#10b981' }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 900, color: '#1a1a2e', mb: 1.5, fontFamily: '"Playfair Display", serif' }}>
-                  Payment Passed & Booking Confirmed!
+                  Payment Recorded & Booking Confirmed!
                 </Typography>
                 <Chip
                   icon={<VerifiedUserIcon sx={{ color: '#ffffff !important' }} />}
-                  label="PAID VIA PAYHERE SANDBOX"
+                  label={`SETTLED VIA ${paymentMethod}`}
                   sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 'bold', mb: 3, py: 0.5, px: 1 }}
                 />
                 <Typography color="text.secondary" sx={{ mb: 4, fontSize: '1.1rem' }}>
-                  {formData.firstName}&apos;s payment was verified and processed via PayHere.
+                  {formData.firstName}&apos;s room booking was confirmed and marked as paid in the system.
                 </Typography>
 
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: '#f8fafc', display: 'inline-block', textAlign: 'left', minWidth: '320px', mb: 5 }}>
@@ -591,7 +752,7 @@ const NewBooking: React.FC = () => {
                   <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 1 }}>#{success}</Typography>
                   {payhereOrderId && (
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                      PayHere Order ID: {payhereOrderId}
+                      Payment Ref: {payhereOrderId}
                     </Typography>
                   )}
                 </Paper>

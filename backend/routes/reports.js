@@ -9,16 +9,15 @@ export default function createReportsRouter(pool) {
   const router = express.Router();
   router.use(requireStaffAuth, requireStaffRoles('Admin'));
 
-  // GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD (defaults to the last 30 days)
   router.get('/summary', async (req, res) => {
     try {
       const today = new Date();
       const monthAgo = new Date(today.getTime() - 29 * 86400000);
       const from = validDate(req.query.from) ? String(req.query.from) : isoDate(monthAgo);
       const to = validDate(req.query.to) ? String(req.query.to) : isoDate(today);
+
       if (from > to) return res.status(400).json({ error: 'The start date must be on or before the end date.' });
 
-      // Bookings are grouped by the day the stay starts; money is grouped by the day it was paid.
       const [[totals]] = await pool.query(
         `SELECT COUNT(*) AS bookings,
                 COALESCE(SUM(room_charges), 0) AS room_revenue,
@@ -31,7 +30,7 @@ export default function createReportsRouter(pool) {
         [from, to]
       );
       const [[collected]] = await pool.query(
-        `SELECT COALESCE(SUM(amount), 0) AS collected FROM payment
+        `SELECT COALESCE(SUM(amount_paid), 0) AS collected FROM Payment
          WHERE payment_date >= ? AND payment_date < DATE_ADD(?, INTERVAL 1 DAY)`,
         [from, to]
       );
@@ -47,14 +46,14 @@ export default function createReportsRouter(pool) {
         [from, to]
       );
       const [daily] = await pool.query(
-        `SELECT DATE_FORMAT(payment_date, '%Y-%m-%d') AS day, SUM(amount) AS total
-         FROM payment
+        `SELECT DATE_FORMAT(payment_date, '%Y-%m-%d') AS day, SUM(amount_paid) AS total
+         FROM Payment
          WHERE payment_date >= ? AND payment_date < DATE_ADD(?, INTERVAL 1 DAY)
          GROUP BY day ORDER BY day`,
         [from, to]
       );
       const [methods] = await pool.query(
-        `SELECT method, COUNT(*) AS payments, SUM(amount) AS total FROM payment
+        `SELECT payment_method AS method, COUNT(*) AS payments, SUM(amount_paid) AS total FROM Payment
          WHERE payment_date >= ? AND payment_date < DATE_ADD(?, INTERVAL 1 DAY)
          GROUP BY method ORDER BY total DESC`,
         [from, to]
@@ -65,13 +64,13 @@ export default function createReportsRouter(pool) {
         [from, to]
       );
       const [services] = await pool.query(
-        `SELECT sc.service_name, sc.category, SUM(su.quantity) AS quantity, SUM(su.quantity * su.price_at_usage) AS revenue
-         FROM service_usage su INNER JOIN service_catalogue sc ON sc.service_id = su.service_id
+        `SELECT sc.service_name, sc.category, SUM(su.quantity) AS quantity, SUM(su.quantity * su.unit_price_at_usage) AS revenue
+         FROM ServiceUsage su INNER JOIN Service sc ON sc.service_id = su.service_id
          WHERE su.usage_date BETWEEN ? AND ?
          GROUP BY sc.service_id, sc.service_name, sc.category ORDER BY revenue DESC LIMIT 8`,
         [from, to]
       );
-      const [rooms] = await pool.query('SELECT status, COUNT(*) AS count FROM room GROUP BY status');
+      const [rooms] = await pool.query('SELECT status, COUNT(*) AS count FROM Room GROUP BY status');
       const [dues] = await pool.query(
         `SELECT booking_id, guest_name, room_number, branch_name AS branch, total_bill, total_paid, balance
          FROM v_guest_billing_detail
@@ -120,7 +119,7 @@ export default function createReportsRouter(pool) {
       });
     } catch (error) {
       console.error('Reports summary error:', error);
-      res.status(500).json({ error: 'Failed to build the report.' });
+      res.status(500).json({ error: 'Failed to build report.' });
     }
   });
 

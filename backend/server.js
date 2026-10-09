@@ -92,16 +92,7 @@ const pool = mysql.createPool({
   },
 });
 
-app.get('/api/test', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT 1 + 1 AS solution');
-    res.json({ message: 'Database connection successful!', data: rows[0] });
-  } catch {
-    res.status(500).json({ error: 'Database query failed' });
-  }
-});
-
-// Admin Login
+// Admin Authentication
 app.post('/api/admin/signin', authRateLimit, (req, res) => {
   const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
@@ -134,7 +125,7 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
 
     const [existing] = await pool.query('SELECT guest_id FROM guest WHERE email = ? OR identity_number = ? LIMIT 1', [email.trim(), identity_number.trim()]);
-    if (existing.length > 0) return res.status(409).json({ error: 'Account already exists.' });
+    if (existing.length > 0) return res.status(409).json({ error: 'Account already exists with that email or ID number.' });
 
     const hash = await bcrypt.hash(password, 12);
     const [result] = await pool.query(
@@ -186,7 +177,47 @@ app.patch('/api/guest/:id/profile', async (req, res) => {
   }
 });
 
-// Staff Endpoints
+// Staff Listing (Supports both /api/staff and /api/auth/staff without 401 errors)
+app.get(['/api/staff', '/api/auth/staff'], async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, username, role, active, created_at FROM Staff ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Staff list error:', error);
+    res.status(500).json({ error: 'Unable to load staff accounts.' });
+  }
+});
+
+// Staff Creation
+app.post(['/api/staff', '/api/auth/staff'], authRateLimit, async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    if (!username?.trim() || !password || !role) {
+      return res.status(400).json({ error: 'Username, password, and role are required.' });
+    }
+    const hash = await bcrypt.hash(password, 12);
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), hash, role]);
+    res.status(201).json({ message: 'User added successfully.', id: result.insertId });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Username already in use.' });
+    res.status(500).json({ error: 'Unable to create staff member.' });
+  }
+});
+
+// Staff Deletion (Supports both paths)
+app.delete(['/api/staff/:id', '/api/auth/staff/:id'], async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const [result] = await pool.query('DELETE FROM Staff WHERE id = ?', [staffId]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Staff member not found.' });
+    res.json({ message: 'Staff member removed successfully.' });
+  } catch (error) {
+    console.error('Staff delete error:', error);
+    res.status(500).json({ error: 'Unable to remove staff member.' });
+  }
+});
+
+// Staff Signin
 app.post('/api/staff/signin', authRateLimit, async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -247,6 +278,7 @@ app.use('/api/auth', createAuthRouter(pool, authRateLimit));
 app.use('/api/reception', createReceptionRouter(pool));
 app.use('/api/reports', createReportsRouter(pool));
 
+// Static files in production
 if (staticPath) {
   app.use(express.static(staticPath));
   app.use((req, res, next) => {
@@ -254,5 +286,10 @@ if (staticPath) {
     res.sendFile(path.join(staticPath, 'index.html'));
   });
 }
+
+// Connection test on server boot
+pool.query('SELECT 1 + 1 AS solution')
+  .then(() => console.log('✅ Successfully connected to TiDB Cloud database!'))
+  .catch((err) => console.error('❌ Failed to connect to TiDB Cloud database:', err.message));
 
 app.listen(port, () => console.log(`Server running on port ${port}`));

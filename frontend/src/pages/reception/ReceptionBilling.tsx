@@ -148,7 +148,9 @@ const ReceptionBilling: React.FC = () => {
                     <CardContent>
                       <Typography variant="caption" color="text.secondary">Room</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 800 }}>{booking.room_number}</Typography>
-                      <Typography variant="body2" color="text.secondary">{booking.room_type} - {booking.branch}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {booking.room_type} {booking.branch ? `- ${booking.branch}` : ''}
+                      </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
@@ -177,13 +179,26 @@ const ReceptionBilling: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {usages.length === 0 && <TableRow><TableCell colSpan={4} align="center" sx={{ py: 3, color: 'text.secondary' }}>No services charged yet.</TableCell></TableRow>}
+                    {usages.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                          No services charged yet.
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {usages.map((usage) => (
                       <TableRow key={usage.usage_id}>
-                        <TableCell>{usage.service_name}<Typography variant="caption" component="div" color="text.secondary">{usage.category}</Typography></TableCell>
+                        <TableCell>
+                          {usage.service_name}
+                          <Typography variant="caption" component="div" color="text.secondary">
+                            {usage.category}
+                          </Typography>
+                        </TableCell>
                         <TableCell>{formatDate(usage.usage_date)}</TableCell>
                         <TableCell>{usage.quantity}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>{currencyFormatter.format(usage.total_price)}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {currencyFormatter.format(usage.total_price)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -192,16 +207,44 @@ const ReceptionBilling: React.FC = () => {
 
               {!closed && (
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ mt: 2.5 }}>
-                  <TextField select size="small" label="Service" value={serviceId} onChange={(event) => setServiceId(event.target.value)} sx={{ flex: 2 }}>
+                  <TextField
+                    select
+                    size="small"
+                    label="Service"
+                    value={serviceId}
+                    onChange={(event) => setServiceId(event.target.value)}
+                    sx={{ flex: 2 }}
+                  >
                     {services.map((service) => (
                       <MenuItem key={service.service_id} value={String(service.service_id)}>
-                        {service.service_name} - {currencyFormatter.format(service.unit_price)}
+                        {service.service_name} ({currencyFormatter.format(service.unit_price)})
                       </MenuItem>
                     ))}
                   </TextField>
-                  <TextField size="small" type="number" label="Qty" value={quantity} onChange={(event) => setQuantity(event.target.value)} slotProps={{ htmlInput: { min: 1, step: 1 } }} sx={{ width: 90 }} />
-                  <TextField size="small" type="date" label="Date" value={usageDate} onChange={(event) => setUsageDate(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
-                  <Button variant="contained" disabled={busy || !serviceId || Number(quantity) < 1} onClick={handleAddService} sx={darkButtonSx}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    label="Qty"
+                    value={quantity}
+                    onChange={(event) => setQuantity(event.target.value)}
+                    slotProps={{ htmlInput: { min: 1, step: 1 } }}
+                    sx={{ width: 90 }}
+                  />
+                  <TextField
+                    size="small"
+                    type="date"
+                    label="Date"
+                    value={usageDate}
+                    onChange={(event) => setUsageDate(event.target.value)}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={{ flex: 1 }}
+                  />
+                  <Button
+                    variant="contained"
+                    disabled={busy || !serviceId || Number(quantity) < 1}
+                    onClick={handleAddService}
+                    sx={darkButtonSx}
+                  >
                     Add charge
                   </Button>
                 </Stack>

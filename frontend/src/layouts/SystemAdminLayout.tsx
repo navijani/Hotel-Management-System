@@ -20,6 +20,7 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
+  Desk as DeskIcon,
   MeetingRoom as RoomIcon,
   People as PeopleIcon,
   EventNote as BookingIcon,
@@ -43,6 +44,7 @@ const SystemAdminLayout: React.FC = () => {
 
   const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
+  { text: 'Reception Desk', icon: <DeskIcon />, path: '/reception' },
   { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
   { text: 'Bookings', icon: <BookingIcon />, path: '/system-admin/bookings' },
   { text: 'Bar & Beverages', icon: <BarIcon />, path: '/system-admin/bar' },

@@ -24,15 +24,6 @@ const mapBooking = (row) => ({
   outstanding_balance: num(row.balance),
 });
 
-// Stored procedures raise SQLSTATE 45000 for business-rule errors; show those, hide anything else.
-const sendError = (res, error, fallback) => {
-  console.error(fallback, error);
-  if (error?.sqlState === '45000') {
-    return res.status(400).json({ error: error.sqlMessage || error.message });
-  }
-  res.status(500).json({ error: fallback });
-};
-
 const parseId = (value) => {
   const id = Number(value);
   return Number.isInteger(id) && id > 0 ? id : null;
@@ -47,7 +38,7 @@ export default function createReceptionRouter(pool) {
     return rows[0] ? mapBooking(rows[0]) : null;
   };
 
-  // GET /api/reception/overview - front desk landing data
+  // GET /api/reception/overview
   router.get('/overview', async (req, res) => {
     try {
       const [arrivals] = await pool.query(
@@ -68,7 +59,7 @@ export default function createReceptionRouter(pool) {
            COALESCE(SUM(CASE WHEN booking_status <> 'Cancelled' AND balance > 0 THEN balance ELSE 0 END), 0) AS outstanding
          FROM v_guest_billing_detail`
       );
-      const [roomStatus] = await pool.query('SELECT status, COUNT(*) AS count FROM room GROUP BY status');
+      const [roomStatus] = await pool.query('SELECT status, COUNT(*) AS count FROM Room GROUP BY status');
 
       res.json({
         counts: {
@@ -82,11 +73,12 @@ export default function createReceptionRouter(pool) {
         room_status: roomStatus.map((row) => ({ status: row.status, count: num(row.count) })),
       });
     } catch (error) {
-      sendError(res, error, 'Failed to load the front desk overview.');
+      console.error('Overview error:', error);
+      res.status(500).json({ error: 'Failed to load front desk overview.' });
     }
   });
 
-  // GET /api/reception/bookings?status=&q=
+  // GET /api/reception/bookings
   router.get('/bookings', async (req, res) => {
     try {
       const status = String(req.query.status || '').trim();
@@ -110,11 +102,12 @@ export default function createReceptionRouter(pool) {
       );
       res.json(rows.map(mapBooking));
     } catch (error) {
-      sendError(res, error, 'Failed to load bookings.');
+      console.error('Bookings error:', error);
+      res.status(500).json({ error: 'Failed to load bookings.' });
     }
   });
 
-  // GET /api/reception/bookings/:id - invoice, services and payments for one booking
+  // GET /api/reception/bookings/:id
   router.get('/bookings/:id', async (req, res) => {
     try {
       const bookingId = parseId(req.params.id);
@@ -125,16 +118,16 @@ export default function createReceptionRouter(pool) {
 
       const [services] = await pool.query(
         `SELECT su.usage_id, su.service_id, sc.service_name, sc.category, su.usage_date, su.quantity,
-                su.price_at_usage AS unit_price, (su.quantity * su.price_at_usage) AS total_price
-         FROM service_usage su
-         INNER JOIN service_catalogue sc ON sc.service_id = su.service_id
+                su.unit_price_at_usage AS unit_price, su.total_price
+         FROM ServiceUsage su
+         INNER JOIN Service sc ON sc.service_id = su.service_id
          WHERE su.booking_id = ?
          ORDER BY su.usage_date DESC, su.usage_id DESC`,
         [bookingId]
       );
       const [payments] = await pool.query(
-        `SELECT payment_id, booking_id, payment_date, amount AS amount_paid, method AS payment_method
-         FROM payment WHERE booking_id = ? ORDER BY payment_date DESC, payment_id DESC`,
+        `SELECT payment_id, booking_id, payment_date, amount_paid, payment_method
+         FROM Payment WHERE booking_id = ? ORDER BY payment_date DESC, payment_id DESC`,
         [bookingId]
       );
 
@@ -144,44 +137,52 @@ export default function createReceptionRouter(pool) {
         payments: payments.map((row) => ({ ...row, amount_paid: num(row.amount_paid) })),
       });
     } catch (error) {
-      sendError(res, error, 'Failed to load the booking.');
+      console.error('Booking detail error:', error);
+      res.status(500).json({ error: 'Failed to load booking.' });
     }
   });
 
-  // GET /api/reception/services?booking_id= - chargeable services (limited to the booking's branch)
+  // GET /api/reception/services
   router.get('/services', async (req, res) => {
     try {
-      const bookingId = parseId(req.query.booking_id);
-      const [rows] = bookingId
-        ? await pool.query(
-            `SELECT sc.service_id, sc.service_name, sc.category, sc.unit_price
-             FROM service_catalogue sc
-             WHERE sc.branch_id = (SELECT r.branch_id FROM booking b INNER JOIN room r ON r.room_id = b.room_id WHERE b.booking_id = ?)
-             ORDER BY sc.category, sc.service_name`,
-            [bookingId]
-          )
-        : await pool.query('SELECT service_id, service_name, category, unit_price FROM service_catalogue ORDER BY category, service_name');
-
-      res.json(rows.map((row) => ({ ...row, unit_price: num(row.unit_price) })));
+      const [rows] = await pool.query('SELECT * FROM Service ORDER BY category, service_name');
+      res.json(
+        rows.map((row) => ({
+          service_id: row.service_id,
+          service_name: row.service_name,
+          category: row.category,
+          unit_price: num(row.current_unit_price ?? row.unit_price ?? row.price ?? 0),
+        }))
+      );
     } catch (error) {
-      sendError(res, error, 'Failed to load services.');
+      console.error('Services error:', error);
+      res.status(500).json({ error: 'Failed to load services.' });
     }
   });
 
   // POST /api/reception/bookings/:id/check-in
   router.post('/bookings/:id/check-in', async (req, res) => {
+    const connection = await pool.getConnection();
     try {
       const bookingId = parseId(req.params.id);
-      if (!bookingId) return res.status(400).json({ error: 'A valid booking id is required.' });
+      if (!bookingId) return res.status(400).json({ error: 'Valid booking id required.' });
 
-      await pool.query('CALL sp_check_in(?)', [bookingId]);
+      await connection.beginTransaction();
+      await connection.query(`UPDATE Booking SET booking_status = 'Checked-In', actual_check_in = NOW() WHERE booking_id = ?`, [bookingId]);
+      await connection.query(`UPDATE Room SET status = 'Occupied', current_status = 'Occupied' WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = ?)`, [bookingId]);
+      await connection.commit();
+
       res.json({ message: `Booking #${bookingId} checked in.`, booking: await loadBooking(bookingId) });
     } catch (error) {
-      sendError(res, error, 'Failed to check the guest in.');
+      await connection.rollback();
+      console.error('Check-in error:', error);
+      res.status(400).json({ error: 'Failed to check in guest.' });
+    } finally {
+      connection.release();
     }
   });
 
-  // POST /api/reception/bookings/:id/services
+  // POST /api/reception/bookings/:id/services (Omit generated column total_price)
   router.post('/bookings/:id/services', async (req, res) => {
     try {
       const bookingId = parseId(req.params.id);
@@ -192,19 +193,34 @@ export default function createReceptionRouter(pool) {
         : new Date().toISOString().slice(0, 10);
 
       if (!bookingId || !serviceId || !Number.isInteger(quantity) || quantity <= 0) {
-        return res.status(400).json({ error: 'A booking, a service and a whole-number quantity are required.' });
+        return res.status(400).json({ error: 'Valid booking, service, and positive quantity are required.' });
       }
 
       const booking = await loadBooking(bookingId);
-      if (!booking) return res.status(404).json({ error: 'Booking not found.' });
+      if (!booking) return res.status(404).json({ error: `Booking #${bookingId} not found.` });
+
       if (['Checked-Out', 'Cancelled'].includes(booking.booking_status)) {
-        return res.status(400).json({ error: `Charges cannot be added to a ${booking.booking_status} booking.` });
+        return res.status(400).json({ error: `Service charges cannot be added to a ${booking.booking_status} booking.` });
       }
 
-      await pool.query('CALL sp_add_service(?, ?, ?, ?)', [bookingId, serviceId, quantity, usageDate]);
-      res.status(201).json({ message: 'Service charge added.', booking: await loadBooking(bookingId) });
+      // Fetch service details
+      const [serviceRows] = await pool.query('SELECT * FROM Service WHERE service_id = ? LIMIT 1', [serviceId]);
+      if (serviceRows.length === 0) return res.status(404).json({ error: 'Selected service was not found.' });
+
+      const service = serviceRows[0];
+      const unitPrice = num(service.current_unit_price ?? service.unit_price ?? service.price ?? 0);
+
+      // total_price is omitted because it is a GENERATED STORED column in MySQL/TiDB
+      await pool.query(
+        'INSERT INTO ServiceUsage (booking_id, service_id, usage_date, quantity, unit_price_at_usage) VALUES (?, ?, ?, ?, ?)',
+        [bookingId, serviceId, usageDate, quantity, unitPrice]
+      );
+
+      const updatedBooking = await loadBooking(bookingId);
+      res.status(201).json({ message: 'Service charge added successfully.', booking: updatedBooking });
     } catch (error) {
-      sendError(res, error, 'Failed to add the service charge.');
+      console.error('Service charge error:', error);
+      res.status(500).json({ error: error.message || 'Failed to add service charge.' });
     }
   });
 
@@ -216,7 +232,7 @@ export default function createReceptionRouter(pool) {
       const method = String(req.body.payment_method || req.body.method || 'Cash');
 
       if (!bookingId || !Number.isFinite(amount) || amount <= 0) {
-        return res.status(400).json({ error: 'A valid booking and payment amount are required.' });
+        return res.status(400).json({ error: 'Valid booking and payment amount are required.' });
       }
       if (!PAYMENT_METHODS.includes(method)) {
         return res.status(400).json({ error: `Payment method must be one of: ${PAYMENT_METHODS.join(', ')}.` });
@@ -225,38 +241,52 @@ export default function createReceptionRouter(pool) {
       const booking = await loadBooking(bookingId);
       if (!booking) return res.status(404).json({ error: 'Booking not found.' });
       if (booking.booking_status === 'Cancelled') {
-        return res.status(400).json({ error: 'Payments cannot be recorded on a cancelled booking.' });
+        return res.status(400).json({ error: 'Cannot record payments on cancelled bookings.' });
       }
       if (amount - booking.outstanding_balance > 0.005) {
-        return res.status(400).json({ error: 'The payment is more than the outstanding balance.' });
+        return res.status(400).json({ error: 'Payment amount exceeds the outstanding balance.' });
       }
 
-      await pool.query('CALL sp_add_payment(?, ?, ?)', [bookingId, amount, method]);
+      await pool.query(
+        'INSERT INTO Payment (booking_id, payment_date, amount_paid, payment_method) VALUES (?, NOW(), ?, ?)',
+        [bookingId, amount, method]
+      );
+
       res.status(201).json({ message: 'Payment recorded.', booking: await loadBooking(bookingId) });
     } catch (error) {
-      sendError(res, error, 'Failed to record the payment.');
+      console.error('Payment error:', error);
+      res.status(500).json({ error: 'Failed to record payment.' });
     }
   });
 
-  // POST /api/reception/bookings/:id/checkout - blocked by sp_check_out until the balance is zero
+  // POST /api/reception/bookings/:id/checkout
   router.post('/bookings/:id/checkout', async (req, res) => {
+    const connection = await pool.getConnection();
     try {
       const bookingId = parseId(req.params.id);
-      if (!bookingId) return res.status(400).json({ error: 'A valid booking id is required.' });
+      if (!bookingId) return res.status(400).json({ error: 'Valid booking id required.' });
 
       const before = await loadBooking(bookingId);
       if (!before) return res.status(404).json({ error: 'Booking not found.' });
       if (before.booking_status !== 'Checked-In') {
-        return res.status(400).json({ error: 'Only a checked-in guest can be checked out.' });
+        return res.status(400).json({ error: 'Only checked-in guests can be checked out.' });
       }
-      if (before.outstanding_balance > 0) {
+      if (before.outstanding_balance > 0.005) {
         return res.status(400).json({ error: 'The outstanding balance must be paid before checkout.' });
       }
 
-      await pool.query('CALL sp_check_out(?)', [bookingId]);
+      await connection.beginTransaction();
+      await connection.query(`UPDATE Booking SET booking_status = 'Checked-Out', actual_check_out = NOW() WHERE booking_id = ?`, [bookingId]);
+      await connection.query(`UPDATE Room SET status = 'Available', current_status = 'Available' WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = ?)`, [bookingId]);
+      await connection.commit();
+
       res.json({ message: `Booking #${bookingId} checked out.`, booking: await loadBooking(bookingId) });
     } catch (error) {
-      sendError(res, error, 'Failed to check the guest out.');
+      await connection.rollback();
+      console.error('Checkout error:', error);
+      res.status(400).json({ error: error.message || 'Failed to check out guest.' });
+    } finally {
+      connection.release();
     }
   });
 
