@@ -6,10 +6,6 @@ import theme from './theme';
 import MainLayout from './layouts/MainLayout';
 import ReceptionDashboard from './pages/reception/Dashboard';
 import ServiceDashboard from './pages/service/ServiceDashboard';
-import ReportsDashboard from './pages/management/ReportsDashboard';
-import BillingOverview from './pages/management/billing/BillingOverview';
-import BillingInvoice from './pages/management/billing/BillingInvoice';
-import BillingRevenue from './pages/management/billing/BillingRevenue';
 
 import GuestLayout from './layouts/GuestLayout';
 import Home from './pages/guest/Home';
@@ -26,36 +22,60 @@ import SystemRooms from './pages/system-admin/Rooms';
 import SystemUsers from './pages/system-admin/Users';
 import SystemBookings from './pages/system-admin/Bookings';
 import SystemSettings from './pages/system-admin/Settings';
+import SystemReports from './pages/system-admin/Reports';
 import ExclusiveOffers from './pages/system-admin/ExclusiveOffers';
 import AccessPortal from './pages/AccessPortal';
 import AdminLogin from './pages/AdminLogin';
+
+import ReceptionLayout from './pages/reception/ReceptionLayout';
+import ReceptionHome from './pages/reception/ReceptionHome';
+import NewBooking from './pages/reception/NewBooking';
+import ReceptionBookings from './pages/reception/ReceptionBookings';
+import ReceptionBilling from './pages/reception/ReceptionBilling';
+
 import CleaningStaff from './pages/staff/CleaningStaff';
 import BarKeepingStaff from './pages/staff/BarKeepingStaff';
 import TherapistStaff from './pages/staff/TherapistStaff';
 import WaiterStaff from './pages/staff/WaiterStaff';
+import HousekeepingStaff from './pages/staff/HousekeepingStaff';
 import BarItemsAdmin from './pages/bar/BarItemsAdmin';
 import BarItemsStaff from './pages/bar/BarItemsStaff';
 
+import { getStoredStaffSession } from './api/auth';
+import type { StaffRole } from './api/auth';
+
 const GuestGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
-  sessionStorage.getItem('guestAuthenticated') === 'true' ? <>{children}</> : <Navigate to="/signin" replace />
-);
-
-const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
-  (sessionStorage.getItem('adminAuthenticated') === 'true' || sessionStorage.getItem('hmsAdminSignedIn') === 'true')
+  sessionStorage.getItem('guestAuthenticated') === 'true' || sessionStorage.getItem('guestSignedIn') === 'true'
     ? <>{children}</>
-    : <Navigate to="/admin" replace />
+    : <Navigate to="/signin" replace />
 );
 
-const StaffGuard: React.FC<{ role: string; children: ReactNode }> = ({ role, children }) => (
-  sessionStorage.getItem('staffRole') === role ? <>{children}</> : <Navigate to="/portal" replace />
-);
+const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const session = getStoredStaffSession();
+  const isAdmin = session?.role?.toLowerCase() === 'admin'
+    || sessionStorage.getItem('adminAuthenticated') === 'true'
+    || sessionStorage.getItem('hmsAdminSignedIn') === 'true';
+
+  return isAdmin ? <>{children}</> : <Navigate to="/admin" replace />;
+};
+
+const StaffGuard: React.FC<{ roles?: StaffRole[]; role?: string; children: ReactNode }> = ({ roles, role, children }) => {
+  const session = getStoredStaffSession();
+  const activeRole = (session?.role || sessionStorage.getItem('staffRole') || '').toLowerCase();
+
+  const allowedRoles = (roles || (role ? [role as StaffRole] : []))
+    .map((r) => r.toLowerCase())
+    .concat('admin');
+
+  return allowedRoles.includes(activeRole) ? <>{children}</> : <Navigate to="/portal" replace />;
+};
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
-          {/* Website Routes with Top Navigation */}
+          {/* Guest Website */}
           <Route path="/" element={<GuestLayout />}>
             <Route index element={<Home />} />
             <Route path="about" element={<About />} />
@@ -67,27 +87,27 @@ function App() {
             <Route path="profile" element={<GuestGuard><Profile /></GuestGuard>} />
           </Route>
 
-          {/* Administrator login and protected administration panels */}
+          {/* Admin Signin */}
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/signin" element={<AdminLogin />} />
 
+          {/* Reception Desk */}
+          <Route path="/reception" element={<StaffGuard roles={['Admin', 'Receptionist']}><ReceptionLayout /></StaffGuard>}>
+            <Route index element={<ReceptionHome />} />
+            <Route path="new-booking" element={<NewBooking />} />
+            <Route path="bookings" element={<ReceptionBookings />} />
+            <Route path="bookings/:bookingId" element={<ReceptionBilling />} />
+          </Route>
+
+          {/* Teammate Management Dashboard */}
           <Route path="/admin/dashboard" element={<AdminGuard><MainLayout /></AdminGuard>}>
             <Route index element={<ReceptionDashboard />} />
             <Route path="service" element={<ServiceDashboard />} />
-            <Route path="management" element={<ReportsDashboard />} />
             <Route path="bar" element={<BarItemsAdmin />} />
             <Route path="offers" element={<ExclusiveOffers />} />
-            <Route path="management/billing" element={<BillingOverview />} />
-            <Route path="management/billing/invoice" element={<BillingInvoice />} />
-            <Route path="management/billing/revenue" element={<BillingRevenue />} />
           </Route>
 
-          {/* Temporary preview route for local billing UI review */}
-          <Route path="/billing-preview" element={<BillingOverview />} />
-          <Route path="/invoice-preview" element={<BillingInvoice />} />
-          <Route path="/revenue-preview" element={<BillingRevenue />} />
-
-          {/* System Admin Panel Routes */}
+          {/* System Admin Dashboard */}
           <Route path="/system-admin" element={<AdminGuard><SystemAdminLayout /></AdminGuard>}>
             <Route index element={<SystemDashboard />} />
             <Route path="rooms" element={<SystemRooms />} />
@@ -95,15 +115,17 @@ function App() {
             <Route path="bookings" element={<SystemBookings />} />
             <Route path="bar" element={<BarItemsAdmin />} />
             <Route path="offers" element={<ExclusiveOffers />} />
+            <Route path="reports" element={<SystemReports />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 
-          {/* Dedicated staff workspaces */}
-          <Route path="/staff/cleaning" element={<StaffGuard role="cleaning"><CleaningStaff /></StaffGuard>} />
-          <Route path="/staff/bar" element={<StaffGuard role="bar"><BarKeepingStaff /></StaffGuard>} />
-          <Route path="/staff/bar-items" element={<StaffGuard role="bar"><BarItemsStaff /></StaffGuard>} />
-          <Route path="/staff/therapist" element={<StaffGuard role="therapist"><TherapistStaff /></StaffGuard>} />
-          <Route path="/staff/waiter" element={<StaffGuard role="waiter"><WaiterStaff /></StaffGuard>} />
+          {/* Staff Department Desks */}
+          <Route path="/staff/housekeeping" element={<StaffGuard roles={['Housekeeping', 'cleaning']}><HousekeepingStaff /></StaffGuard>} />
+          <Route path="/staff/cleaning" element={<StaffGuard roles={['cleaning', 'Housekeeping']}><CleaningStaff /></StaffGuard>} />
+          <Route path="/staff/bar" element={<StaffGuard roles={['bar', 'Admin']}><BarKeepingStaff /></StaffGuard>} />
+          <Route path="/staff/bar-items" element={<StaffGuard roles={['bar', 'waiter', 'Admin']}><BarItemsStaff /></StaffGuard>} />
+          <Route path="/staff/therapist" element={<StaffGuard roles={['therapist']}><TherapistStaff /></StaffGuard>} />
+          <Route path="/staff/waiter" element={<StaffGuard roles={['waiter']}><WaiterStaff /></StaffGuard>} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
