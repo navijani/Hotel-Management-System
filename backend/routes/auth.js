@@ -91,7 +91,7 @@ export default function createAuthRouter(pool, authRateLimit) {
         })();
 
   // Staff listing endpoint (also handles /api/auth/staff if requested)
-  router.get('/staff', async (req, res) => {
+  router.get('/staff', authRateLimit, async (req, res) => {
     try {
       const [rows] = await pool.query('SELECT id, username, role, active, created_at FROM Staff ORDER BY created_at DESC');
       res.json(rows);
