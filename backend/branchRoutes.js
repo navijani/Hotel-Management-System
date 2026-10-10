@@ -7,8 +7,22 @@ export default function createBranchRouter(pool) {
     router.post('/', async (req, res) => {
         try {
             const { branch_name, city, address, contact_number } = req.body;
+            
+            // --- BASIC INPUT VALIDATION ---
+            if (!branch_name?.trim() || !city?.trim() || !address?.trim() || !contact_number?.trim()) {
+                return res.status(400).json({ 
+                    error: "Validation failed: branch_name, city, address, and contact_number are required fields." 
+                });
+            }
+            // ------------------------------
+
             const sql = `INSERT INTO Branch (branch_name, city, address, contact_number) VALUES (?, ?, ?, ?)`;
-            const [result] = await pool.execute(sql, [branch_name, city, address, contact_number]);
+            const [result] = await pool.execute(sql, [
+                branch_name.trim(), 
+                city.trim(), 
+                address.trim(), 
+                contact_number.trim()
+            ]);
             
             res.status(201).json({ 
                 message: "Branch created successfully", 
@@ -26,9 +40,9 @@ export default function createBranchRouter(pool) {
             let sql = `SELECT * FROM Branch`;
             let params = [];
 
-            if (city) {
+            if (city?.trim()) {
                 sql += ` WHERE city = ?`;
-                params.push(city);
+                params.push(city.trim());
             }
 
             const [rows] = await pool.execute(sql, params);
@@ -42,6 +56,11 @@ export default function createBranchRouter(pool) {
     router.get('/:id', async (req, res) => {
         try {
             const { id } = req.params;
+            
+            if (isNaN(Number(id))) {
+                 return res.status(400).json({ error: "Invalid branch ID format." });
+            }
+
             const sql = `SELECT * FROM Branch WHERE branch_id = ?`;
             const [rows] = await pool.execute(sql, [id]);
             
@@ -61,8 +80,26 @@ export default function createBranchRouter(pool) {
             const { id } = req.params;
             const { branch_name, city, address, contact_number } = req.body;
             
+            // --- BASIC INPUT VALIDATION ---
+            if (isNaN(Number(id))) {
+                return res.status(400).json({ error: "Invalid branch ID format." });
+            }
+            
+            if (!branch_name?.trim() || !city?.trim() || !address?.trim() || !contact_number?.trim()) {
+                return res.status(400).json({ 
+                    error: "Validation failed: branch_name, city, address, and contact_number are required fields." 
+                });
+            }
+            // ------------------------------
+            
             const sql = `UPDATE Branch SET branch_name = ?, city = ?, address = ?, contact_number = ? WHERE branch_id = ?`;
-            const [result] = await pool.execute(sql, [branch_name, city, address, contact_number, id]);
+            const [result] = await pool.execute(sql, [
+                branch_name.trim(), 
+                city.trim(), 
+                address.trim(), 
+                contact_number.trim(), 
+                id
+            ]);
             
             if (result.affectedRows === 0) {
                 return res.status(404).json({ message: "Branch not found" });
@@ -78,6 +115,11 @@ export default function createBranchRouter(pool) {
     router.delete('/:id', async (req, res) => {
         try {
             const { id } = req.params;
+            
+            if (isNaN(Number(id))) {
+                 return res.status(400).json({ error: "Invalid branch ID format." });
+            }
+
             const sql = `DELETE FROM Branch WHERE branch_id = ?`;
             const [result] = await pool.execute(sql, [id]);
             
@@ -87,7 +129,6 @@ export default function createBranchRouter(pool) {
             
             res.status(200).json({ message: "Branch deleted successfully" });
         } catch (error) {
-            // FIX: Generic DELETE error message for foreign key references
             if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED') {
                 return res.status(409).json({ error: "Cannot delete this branch because it is actively linked to other records (e.g., rooms, staff, or bookings)." });
             }
@@ -99,8 +140,11 @@ export default function createBranchRouter(pool) {
     router.get('/:id/rooms', async (req, res) => {
         try {
             const { id } = req.params;
-            // FIX: Comment/query mismatch resolved by adding `r.status = 'Available'` 
-            // FIX: Changed `r.current_status` to `r.status`
+            
+            if (isNaN(Number(id))) {
+                 return res.status(400).json({ error: "Invalid branch ID format." });
+            }
+
             const sql = `
                 SELECT r.room_number, r.status, rt.type_name, rt.capacity, rt.daily_rate
                 FROM Branch b
