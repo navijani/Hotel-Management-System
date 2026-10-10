@@ -580,7 +580,7 @@ const Book: React.FC = () => {
                       <Button variant="contained" onClick={() => navigate('/profile')} size="large" sx={{ borderRadius: 8, px: 4, bgcolor: '#1a1a2e', color: '#fff', textTransform: 'none', fontWeight: 600 }}>
                         View My Profile & Bookings
                       </Button>
-                      <Button variant="outlined" onClick={() => navigate('/')} size="large" sx={{ borderRadius: 8, px: 4, textTransform: 'none', fontWeight: 600, color: '#1a1a2e', borderColor: '#cbd5e1' }}>
+                      <Button variant="outlined" onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }} size="large" sx={{ borderRadius: 8, px: 4, textTransform: 'none', fontWeight: 600, color: '#1a1a2e', borderColor: '#cbd5e1' }}>
                         Return to Homepage
                       </Button>
                     </Box>

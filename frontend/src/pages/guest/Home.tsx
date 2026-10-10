@@ -59,15 +59,7 @@ const Home: React.FC = () => {
   const [selectedOffer, setSelectedOffer] = useState<ExclusiveOffer | null>(null);
   const [, setWelcomePopupOffer] = useState<ExclusiveOffer | null>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState<boolean>(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch((err) => {
-        console.log('Video autoplay prevented or loading:', err);
-      });
-    }
-  }, []);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -92,15 +84,23 @@ const Home: React.FC = () => {
     setShowWelcomePopup(false);
     setSelectedOffer(null);
 
-    if (offerToBook && offerToBook.room_id) {
-      axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
-        const roomData = res.data;
-        const discountVal = offerToBook.discount || roomData.discount || 0;
-        const originalPrice = Number(roomData.price_per_night || 150);
-        const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+    if (!offerToBook) {
+      navigate('/rooms');
+      return;
+    }
 
-        navigate('/book', {
-          state: {
+    const doNavigateToBook = (bookingState: object) => {
+      navigate('/book', { state: bookingState });
+    };
+
+    const resolveAndNavigate = () => {
+      if (offerToBook.room_id) {
+        axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
+          const roomData = res.data;
+          const discountVal = offerToBook.discount || roomData.discount || 0;
+          const originalPrice = Number(roomData.price_per_night || 150);
+          const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+          const bookingState = {
             room: {
               RoomID: roomData.room_id,
               RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
@@ -112,19 +112,34 @@ const Home: React.FC = () => {
             },
             roomId: offerToBook.room_id,
             roomType: roomData.type || 'Special Offer Room'
-          }
-        });
-      }).catch(() => {
-        navigate('/book', {
-          state: {
+          };
+          doNavigateToBook(bookingState);
+        }).catch(() => {
+          doNavigateToBook({
             roomId: offerToBook.room_id,
             roomType: offerToBook.topic || 'Special Offer Room'
-          }
+          });
         });
-      });
-    } else {
-      navigate('/rooms');
+      } else {
+        navigate('/rooms');
+      }
+    };
+
+    // If user is NOT signed in, save offer as pending intent then redirect to sign-in
+    const signedIn = window.sessionStorage.getItem('guestSignedIn') === 'true';
+    if (!signedIn) {
+      sessionStorage.setItem('pendingBookingIntent', JSON.stringify({
+        offerId: offerToBook.id,
+        room_id: offerToBook.room_id,
+        topic: offerToBook.topic,
+        discount: offerToBook.discount,
+        image: offerToBook.image,
+      }));
+      navigate('/signin');
+      return;
     }
+
+    resolveAndNavigate();
   };
 
 
@@ -149,12 +164,11 @@ const Home: React.FC = () => {
   ];
 
   const toggleVideo = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
+    if (iframeRef.current) {
+      const msg = isPlaying
+        ? '{"event":"command","func":"pauseVideo","args":""}'
+        : '{"event":"command","func":"playVideo","args":""}';
+      iframeRef.current.contentWindow?.postMessage(msg, '*');
       setIsPlaying(!isPlaying);
     }
   };
@@ -301,31 +315,35 @@ const Home: React.FC = () => {
             bottom: 0,
             zIndex: 0,
             backgroundColor: '#0a0a0a',
+            backgroundImage: `url(${import.meta.env.BASE_URL}images/colombo.jpg)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
             overflow: 'hidden'
           }}
         >
-          <video
-            ref={videoRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            key="hero-video-v3"
+          {/* YouTube iframe background - streams reliably on GitHub Pages */}
+          <iframe
+            ref={iframeRef}
+            src="https://www.youtube-nocookie.com/embed/2qKfnhNlFKk?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&playsinline=1&disablekb=1&fs=0&playlist=2qKfnhNlFKk&enablejsapi=1"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            title="Hero background video"
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
+              /* 16:9 cover technique */
+              width: '100vw',
+              height: '56.25vw',
+              minHeight: '100%',
+              minWidth: '177.78vh',
               transform: 'translate(-50%, -50%)',
               zIndex: 0,
               opacity: 0.85,
-              filter: 'contrast(1.1) saturate(1.2)'
+              border: 'none',
+              pointerEvents: 'none',
             }}
-          >
-            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4?v=2`} type="video/mp4" />
-          </video>
+          />
 
           {/* Modern Gradient Overlay */}
           <Box
