@@ -63,6 +63,33 @@ export const requireStaffRoles = (...allowedRoles) => {
 };
 
 export default function createAuthRouter(pool, authRateLimit) {
+  const signinRateLimit =
+    typeof authRateLimit === 'function'
+      ? authRateLimit
+      : (() => {
+          const attempts = new Map();
+          const windowMs = 15 * 60 * 1000;
+          const max = 20;
+
+          return (req, res, next) => {
+            const key = req.ip || req.connection?.remoteAddress || 'unknown';
+            const now = Date.now();
+            const entry = attempts.get(key);
+
+            if (!entry || now > entry.resetAt) {
+              attempts.set(key, { count: 1, resetAt: now + windowMs });
+              return next();
+            }
+
+            if (entry.count >= max) {
+              return res.status(429).json({ error: 'Too many sign-in attempts. Please try again later.' });
+            }
+
+            entry.count += 1;
+            return next();
+          };
+        })();
+
   // Staff listing endpoint (also handles /api/auth/staff if requested)
   router.get('/staff', async (req, res) => {
     try {
@@ -74,7 +101,7 @@ export default function createAuthRouter(pool, authRateLimit) {
     }
   });
 
-  router.post('/signin', authRateLimit, async (req, res) => {
+  router.post('/signin', signinRateLimit, async (req, res) => {
     try {
       const { username, password, role } = req.body;
       const [rows] = await pool.query(
