@@ -90,8 +90,10 @@ export default function createAuthRouter(pool, authRateLimit) {
           };
         })();
 
+  const staffListRateLimit = typeof authRateLimit === 'function' ? authRateLimit : signinRateLimit;
+
   // Staff listing endpoint (also handles /api/auth/staff if requested)
-  router.get('/staff', authRateLimit, async (req, res) => {
+  router.get('/staff', staffListRateLimit, async (req, res) => {
     try {
       const [rows] = await pool.query('SELECT id, username, role, active, created_at FROM Staff ORDER BY created_at DESC');
       res.json(rows);
