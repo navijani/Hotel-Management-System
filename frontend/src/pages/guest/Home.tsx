@@ -59,7 +59,93 @@ const Home: React.FC = () => {
   const [selectedOffer, setSelectedOffer] = useState<ExclusiveOffer | null>(null);
   const [, setWelcomePopupOffer] = useState<ExclusiveOffer | null>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState<boolean>(false);
+<<<<<<< HEAD
   const videoRef = useRef<HTMLVideoElement>(null);
+=======
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const res = await axios.get('/api/offers?active_only=true');
+        if (Array.isArray(res.data)) {
+          setOffers(res.data);
+          if (res.data.length > 0) {
+            setWelcomePopupOffer(res.data[0]);
+            setShowWelcomePopup(true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load exclusive offers:', err);
+      }
+    };
+    fetchOffers();
+  }, []);
+
+  const handleBookOffer = (targetOffer?: ExclusiveOffer | null) => {
+    const offerToBook = targetOffer || selectedOffer || welcomePopupOffer;
+    setShowWelcomePopup(false);
+    setSelectedOffer(null);
+
+    if (!offerToBook) {
+      navigate('/rooms');
+      return;
+    }
+
+    const doNavigateToBook = (bookingState: object) => {
+      navigate('/book', { state: bookingState });
+    };
+
+    const resolveAndNavigate = () => {
+      if (offerToBook.room_id) {
+        axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
+          const roomData = res.data;
+          const discountVal = offerToBook.discount || roomData.discount || 0;
+          const originalPrice = Number(roomData.price_per_night || 150);
+          const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+          const bookingState = {
+            room: {
+              RoomID: roomData.room_id,
+              RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
+              RoomTypeID: roomData.type || 'Special Offer Room',
+              Price: finalPrice,
+              OriginalPrice: originalPrice,
+              BedType: roomData.bed_type || 'Premium Bedding',
+              image: roomData.image || (offerToBook.image ? offerToBook.image : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop')
+            },
+            roomId: offerToBook.room_id,
+            roomType: roomData.type || 'Special Offer Room'
+          };
+          doNavigateToBook(bookingState);
+        }).catch(() => {
+          doNavigateToBook({
+            roomId: offerToBook.room_id,
+            roomType: offerToBook.topic || 'Special Offer Room'
+          });
+        });
+      } else {
+        navigate('/rooms');
+      }
+    };
+
+    // If user is NOT signed in, save offer as pending intent then redirect to sign-in
+    const signedIn = window.sessionStorage.getItem('guestSignedIn') === 'true';
+    if (!signedIn) {
+      sessionStorage.setItem('pendingBookingIntent', JSON.stringify({
+        offerId: offerToBook.id,
+        room_id: offerToBook.room_id,
+        topic: offerToBook.topic,
+        discount: offerToBook.discount,
+        image: offerToBook.image,
+      }));
+      navigate('/signin');
+      return;
+    }
+
+    resolveAndNavigate();
+  };
+
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
   useEffect(() => {
     if (videoRef.current) {
@@ -149,12 +235,11 @@ const Home: React.FC = () => {
   ];
 
   const toggleVideo = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
+    if (iframeRef.current) {
+      const msg = isPlaying
+        ? '{"event":"command","func":"pauseVideo","args":""}'
+        : '{"event":"command","func":"playVideo","args":""}';
+      iframeRef.current.contentWindow?.postMessage(msg, '*');
       setIsPlaying(!isPlaying);
     }
   };
@@ -301,6 +386,7 @@ const Home: React.FC = () => {
             bottom: 0,
             zIndex: 0,
             backgroundColor: '#0a0a0a',
+<<<<<<< HEAD
             overflow: 'hidden'
           }}
         >
@@ -311,10 +397,26 @@ const Home: React.FC = () => {
             muted
             playsInline
             key="hero-video-v3"
+=======
+            backgroundImage: `url(${import.meta.env.BASE_URL}images/colombo.jpg)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            overflow: 'hidden'
+          }}
+        >
+          {/* YouTube iframe background - streams reliably on GitHub Pages */}
+          <iframe
+            ref={iframeRef}
+            src="https://www.youtube-nocookie.com/embed/2qKfnhNlFKk?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&playsinline=1&disablekb=1&fs=0&playlist=2qKfnhNlFKk&enablejsapi=1"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            title="Hero background video"
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
+<<<<<<< HEAD
               width: '100%',
               height: '100%',
               objectFit: 'cover',
@@ -326,6 +428,20 @@ const Home: React.FC = () => {
           >
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4?v=2`} type="video/mp4" />
           </video>
+=======
+              /* 16:9 cover technique */
+              width: '100vw',
+              height: '56.25vw',
+              minHeight: '100%',
+              minWidth: '177.78vh',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 0,
+              opacity: 0.85,
+              border: 'none',
+              pointerEvents: 'none',
+            }}
+          />
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
           {/* Modern Gradient Overlay */}
           <Box

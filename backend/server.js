@@ -8,69 +8,111 @@ import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from 'url';
+<<<<<<< HEAD
 import createRoomsRouter from './routes/rooms.js';
 import createBookingsRouter from './routes/bookings.js';
 import createBarRouter from './routes/bar.js';
 import createOffersRouter from './routes/offers.js';
 import createBillingRouter from './routes/billing.js';
 
+=======
+
+import createAuthRouter, { normalizeRole } from './routes/auth.js';
+import createRoomsRouter from './routes/rooms.js';
+import createBookingsRouter from './routes/bookings.js';
+import createBarRouter from './routes/bar.js';
+import createOffersRouter from './routes/offers.js';
+import createReceptionRouter from './routes/reception.js';
+import createReportsRouter from './routes/reports.js';
+
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
+<<<<<<< HEAD
 // Global API Rate Limiter
 const globalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 300, // 300 requests per 15 min
+=======
+const globalRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many requests from this IP. Please try again later.' },
 });
 
+<<<<<<< HEAD
 // Authentication & Account Creation Rate Limiter (Brute-force protection)
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 15, // 15 login/signup attempts per 15 min
+=======
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts. Please try again later.' },
 });
 
+<<<<<<< HEAD
 // Booking Rate Limiter
+=======
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 const bookingRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: 20,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many booking attempts. Please try again later.' },
 });
 
+<<<<<<< HEAD
 // Apply global rate limiting to all API endpoints
 app.use('/api/', globalRateLimit);
 
 // Ensure uploads directory exists
+=======
+app.use('/api/', globalRateLimit);
+
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads', { recursive: true });
 }
 
+<<<<<<< HEAD
 // Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (!fs.existsSync('uploads')) {
       fs.mkdirSync('uploads', { recursive: true });
     }
+=======
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (!fs.existsSync('uploads')) fs.mkdirSync('uploads', { recursive: true });
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024, fieldSize: 50 * 1024 * 1024 },
+});
+<<<<<<< HEAD
 const upload = multer({
   storage: storage,
   limits: {
@@ -83,11 +125,15 @@ const upload = multer({
 const publicDistPath = path.join(process.cwd(), 'public');
 const relativeDistPath = path.join(process.cwd(), '../frontend/dist');
 const staticPath = fs.existsSync(publicDistPath) ? publicDistPath : (fs.existsSync(relativeDistPath) ? relativeDistPath : null);
+=======
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
-// Serve uploads directory statically
+const publicDistPath = path.join(process.cwd(), 'public');
+const relativeDistPath = path.join(process.cwd(), '../frontend/dist');
+const staticPath = fs.existsSync(publicDistPath) ? publicDistPath : (fs.existsSync(relativeDistPath) ? relativeDistPath : null);
+
 app.use('/uploads', express.static('uploads'));
 
-// Database connection pool
 const pool = mysql.createPool({
   host: (process.env.DB_HOST || 'localhost').trim(),
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 4000,
@@ -100,6 +146,7 @@ const pool = mysql.createPool({
   ssl: process.env.DB_SSL === 'false' ? false : {
     minVersion: 'TLSv1.2',
     rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' || fs.existsSync('ca.pem'),
+<<<<<<< HEAD
     ca: fs.existsSync('ca.pem') ? fs.readFileSync('ca.pem') : undefined
   }
 });
@@ -121,6 +168,13 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
+=======
+    ca: fs.existsSync('ca.pem') ? fs.readFileSync('ca.pem') : undefined,
+  },
+});
+
+// Admin Authentication
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 app.post('/api/admin/signin', authRateLimit, (req, res) => {
   const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
@@ -129,9 +183,11 @@ app.post('/api/admin/signin', authRateLimit, (req, res) => {
     return res.status(401).json({ error: 'Invalid administrator credentials.' });
   }
 
-  res.json({ message: 'Administrator login successful.' });
+  const token = Buffer.from(JSON.stringify({ username, role: 'Admin' })).toString('base64');
+  res.json({ message: 'Administrator login successful.', token, role: 'Admin' });
 });
 
+<<<<<<< HEAD
 app.get('/api/guest/check-id', async (req, res) => {
   try {
     const { identity_number } = req.query;
@@ -151,6 +207,16 @@ app.get('/api/guest/check-id', async (req, res) => {
     res.json({ available: true });
   } catch (error) {
     console.error('Check ID error:', error);
+=======
+// Guest Endpoints
+app.get('/api/guest/check-id', async (req, res) => {
+  try {
+    const { identity_number } = req.query;
+    if (!identity_number?.trim()) return res.status(400).json({ error: 'Identity number is required.' });
+    const [rows] = await pool.query('SELECT guest_id FROM guest WHERE identity_number = ? LIMIT 1', [identity_number.trim()]);
+    res.json({ available: rows.length === 0 });
+  } catch {
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     res.status(500).json({ error: 'Unable to verify ID number.' });
   }
 });
@@ -158,12 +224,14 @@ app.get('/api/guest/check-id', async (req, res) => {
 app.post('/api/guest/signup', authRateLimit, async (req, res) => {
   try {
     const { first_name, last_name, email, phone_number, identity_number, password } = req.body;
-    const requiredFields = [first_name, last_name, email, phone_number, identity_number, password];
+    const required = [first_name, last_name, email, phone_number, identity_number, password];
+    if (required.some((f) => !f?.trim())) return res.status(400).json({ error: 'All guest registration fields are required.' });
+    if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
 
-    if (requiredFields.some((field) => typeof field !== 'string' || !field.trim())) {
-      return res.status(400).json({ error: 'All guest registration fields are required.' });
-    }
+    const [existing] = await pool.query('SELECT guest_id FROM guest WHERE email = ? OR identity_number = ? LIMIT 1', [email.trim(), identity_number.trim()]);
+    if (existing.length > 0) return res.status(409).json({ error: 'Account already exists with that email or ID number.' });
 
+<<<<<<< HEAD
     if (password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
@@ -179,10 +247,14 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+=======
+    const hash = await bcrypt.hash(password, 12);
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     const [result] = await pool.query(
-      'INSERT INTO GUEST (first_name, last_name, email, phone_number, identity_number, password) VALUES (?, ?, ?, ?, ?, ?)',
-      [first_name.trim(), last_name.trim(), email.trim(), phone_number.trim(), identity_number.trim(), passwordHash]
+      'INSERT INTO guest (first_name, last_name, email, phone_number, identity_number, password) VALUES (?, ?, ?, ?, ?, ?)',
+      [first_name.trim(), last_name.trim(), email.trim(), phone_number.trim(), identity_number.trim(), hash]
     );
+<<<<<<< HEAD
 
     res.status(201).json({
       message: 'Guest account created successfully.',
@@ -193,6 +265,10 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'ID number or email already in use. Please choose a different ID.' });
     }
+=======
+    res.status(201).json({ message: 'Guest account created successfully.', guest_id: result.insertId });
+  } catch {
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     res.status(500).json({ error: 'Unable to create guest account.' });
   }
 });
@@ -200,6 +276,7 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
 app.post('/api/guest/signin', authRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
+<<<<<<< HEAD
 
     if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
@@ -213,8 +290,14 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
 
     if (!guest || !(await bcrypt.compare(password, guest.password))) {
       return res.status(401).json({ error: 'Account not found or password incorrect. Please check your credentials.' });
-    }
+=======
+    const [rows] = await pool.query('SELECT * FROM guest WHERE email = ? LIMIT 1', [email?.trim()]);
+    const guest = rows[0];
 
+    if (!guest || !(await bcrypt.compare(password || '', guest.password))) {
+      return res.status(401).json({ error: 'Invalid credentials.' });
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
+    }
     res.json({
       guest_id: guest.guest_id,
       first_name: guest.first_name,
@@ -223,13 +306,13 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
       phone_number: guest.phone_number,
       identity_number: guest.identity_number,
     });
-  } catch (error) {
-    console.error('Guest signin error:', error);
+  } catch {
     res.status(500).json({ error: 'Unable to sign in.' });
   }
 });
 
 app.patch('/api/guest/:id/profile', async (req, res) => {
+<<<<<<< HEAD
   try {
     const guestId = Number(req.params.id);
     const { phone_number, first_name, last_name } = req.body;
@@ -455,6 +538,26 @@ app.patch('/api/staff/:id/attendance/busy', async (req, res) => {
 });
 
 app.get('/api/staff', async (req, res) => {
+=======
+  try {
+    const guestId = Number(req.params.id);
+    const { phone_number, first_name, last_name } = req.body;
+    await pool.query('UPDATE guest SET phone_number = ?, first_name = COALESCE(?, first_name), last_name = COALESCE(?, last_name) WHERE guest_id = ?', [
+      phone_number?.trim(),
+      first_name?.trim() || null,
+      last_name?.trim() || null,
+      guestId,
+    ]);
+    const [rows] = await pool.query('SELECT guest_id, first_name, last_name, email, phone_number, identity_number FROM guest WHERE guest_id = ?', [guestId]);
+    res.json({ message: 'Profile updated successfully.', guest: rows[0] });
+  } catch {
+    res.status(500).json({ error: 'Unable to update profile.' });
+  }
+});
+
+// Staff Listing (Supports both /api/staff and /api/auth/staff without 401 errors)
+app.get(['/api/staff', '/api/auth/staff'], async (req, res) => {
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
   try {
     const [rows] = await pool.query('SELECT id, username, role, active, created_at FROM Staff ORDER BY created_at DESC');
     res.json(rows);
@@ -464,20 +567,23 @@ app.get('/api/staff', async (req, res) => {
   }
 });
 
-app.patch('/api/staff/:id/status', async (req, res) => {
+// Staff Creation
+app.post(['/api/staff', '/api/auth/staff'], authRateLimit, async (req, res) => {
   try {
-    const active = Boolean(req.body.active);
-    const [result] = await pool.query('UPDATE Staff SET active = ? WHERE id = ?', [active, req.params.id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Staff member not found.' });
+    const { username, password, role } = req.body;
+    if (!username?.trim() || !password || !role) {
+      return res.status(400).json({ error: 'Username, password, and role are required.' });
     }
-    res.json({ message: active ? 'Staff member approved.' : 'Staff member deactivated.' });
+    const hash = await bcrypt.hash(password, 12);
+    const [result] = await pool.query('INSERT INTO Staff (username, password, role, active) VALUES (?, ?, ?, TRUE)', [username.trim(), hash, role]);
+    res.status(201).json({ message: 'User added successfully.', id: result.insertId });
   } catch (error) {
-    console.error('Staff status update error:', error);
-    res.status(500).json({ error: 'Unable to update staff status.' });
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Username already in use.' });
+    res.status(500).json({ error: 'Unable to create staff member.' });
   }
 });
 
+<<<<<<< HEAD
 // (Replaced by roomsRouter)
 
 const roomsRouter = createRoomsRouter(pool, upload);
@@ -637,3 +743,94 @@ app.get('/api/branches/:id/rooms', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+=======
+// Staff Deletion (Supports both paths)
+app.delete(['/api/staff/:id', '/api/auth/staff/:id'], async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const [result] = await pool.query('DELETE FROM Staff WHERE id = ?', [staffId]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Staff member not found.' });
+    res.json({ message: 'Staff member removed successfully.' });
+  } catch (error) {
+    console.error('Staff delete error:', error);
+    res.status(500).json({ error: 'Unable to remove staff member.' });
+  }
+});
+
+// Staff Signin
+app.post('/api/staff/signin', authRateLimit, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const [rows] = await pool.query('SELECT * FROM Staff WHERE username = ? LIMIT 1', [username?.trim()]);
+    const staff = rows[0];
+
+    if (!staff || !(await bcrypt.compare(password || '', staff.password))) {
+      return res.status(401).json({ error: 'Invalid staff credentials.' });
+    }
+    if (!staff.active) return res.status(403).json({ error: 'Account deactivated.' });
+
+    const normalized = normalizeRole(staff.role);
+    const token = Buffer.from(JSON.stringify({ id: staff.id, username: staff.username, role: normalized })).toString('base64');
+    res.json({ id: staff.id, staff_id: staff.id, username: staff.username, role: normalized, token });
+  } catch {
+    res.status(500).json({ error: 'Unable to sign in.' });
+  }
+});
+
+app.get('/api/staff/:id/workspace', async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const [staffRows] = await pool.query('SELECT id, username, role, active, mobile_number FROM Staff WHERE id = ?', [staffId]);
+    if (!staffRows[0]) return res.status(404).json({ error: 'Staff member not found.' });
+
+    const [attendance] = await pool.query(
+      "SELECT id, DATE_FORMAT(attendance_date, '%Y-%m-%d') AS attendance_date, check_in_time, check_out_time, check_in_location, check_out_location, is_busy FROM staff_attendance WHERE staff_id = ? ORDER BY attendance_date DESC LIMIT 14",
+      [staffId]
+    );
+    const [salaryRows] = await pool.query('SELECT role, rate, salary_amount FROM staff_salary WHERE staff_id = ? LIMIT 1', [staffId]);
+    res.json({ staff: staffRows[0], attendance, salary: salaryRows[0] || { role: staffRows[0].role, rate: 7, salary_amount: 0 } });
+  } catch {
+    res.status(500).json({ error: 'Unable to load workspace.' });
+  }
+});
+
+app.post('/api/staff/:id/attendance/:action', async (req, res) => {
+  const { id, action } = req.params;
+  const location = String(req.body.location || req.body.check_in_location || req.body.check_out_location || '').trim();
+
+  if (action === 'check-in') {
+    await pool.query('INSERT INTO staff_attendance (staff_id, attendance_date, check_in_time, check_in_location) VALUES (?, CURDATE(), CURTIME(), ?)', [id, location]);
+    res.json({ message: 'Checked in successfully.' });
+  } else {
+    await pool.query('UPDATE staff_attendance SET check_out_time = CURTIME(), check_out_location = ? WHERE staff_id = ? AND attendance_date = CURDATE() AND check_out_time IS NULL', [location, id]);
+    res.json({ message: 'Checked out successfully.' });
+  }
+});
+
+// Mounted Routers
+app.use('/api/rooms', createRoomsRouter(pool, upload));
+app.use('/api/bookings', createBookingsRouter(pool, bookingRateLimit));
+app.use('/api/bar', createBarRouter(pool, upload));
+app.use('/api/admin/bar', createBarRouter(pool, upload));
+app.use('/api/offers', createOffersRouter(pool, upload));
+app.use('/api/exclusive-offers', createOffersRouter(pool, upload));
+app.use('/api/auth', createAuthRouter(pool, authRateLimit));
+app.use('/api/reception', createReceptionRouter(pool));
+app.use('/api/reports', createReportsRouter(pool));
+
+// Static files in production
+if (staticPath) {
+  app.use(express.static(staticPath));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+}
+
+// Connection test on server boot
+pool.query('SELECT 1 + 1 AS solution')
+  .then(() => console.log('✅ Successfully connected to TiDB Cloud database!'))
+  .catch((err) => console.error('❌ Failed to connect to TiDB Cloud database:', err.message));
+
+app.listen(port, () => console.log(`Server running on port ${port}`));
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
