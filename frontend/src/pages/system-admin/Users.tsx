@@ -17,18 +17,24 @@ type StaffUser = {
 };
 
 const roleOptions = [
+<<<<<<< HEAD
+=======
   { value: 'receptionist', label: 'Front Desk / Reception' },
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
   { value: 'cleaning', label: 'Cleaning Staff' },
   { value: 'bar', label: 'Bar Keeping Staff' },
   { value: 'therapist', label: 'Therapist Staff' },
   { value: 'waiter', label: 'Waiter Staff' },
   { value: 'admin', label: 'Administrator' },
 ];
+<<<<<<< HEAD
+=======
 
 const getAuthHeaders = () => {
   const token = sessionStorage.getItem('staffToken') || '';
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<StaffUser[]>([]);
@@ -49,6 +55,13 @@ const Users: React.FC = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
+<<<<<<< HEAD
+    try {
+      const response = await axios.get<StaffUser[]>('/api/staff');
+      setUsers(response.data);
+    } catch {
+      setError('Unable to load users from database.');
+=======
     setError('');
     try {
       // Calls standard /api/staff with optional auth headers to prevent 401
@@ -59,6 +72,7 @@ const Users: React.FC = () => {
     } catch (err: any) {
       console.error('Fetch users error:', err);
       setError(err.response?.data?.error || 'Unable to load users from database.');
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     } finally {
       setLoading(false);
     }
@@ -91,6 +105,13 @@ const Users: React.FC = () => {
     setAddError('');
 
     try {
+<<<<<<< HEAD
+      await axios.post('/api/staff', {
+        username: newUsername.trim(),
+        password: newPassword,
+        role: newRole,
+      });
+=======
       await axios.post(
         '/api/staff',
         {
@@ -100,12 +121,22 @@ const Users: React.FC = () => {
         },
         { headers: getAuthHeaders() }
       );
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
       setSuccess(`User "${newUsername.trim()}" added successfully.`);
       handleCloseAddModal();
       await fetchUsers();
+<<<<<<< HEAD
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setAddError(err.response?.data?.error || 'Failed to create user.');
+      } else {
+        setAddError('Failed to create user.');
+      }
+=======
     } catch (err: any) {
       setAddError(err.response?.data?.error || 'Failed to create user.');
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     } finally {
       setIsSubmitting(false);
     }
@@ -115,6 +146,18 @@ const Users: React.FC = () => {
     if (!deleteTarget) return;
 
     try {
+<<<<<<< HEAD
+      await axios.delete(`/api/staff/${deleteTarget.id}`);
+      setSuccess(`User "${deleteTarget.username}" removed successfully.`);
+      setDeleteTarget(null);
+      await fetchUsers();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error || 'Failed to remove user.');
+      } else {
+        setError('Failed to remove user.');
+      }
+=======
       await axios.delete(`/api/staff/${deleteTarget.id}`, {
         headers: getAuthHeaders(),
       });
@@ -123,6 +166,7 @@ const Users: React.FC = () => {
       await fetchUsers();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to remove user.');
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     }
   };
 
@@ -223,7 +267,11 @@ const Users: React.FC = () => {
           <DialogContent dividers>
             <Stack spacing={2.5}>
               <Typography variant="body2" color="text.secondary">
+<<<<<<< HEAD
+                Directly create a staff or user account. No approval required; the user can log in immediately.
+=======
                 Directly create a staff or user account. The user will be able to log in immediately.
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
               </Typography>
               {addError && <Alert severity="error">{addError}</Alert>}
               <TextField
@@ -267,7 +315,11 @@ const Users: React.FC = () => {
         </Box>
       </Dialog>
 
+<<<<<<< HEAD
+      {/* Delete User Confirmation Dialog */}
+=======
       {/* Delete Confirmation Dialog */}
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>Confirm Remove User</DialogTitle>
         <DialogContent>

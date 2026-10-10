@@ -35,6 +35,8 @@ const SignIn: React.FC = () => {
       window.dispatchEvent(new Event('guestAuthChanged'));
       window.dispatchEvent(new Event('authChange'));
 
+<<<<<<< HEAD
+=======
       // Check if there is a pending booking intent saved before sign-in
       const pendingRaw = sessionStorage.getItem('pendingBookingIntent');
       if (pendingRaw) {
@@ -71,6 +73,7 @@ const SignIn: React.FC = () => {
         }
       }
 
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
       setTimeout(() => {
         navigate('/profile');
       }, 1000);

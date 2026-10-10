@@ -17,7 +17,11 @@ const staffRoles = [
 
 const AccessPortal: React.FC = () => {
   const navigate = useNavigate();
+<<<<<<< HEAD
+  const [role, setRole] = useState<StaffRole>('cleaning');
+=======
   const [role, setRole] = useState<StaffRole>('receptionist');
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,6 +39,9 @@ const AccessPortal: React.FC = () => {
     setLoading(true);
 
     try {
+<<<<<<< HEAD
+      const response = await axios.post('/api/staff/signin', { username: email.trim(), password, role });
+=======
       // 1. Authenticate with backend
       const response = await axios.post('/api/staff/signin', { 
         username: email.trim(), 
@@ -43,6 +50,7 @@ const AccessPortal: React.FC = () => {
       });
 
       // 2. Save session data
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
       sessionStorage.setItem('staffRole', role);
       sessionStorage.setItem('staffId', String(response.data.staff_id || response.data.id));
       sessionStorage.setItem('hmsStaffSession', JSON.stringify(response.data));

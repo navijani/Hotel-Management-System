@@ -59,6 +59,9 @@ const Home: React.FC = () => {
   const [selectedOffer, setSelectedOffer] = useState<ExclusiveOffer | null>(null);
   const [, setWelcomePopupOffer] = useState<ExclusiveOffer | null>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState<boolean>(false);
+<<<<<<< HEAD
+  const videoRef = useRef<HTMLVideoElement>(null);
+=======
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -140,6 +143,74 @@ const Home: React.FC = () => {
     }
 
     resolveAndNavigate();
+  };
+
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.log('Video autoplay prevented or loading:', err);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const res = await axios.get('/api/offers?active_only=true');
+        if (Array.isArray(res.data)) {
+          setOffers(res.data);
+          if (res.data.length > 0) {
+            setWelcomePopupOffer(res.data[0]);
+            setShowWelcomePopup(true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load exclusive offers:', err);
+      }
+    };
+    fetchOffers();
+  }, []);
+
+  const handleBookOffer = (targetOffer?: ExclusiveOffer | null) => {
+    const offerToBook = targetOffer || selectedOffer || welcomePopupOffer;
+    setShowWelcomePopup(false);
+    setSelectedOffer(null);
+
+    if (offerToBook && offerToBook.room_id) {
+      axios.get(`/api/rooms/${offerToBook.room_id}`).then(res => {
+        const roomData = res.data;
+        const discountVal = offerToBook.discount || roomData.discount || 0;
+        const originalPrice = Number(roomData.price_per_night || 150);
+        const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
+
+        navigate('/book', {
+          state: {
+            room: {
+              RoomID: roomData.room_id,
+              RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
+              RoomTypeID: roomData.type || 'Special Offer Room',
+              Price: finalPrice,
+              OriginalPrice: originalPrice,
+              BedType: roomData.bed_type || 'Premium Bedding',
+              image: roomData.image || (offerToBook.image ? offerToBook.image : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop')
+            },
+            roomId: offerToBook.room_id,
+            roomType: roomData.type || 'Special Offer Room'
+          }
+        });
+      }).catch(() => {
+        navigate('/book', {
+          state: {
+            roomId: offerToBook.room_id,
+            roomType: offerToBook.topic || 'Special Offer Room'
+          }
+        });
+      });
+    } else {
+      navigate('/rooms');
+    }
   };
 
 
@@ -315,6 +386,18 @@ const Home: React.FC = () => {
             bottom: 0,
             zIndex: 0,
             backgroundColor: '#0a0a0a',
+<<<<<<< HEAD
+            overflow: 'hidden'
+          }}
+        >
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            key="hero-video-v3"
+=======
             backgroundImage: `url(${import.meta.env.BASE_URL}images/colombo.jpg)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -328,10 +411,24 @@ const Home: React.FC = () => {
             allow="autoplay; encrypted-media"
             allowFullScreen
             title="Hero background video"
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
+<<<<<<< HEAD
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 0,
+              opacity: 0.85,
+              filter: 'contrast(1.1) saturate(1.2)'
+            }}
+          >
+            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4?v=2`} type="video/mp4" />
+          </video>
+=======
               /* 16:9 cover technique */
               width: '100vw',
               height: '56.25vw',
@@ -344,6 +441,7 @@ const Home: React.FC = () => {
               pointerEvents: 'none',
             }}
           />
+>>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
           {/* Modern Gradient Overlay */}
           <Box
