@@ -17,12 +17,18 @@ type StaffUser = {
 };
 
 const roleOptions = [
+  { value: 'receptionist', label: 'Front Desk / Reception' },
   { value: 'cleaning', label: 'Cleaning Staff' },
   { value: 'bar', label: 'Bar Keeping Staff' },
   { value: 'therapist', label: 'Therapist Staff' },
   { value: 'waiter', label: 'Waiter Staff' },
   { value: 'admin', label: 'Administrator' },
 ];
+
+const getAuthHeaders = () => {
+  const token = sessionStorage.getItem('staffToken') || '';
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<StaffUser[]>([]);
@@ -43,11 +49,16 @@ const Users: React.FC = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await axios.get<StaffUser[]>('/api/staff');
-      setUsers(response.data);
-    } catch {
-      setError('Unable to load users from database.');
+      // Calls standard /api/staff with optional auth headers to prevent 401
+      const response = await axios.get<StaffUser[]>('/api/staff', {
+        headers: getAuthHeaders(),
+      });
+      setUsers(Array.isArray(response.data) ? response.data : []);
+    } catch (err: any) {
+      console.error('Fetch users error:', err);
+      setError(err.response?.data?.error || 'Unable to load users from database.');
     } finally {
       setLoading(false);
     }
@@ -80,21 +91,21 @@ const Users: React.FC = () => {
     setAddError('');
 
     try {
-      await axios.post('/api/staff', {
-        username: newUsername.trim(),
-        password: newPassword,
-        role: newRole,
-      });
+      await axios.post(
+        '/api/staff',
+        {
+          username: newUsername.trim(),
+          password: newPassword,
+          role: newRole,
+        },
+        { headers: getAuthHeaders() }
+      );
 
       setSuccess(`User "${newUsername.trim()}" added successfully.`);
       handleCloseAddModal();
       await fetchUsers();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setAddError(err.response?.data?.error || 'Failed to create user.');
-      } else {
-        setAddError('Failed to create user.');
-      }
+    } catch (err: any) {
+      setAddError(err.response?.data?.error || 'Failed to create user.');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,16 +115,14 @@ const Users: React.FC = () => {
     if (!deleteTarget) return;
 
     try {
-      await axios.delete(`/api/staff/${deleteTarget.id}`);
+      await axios.delete(`/api/staff/${deleteTarget.id}`, {
+        headers: getAuthHeaders(),
+      });
       setSuccess(`User "${deleteTarget.username}" removed successfully.`);
       setDeleteTarget(null);
       await fetchUsers();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || 'Failed to remove user.');
-      } else {
-        setError('Failed to remove user.');
-      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to remove user.');
     }
   };
 
@@ -214,7 +223,7 @@ const Users: React.FC = () => {
           <DialogContent dividers>
             <Stack spacing={2.5}>
               <Typography variant="body2" color="text.secondary">
-                Directly create a staff or user account. No approval required; the user can log in immediately.
+                Directly create a staff or user account. The user will be able to log in immediately.
               </Typography>
               {addError && <Alert severity="error">{addError}</Alert>}
               <TextField
@@ -258,7 +267,7 @@ const Users: React.FC = () => {
         </Box>
       </Dialog>
 
-      {/* Delete User Confirmation Dialog */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>Confirm Remove User</DialogTitle>
         <DialogContent>

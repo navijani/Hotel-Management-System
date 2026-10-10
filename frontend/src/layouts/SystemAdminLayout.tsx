@@ -20,6 +20,7 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
+  Desk as DeskIcon,
   MeetingRoom as RoomIcon,
   People as PeopleIcon,
   EventNote as BookingIcon,
@@ -27,6 +28,7 @@ import {
   LocalOffer as OfferIcon,
   Settings as SettingsIcon,
   ExitToApp as LogoutIcon,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 260;
@@ -41,14 +43,16 @@ const SystemAdminLayout: React.FC = () => {
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
-    { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
-    { text: 'Bookings', icon: <BookingIcon />, path: '/system-admin/bookings' },
-    { text: 'Bar & Beverages', icon: <BarIcon />, path: '/system-admin/bar' },
-    { text: 'Users & Staff', icon: <PeopleIcon />, path: '/system-admin/users' },
-    { text: 'Exclusive Offers', icon: <OfferIcon />, path: '/system-admin/offers' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/system-admin/settings' },
-  ];
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
+  { text: 'Reception Desk', icon: <DeskIcon />, path: '/reception' },
+  { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
+  { text: 'Bookings', icon: <BookingIcon />, path: '/system-admin/bookings' },
+  { text: 'Bar & Beverages', icon: <BarIcon />, path: '/system-admin/bar' },
+  { text: 'Users & Staff', icon: <PeopleIcon />, path: '/system-admin/users' },
+  { text: 'Exclusive Offers', icon: <OfferIcon />, path: '/system-admin/offers' },
+  { text: 'Financial Reports', icon: <AssessmentIcon />, path: '/system-admin/reports' }, // <-- Added
+  { text: 'Settings', icon: <SettingsIcon />, path: '/system-admin/settings' },
+];
 
   const drawer = (
     <Box sx={{ height: '100%', bgcolor: '#1e1e2f', color: '#fff' }}>
