@@ -43,16 +43,6 @@ const SystemAdminLayout: React.FC = () => {
   };
 
   const menuItems = [
-<<<<<<< HEAD
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
-    { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
-    { text: 'Bookings', icon: <BookingIcon />, path: '/system-admin/bookings' },
-    { text: 'Bar & Beverages', icon: <BarIcon />, path: '/system-admin/bar' },
-    { text: 'Users & Staff', icon: <PeopleIcon />, path: '/system-admin/users' },
-    { text: 'Exclusive Offers', icon: <OfferIcon />, path: '/system-admin/offers' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/system-admin/settings' },
-  ];
-=======
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
   { text: 'Reception Desk', icon: <DeskIcon />, path: '/reception' },
   { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
@@ -63,7 +53,6 @@ const SystemAdminLayout: React.FC = () => {
   { text: 'Financial Reports', icon: <AssessmentIcon />, path: '/system-admin/reports' }, // <-- Added
   { text: 'Settings', icon: <SettingsIcon />, path: '/system-admin/settings' },
 ];
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
   const drawer = (
     <Box sx={{ height: '100%', bgcolor: '#1e1e2f', color: '#fff' }}>
@@ -109,11 +98,7 @@ const SystemAdminLayout: React.FC = () => {
       <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2 }}>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mb: 2 }} />
         <ListItemButton
-<<<<<<< HEAD
-          onClick={() => navigate('/')}
-=======
           onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }}
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
           sx={{ borderRadius: 2, color: '#a0a0b0', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: '#fff' } }}
         >
           <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><LogoutIcon /></ListItemIcon>

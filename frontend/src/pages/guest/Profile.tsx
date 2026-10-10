@@ -243,11 +243,7 @@ const Profile: React.FC = () => {
                   sessionStorage.removeItem('guestProfile');
                   sessionStorage.removeItem('guestUser');
                   window.dispatchEvent(new Event('guestAuthChanged'));
-<<<<<<< HEAD
-                  window.location.href = '/';
-=======
                   window.location.href = import.meta.env.BASE_URL || '/';
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
                 }}
               >
                 Logout Account
