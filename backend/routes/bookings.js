@@ -1,7 +1,14 @@
 import express from 'express';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
+const bookingWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // limit each IP to 30 write requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const formatBillingRow = (row) => ({
   booking_id: row.booking_id,
@@ -257,7 +264,7 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
   };
 
   // PUT /api/bookings/:id/status
-  router.put('/:id/status', async (req, res) => {
+  router.put('/:id/status', bookingWriteLimiter, async (req, res) => {
     const connection = await pool.getConnection();
     try {
       const bookingId = Number(req.params.id);
@@ -289,7 +296,7 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
   });
 
   // POST /api/bookings/:id/check-in
-  router.post('/:id/check-in', async (req, res) => {
+  router.post('/:id/check-in', bookingWriteLimiter, async (req, res) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
@@ -305,7 +312,7 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
   });
 
   // POST /api/bookings/:id/check-out
-  router.post('/:id/check-out', async (req, res) => {
+  router.post('/:id/check-out', bookingWriteLimiter, async (req, res) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
