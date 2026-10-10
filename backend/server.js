@@ -740,9 +740,6 @@ app.get('/api/branches/:id/rooms', async (req, res) => {
 //=====================================================
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
 =======
 // Staff Deletion (Supports both paths)
 app.delete(['/api/staff/:id', '/api/auth/staff/:id'], async (req, res) => {
@@ -817,7 +814,7 @@ app.use('/api/exclusive-offers', createOffersRouter(pool, upload));
 app.use('/api/auth', createAuthRouter(pool, authRateLimit));
 app.use('/api/reception', createReceptionRouter(pool));
 app.use('/api/reports', createReportsRouter(pool));
-
+app.use('/api/branches', createBranchRouter(pool));
 // Static files in production
 if (staticPath) {
   app.use(express.static(staticPath));
