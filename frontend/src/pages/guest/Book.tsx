@@ -57,31 +57,99 @@ const Book: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { room, roomId: fallbackId, roomType: fallbackType } = location.state || {};
+
+  const getSavedBooking = () => {
+    try {
+      const raw = sessionStorage.getItem('pendingBookingRoom') || sessionStorage.getItem('pendingBookingIntent');
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const savedBooking = getSavedBooking();
+  const stateData = location.state || {};
+  const room = stateData.room || savedBooking?.room || (savedBooking?.RoomID ? savedBooking : null);
+  const fallbackId = stateData.roomId || savedBooking?.roomId || savedBooking?.RoomID;
+  const fallbackType = stateData.roomType || savedBooking?.roomType || savedBooking?.RoomTypeID;
 
   const selectedRoomId = room?.RoomID || fallbackId || null;
   const selectedRoomType = room?.RoomTypeID || fallbackType || 'Standard';
-  const selectedBranch = room?.Branch || 'Colombo';
-  const selectedPrice = room?.Price || 150;
-  const selectedImage = room?.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop';
+  const selectedBranch = (!room?.Branch || room?.Branch === 'undefined') ? (savedBooking?.room?.Branch || 'Colombo') : room.Branch;
+  const selectedPrice = room?.Price || savedBooking?.room?.Price || 150;
+  const selectedImage = room?.image || savedBooking?.room?.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop';
 
   const [bookedDates, setBookedDates] = useState<{ start: Dayjs, end: Dayjs }[]>([]);
 
   // Guest profile auto-fill
-  const storedProfileRaw = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
-  const storedProfile = storedProfileRaw ? JSON.parse(storedProfileRaw) : null;
+  const getStoredProfile = () => {
+    try {
+      const storedProfileRaw = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
+      return storedProfileRaw ? JSON.parse(storedProfileRaw) : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const storedProfile = getStoredProfile();
 
   const [formData, setFormData] = useState({
     firstName: storedProfile?.first_name || storedProfile?.firstName || '',
     lastName: storedProfile?.last_name || storedProfile?.lastName || '',
     email: storedProfile?.email || '',
-    phone: storedProfile?.phone_number || storedProfile?.phone || '',
-    identificationNo: storedProfile?.identity_number || storedProfile?.identityNumber || '',
+    phone: storedProfile?.phone_number || storedProfile?.phone || storedProfile?.contact_number || '',
+    identificationNo: storedProfile?.identity_number || storedProfile?.identityNumber || storedProfile?.id_number || storedProfile?.identificationNo || '',
     checkInDate: null as Dayjs | null,
     checkOutDate: null as Dayjs | null,
     roomType: selectedRoomType,
     roomId: selectedRoomId,
   });
+
+  // Guard: if user is not signed in, redirect to sign in page while retaining booking details
+  useEffect(() => {
+    const isSignedIn = sessionStorage.getItem('guestSignedIn') === 'true' || sessionStorage.getItem('guestAuthenticated') === 'true';
+    if (!isSignedIn) {
+      const currentBooking = {
+        room,
+        roomId: selectedRoomId,
+        roomType: selectedRoomType
+      };
+      if (selectedRoomId || room) {
+        sessionStorage.setItem('pendingBookingRoom', JSON.stringify(currentBooking));
+        sessionStorage.setItem('pendingBookingIntent', JSON.stringify(currentBooking));
+      }
+      navigate('/signin', {
+        state: {
+          redirectTo: '/book',
+          bookingState: currentBooking
+        }
+      });
+    }
+  }, [navigate, room, selectedRoomId, selectedRoomType]);
+
+  // Sync profile details if available
+  useEffect(() => {
+    const p = getStoredProfile();
+    if (p) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: prev.firstName || p.first_name || p.firstName || '',
+        lastName: prev.lastName || p.last_name || p.lastName || '',
+        email: prev.email || p.email || '',
+        phone: prev.phone || p.phone_number || p.phone || p.contact_number || '',
+        identificationNo: prev.identificationNo || p.identity_number || p.identityNumber || p.id_number || p.identificationNo || '',
+      }));
+    }
+  }, []);
+
+  // Sync room details
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      roomType: selectedRoomType,
+      roomId: selectedRoomId,
+    }));
+  }, [selectedRoomId, selectedRoomType]);
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -580,11 +648,7 @@ const Book: React.FC = () => {
                       <Button variant="contained" onClick={() => navigate('/profile')} size="large" sx={{ borderRadius: 8, px: 4, bgcolor: '#1a1a2e', color: '#fff', textTransform: 'none', fontWeight: 600 }}>
                         View My Profile & Bookings
                       </Button>
-<<<<<<< HEAD
-                      <Button variant="outlined" onClick={() => navigate('/')} size="large" sx={{ borderRadius: 8, px: 4, textTransform: 'none', fontWeight: 600, color: '#1a1a2e', borderColor: '#cbd5e1' }}>
-=======
                       <Button variant="outlined" onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }} size="large" sx={{ borderRadius: 8, px: 4, textTransform: 'none', fontWeight: 600, color: '#1a1a2e', borderColor: '#cbd5e1' }}>
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
                         Return to Homepage
                       </Button>
                     </Box>

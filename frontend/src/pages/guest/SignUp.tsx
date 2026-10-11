@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Box, Container, Typography, TextField, Button, Paper, Alert, Grid, CircularProgress } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const SignUp: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,7 +20,6 @@ const SignUp: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,8 +106,44 @@ const SignUp: React.FC = () => {
       sessionStorage.setItem('guestAuthenticated', 'true');
       sessionStorage.setItem('guestSignedIn', 'true');
       sessionStorage.setItem('guestProfile', JSON.stringify(signinRes.data));
+      sessionStorage.setItem('guestUser', JSON.stringify(signinRes.data));
       window.dispatchEvent(new Event('guestAuthChanged'));
       window.dispatchEvent(new Event('authChange'));
+
+      const locationState = location.state as any;
+      const pendingRoomRaw = sessionStorage.getItem('pendingBookingRoom');
+      const pendingIntentRaw = sessionStorage.getItem('pendingBookingIntent');
+
+      let bookingToRestore = null;
+      if (locationState?.bookingState) {
+        bookingToRestore = locationState.bookingState;
+      } else if (locationState?.room) {
+        bookingToRestore = {
+          room: locationState.room,
+          roomId: locationState.room?.RoomID || locationState.roomId,
+          roomType: locationState.room?.RoomTypeID || locationState.roomType
+        };
+      } else if (pendingRoomRaw) {
+        try {
+          bookingToRestore = JSON.parse(pendingRoomRaw);
+        } catch (_) {}
+      } else if (pendingIntentRaw) {
+        try {
+          const intent = JSON.parse(pendingIntentRaw);
+          if (intent.room || intent.roomId) {
+            bookingToRestore = intent;
+          }
+        } catch (_) {}
+      }
+
+      if (bookingToRestore) {
+        sessionStorage.removeItem('pendingBookingRoom');
+        sessionStorage.removeItem('pendingBookingIntent');
+        setTimeout(() => {
+          navigate('/book', { state: bookingToRestore });
+        }, 800);
+        return;
+      }
 
       setTimeout(() => {
         navigate('/profile');

@@ -235,6 +235,35 @@ const Rooms: React.FC = () => {
   }, []);
 
 
+  const handleBookRoom = (room: any, discountedPrice: number) => {
+    const bookingPayload = {
+      room: {
+        ...room,
+        Branch: (!room.Branch || room.Branch === 'undefined') ? 'Colombo' : room.Branch,
+        Price: discountedPrice,
+        OriginalPrice: room.Price
+      },
+      roomId: room.RoomID,
+      roomType: room.RoomTypeID
+    };
+
+    const isSignedIn = sessionStorage.getItem('guestSignedIn') === 'true' || sessionStorage.getItem('guestAuthenticated') === 'true';
+
+    if (!isSignedIn) {
+      // Save pending booking so after sign in user goes directly to room book page
+      sessionStorage.setItem('pendingBookingRoom', JSON.stringify(bookingPayload));
+      sessionStorage.setItem('pendingBookingIntent', JSON.stringify(bookingPayload));
+      navigate('/signin', {
+        state: {
+          redirectTo: '/book',
+          bookingState: bookingPayload
+        }
+      });
+    } else {
+      navigate('/book', { state: bookingPayload });
+    }
+  };
+
   const uniqueTypes = Array.from(new Set(rooms.map(r => r.RoomTypeID)));
 
   return (
@@ -454,8 +483,8 @@ const Rooms: React.FC = () => {
                       <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                           <Typography variant="caption" sx={{ color: '#d4af37', fontWeight: 600, letterSpacing: 1, display: 'block', mb: 0.5 }}>
-                              {room.Branch} Branch
-                            </Typography>
+                            {(!room.Branch || room.Branch === 'undefined') ? 'Colombo' : room.Branch} Branch
+                          </Typography>
                             <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Playfair Display", serif' }}>
                             {room.RoomTypeID}
                           </Typography>
@@ -506,7 +535,7 @@ const Rooms: React.FC = () => {
                           variant="contained"
                           fullWidth
                           disabled={!isAvailable}
-                          onClick={() => navigate('/book', { state: { room: { ...room, Price: discountedPrice, OriginalPrice: room.Price } } })}
+                          onClick={() => handleBookRoom(room, discountedPrice)}
                           sx={{
                             mt: 'auto',
                             py: 1.5,

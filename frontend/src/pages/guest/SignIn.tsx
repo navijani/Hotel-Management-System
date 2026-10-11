@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Container, Typography, TextField, Button, Paper, Alert, CircularProgress } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const SignIn: React.FC = () => {
@@ -10,6 +10,9 @@ const SignIn: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isBookingRedirect = location.state?.redirectTo === '/book' || Boolean(location.state?.bookingState) || Boolean(sessionStorage.getItem('pendingBookingRoom'));
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,51 +35,69 @@ const SignIn: React.FC = () => {
       sessionStorage.setItem('guestAuthenticated', 'true');
       sessionStorage.setItem('guestSignedIn', 'true');
       sessionStorage.setItem('guestProfile', JSON.stringify(res.data));
+      sessionStorage.setItem('guestUser', JSON.stringify(res.data));
       window.dispatchEvent(new Event('guestAuthChanged'));
       window.dispatchEvent(new Event('authChange'));
 
-<<<<<<< HEAD
-=======
-      // Check if there is a pending booking intent saved before sign-in
-      const pendingRaw = sessionStorage.getItem('pendingBookingIntent');
-      if (pendingRaw) {
-        sessionStorage.removeItem('pendingBookingIntent');
+      // Check if there is a pending booking intent or room saved before sign-in
+      const locationState = location.state as any;
+      const pendingRoomRaw = sessionStorage.getItem('pendingBookingRoom');
+      const pendingIntentRaw = sessionStorage.getItem('pendingBookingIntent');
+
+      let bookingToRestore = null;
+      if (locationState?.bookingState) {
+        bookingToRestore = locationState.bookingState;
+      } else if (locationState?.room) {
+        bookingToRestore = {
+          room: locationState.room,
+          roomId: locationState.room?.RoomID || locationState.roomId,
+          roomType: locationState.room?.RoomTypeID || locationState.roomType
+        };
+      } else if (pendingRoomRaw) {
         try {
-          const intent = JSON.parse(pendingRaw);
-          if (intent.room_id) {
+          bookingToRestore = JSON.parse(pendingRoomRaw);
+        } catch (_) {}
+      } else if (pendingIntentRaw) {
+        try {
+          const intent = JSON.parse(pendingIntentRaw);
+          if (intent.room || intent.roomId) {
+            bookingToRestore = intent;
+          } else if (intent.room_id) {
             const roomRes = await axios.get(`/api/rooms/${intent.room_id}`);
             const roomData = roomRes.data;
             const discountVal = intent.discount || roomData.discount || 0;
             const originalPrice = Number(roomData.price_per_night || 150);
             const finalPrice = discountVal > 0 ? Math.round(originalPrice * (1 - discountVal / 100)) : originalPrice;
-            setTimeout(() => {
-              navigate('/book', {
-                state: {
-                  room: {
-                    RoomID: roomData.room_id,
-                    RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
-                    RoomTypeID: roomData.type || 'Special Offer Room',
-                    Price: finalPrice,
-                    OriginalPrice: originalPrice,
-                    BedType: roomData.bed_type || 'Premium Bedding',
-                    image: roomData.image || (intent.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop'),
-                  },
-                  roomId: intent.room_id,
-                  roomType: roomData.type || 'Special Offer Room',
-                }
-              });
-            }, 800);
-            return;
+            bookingToRestore = {
+              room: {
+                RoomID: roomData.room_id,
+                RoomNumber: roomData.room_number || `Room ${roomData.room_id}`,
+                RoomTypeID: roomData.type || 'Special Offer Room',
+                Branch: roomData.branch || 'Colombo',
+                Price: finalPrice,
+                OriginalPrice: originalPrice,
+                BedType: roomData.bed_type || 'Premium Bedding',
+                image: roomData.image || (intent.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000&auto=format&fit=crop'),
+              },
+              roomId: intent.room_id,
+              roomType: roomData.type || 'Special Offer Room',
+            };
           }
-        } catch (_) {
-          // fallback to profile if room fetch fails
-        }
+        } catch (_) {}
       }
 
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
+      if (bookingToRestore) {
+        sessionStorage.removeItem('pendingBookingRoom');
+        sessionStorage.removeItem('pendingBookingIntent');
+        setTimeout(() => {
+          navigate('/book', { state: bookingToRestore });
+        }, 600);
+        return;
+      }
+
       setTimeout(() => {
         navigate('/profile');
-      }, 1000);
+      }, 800);
     } catch (err: any) {
       const serverError = err.response?.data?.error || 'Unable to sign in. Please check your credentials.';
       setError(serverError);
@@ -96,6 +117,11 @@ const SignIn: React.FC = () => {
             Sign in to access your reservations and exclusive offers.
           </Typography>
 
+          {isBookingRedirect && !success && (
+            <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+              Please sign in to proceed with your room reservation.
+            </Alert>
+          )}
           {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
 
@@ -152,7 +178,7 @@ const SignIn: React.FC = () => {
 
             <Box sx={{ textAlign: 'center', mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Don't have an account? <Box component="span" onClick={() => navigate('/signup')} sx={{ color: '#d4af37', fontWeight: 600, cursor: 'pointer' }}>Sign Up</Box>
+                Don't have an account? <Box component="span" onClick={() => navigate('/signup', { state: location.state })} sx={{ color: '#d4af37', fontWeight: 600, cursor: 'pointer' }}>Sign Up</Box>
               </Typography>
             </Box>
           </Box>
