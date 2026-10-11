@@ -208,7 +208,7 @@ const Rooms: React.FC = () => {
           RoomID: r.room_id || r.RoomID,
           RoomNumber: r.room_number || r.RoomNumber || 'TBD',
           RoomTypeID: r.type || r.RoomTypeID || 'Standard',
-            Branch: r.branch || r.Branch || 'Colombo',
+          Branch: (!r.branch || String(r.branch).trim().toLowerCase().includes('undefined')) ? 'Colombo' : r.branch,
           Status: r.status || r.current_status || r.Status || 'Available',
           Price: r.price_per_night || r.Price || 120,
           Discount: Number(r.discount || r.Discount || 0),
@@ -511,7 +511,7 @@ const Rooms: React.FC = () => {
                       <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                           <Typography variant="caption" sx={{ color: '#d4af37', fontWeight: 600, letterSpacing: 1, display: 'block', mb: 0.5 }}>
-                            {(!room.Branch || room.Branch === 'undefined') ? 'Colombo' : room.Branch} Branch
+                            {(!room.Branch || String(room.Branch).trim().toLowerCase().includes('undefined')) ? 'Colombo' : room.Branch} Branch
                           </Typography>
                             <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Playfair Display", serif' }}>
                             {room.RoomTypeID}
