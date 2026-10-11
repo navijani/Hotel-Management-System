@@ -60,7 +60,11 @@ const Book: React.FC = () => {
 
   const getSavedBooking = () => {
     try {
-      const raw = sessionStorage.getItem('pendingBookingRoom') || sessionStorage.getItem('pendingBookingIntent');
+      const raw =
+        sessionStorage.getItem('pendingBookingRoom') ||
+        localStorage.getItem('pendingBookingRoom') ||
+        sessionStorage.getItem('pendingBookingIntent') ||
+        localStorage.getItem('pendingBookingIntent');
       return raw ? JSON.parse(raw) : null;
     } catch (_) {
       return null;
@@ -84,7 +88,11 @@ const Book: React.FC = () => {
   // Guest profile auto-fill
   const getStoredProfile = () => {
     try {
-      const storedProfileRaw = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
+      const storedProfileRaw =
+        sessionStorage.getItem('guestProfile') ||
+        sessionStorage.getItem('guestUser') ||
+        localStorage.getItem('guestProfile') ||
+        localStorage.getItem('guestUser');
       return storedProfileRaw ? JSON.parse(storedProfileRaw) : null;
     } catch (_) {
       return null;
@@ -105,9 +113,20 @@ const Book: React.FC = () => {
     roomId: selectedRoomId,
   });
 
+  const checkIsSignedIn = () => {
+    const authFlag =
+      sessionStorage.getItem('guestSignedIn') === 'true' ||
+      sessionStorage.getItem('guestAuthenticated') === 'true' ||
+      localStorage.getItem('guestSignedIn') === 'true' ||
+      localStorage.getItem('guestAuthenticated') === 'true';
+
+    const p = getStoredProfile();
+    return Boolean(authFlag && p && (p.guest_id || p.email || p.first_name));
+  };
+
   // Guard: if user is not signed in, redirect to sign in page while retaining booking details
   useEffect(() => {
-    const isSignedIn = sessionStorage.getItem('guestSignedIn') === 'true' || sessionStorage.getItem('guestAuthenticated') === 'true';
+    const isSignedIn = checkIsSignedIn();
     if (!isSignedIn) {
       const currentBooking = {
         room,
@@ -116,8 +135,12 @@ const Book: React.FC = () => {
       };
       if (selectedRoomId || room) {
         sessionStorage.setItem('pendingBookingRoom', JSON.stringify(currentBooking));
+        localStorage.setItem('pendingBookingRoom', JSON.stringify(currentBooking));
         sessionStorage.setItem('pendingBookingIntent', JSON.stringify(currentBooking));
+        localStorage.setItem('pendingBookingIntent', JSON.stringify(currentBooking));
       }
+      sessionStorage.setItem('pendingBookingRedirect', '/book');
+      localStorage.setItem('pendingBookingRedirect', '/book');
       navigate('/signin', {
         state: {
           redirectTo: '/book',
@@ -127,19 +150,49 @@ const Book: React.FC = () => {
     }
   }, [navigate, room, selectedRoomId, selectedRoomType]);
 
+  const applyProfileToForm = (p: any) => {
+    if (!p) return;
+    setFormData(prev => ({
+      ...prev,
+      firstName: p.first_name || p.firstName || prev.firstName || '',
+      lastName: p.last_name || p.lastName || prev.lastName || '',
+      email: p.email || prev.email || '',
+      phone: p.phone_number || p.phone || p.contact_number || prev.phone || '',
+      identificationNo: p.identity_number || p.identityNumber || p.id_number || p.identificationNo || prev.identificationNo || '',
+    }));
+  };
+
   // Sync profile details if available
   useEffect(() => {
     const p = getStoredProfile();
     if (p) {
-      setFormData(prev => ({
-        ...prev,
-        firstName: prev.firstName || p.first_name || p.firstName || '',
-        lastName: prev.lastName || p.last_name || p.lastName || '',
-        email: prev.email || p.email || '',
-        phone: prev.phone || p.phone_number || p.phone || p.contact_number || '',
-        identificationNo: prev.identificationNo || p.identity_number || p.identityNumber || p.id_number || p.identificationNo || '',
-      }));
+      applyProfileToForm(p);
+      if (p.guest_id && (!p.phone_number || !p.identity_number || !p.first_name)) {
+        axios.get(`/api/guest/${p.guest_id}/profile`)
+          .then(res => {
+            if (res.data) {
+              applyProfileToForm(res.data);
+              const merged = { ...p, ...res.data };
+              const str = JSON.stringify(merged);
+              sessionStorage.setItem('guestProfile', str);
+              localStorage.setItem('guestProfile', str);
+            }
+          })
+          .catch(() => {});
+      }
     }
+
+    const handleAuthChange = () => {
+      const refreshed = getStoredProfile();
+      if (refreshed) applyProfileToForm(refreshed);
+    };
+
+    window.addEventListener('guestAuthChanged', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('guestAuthChanged', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, []);
 
   // Sync room details
@@ -203,6 +256,12 @@ const Book: React.FC = () => {
       const response = await axios.post('/api/bookings', payload);
       setSuccess('Booking confirmed successfully! Booking ID: ' + response.data.bookingId);
       setPayhereOrderId(orderId);
+      sessionStorage.removeItem('pendingBookingRoom');
+      sessionStorage.removeItem('pendingBookingIntent');
+      sessionStorage.removeItem('pendingBookingRedirect');
+      localStorage.removeItem('pendingBookingRoom');
+      localStorage.removeItem('pendingBookingIntent');
+      localStorage.removeItem('pendingBookingRedirect');
       setActiveStep(3); // Step 3 is Confirmation
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {

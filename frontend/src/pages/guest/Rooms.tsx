@@ -235,6 +235,29 @@ const Rooms: React.FC = () => {
   }, []);
 
 
+  const checkIsSignedIn = () => {
+    const authFlag =
+      sessionStorage.getItem('guestSignedIn') === 'true' ||
+      sessionStorage.getItem('guestAuthenticated') === 'true' ||
+      localStorage.getItem('guestSignedIn') === 'true' ||
+      localStorage.getItem('guestAuthenticated') === 'true';
+
+    const rawProfile =
+      sessionStorage.getItem('guestProfile') ||
+      sessionStorage.getItem('guestUser') ||
+      localStorage.getItem('guestProfile') ||
+      localStorage.getItem('guestUser');
+
+    if (!authFlag || !rawProfile) return false;
+
+    try {
+      const p = JSON.parse(rawProfile);
+      return Boolean(p && (p.guest_id || p.email || p.first_name));
+    } catch {
+      return false;
+    }
+  };
+
   const handleBookRoom = (room: any, discountedPrice: number) => {
     const bookingPayload = {
       room: {
@@ -247,12 +270,17 @@ const Rooms: React.FC = () => {
       roomType: room.RoomTypeID
     };
 
-    const isSignedIn = sessionStorage.getItem('guestSignedIn') === 'true' || sessionStorage.getItem('guestAuthenticated') === 'true';
+    const isSignedIn = checkIsSignedIn();
+
+    // Always preserve selected room in both storage mechanisms
+    sessionStorage.setItem('pendingBookingRoom', JSON.stringify(bookingPayload));
+    localStorage.setItem('pendingBookingRoom', JSON.stringify(bookingPayload));
+    sessionStorage.setItem('pendingBookingIntent', JSON.stringify(bookingPayload));
+    localStorage.setItem('pendingBookingIntent', JSON.stringify(bookingPayload));
 
     if (!isSignedIn) {
-      // Save pending booking so after sign in user goes directly to room book page
-      sessionStorage.setItem('pendingBookingRoom', JSON.stringify(bookingPayload));
-      sessionStorage.setItem('pendingBookingIntent', JSON.stringify(bookingPayload));
+      sessionStorage.setItem('pendingBookingRedirect', '/book');
+      localStorage.setItem('pendingBookingRedirect', '/book');
       navigate('/signin', {
         state: {
           redirectTo: '/book',

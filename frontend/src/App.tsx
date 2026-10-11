@@ -44,11 +44,14 @@ import BarItemsStaff from './pages/bar/BarItemsStaff';
 import { getStoredStaffSession } from './api/auth';
 import type { StaffRole } from './api/auth';
 
-const GuestGuard: React.FC<{ children: ReactNode }> = ({ children }) => (
-  sessionStorage.getItem('guestAuthenticated') === 'true' || sessionStorage.getItem('guestSignedIn') === 'true'
-    ? <>{children}</>
-    : <Navigate to="/signin" replace />
-);
+const GuestGuard: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const isAuth =
+    sessionStorage.getItem('guestAuthenticated') === 'true' ||
+    sessionStorage.getItem('guestSignedIn') === 'true' ||
+    localStorage.getItem('guestAuthenticated') === 'true' ||
+    localStorage.getItem('guestSignedIn') === 'true';
+  return isAuth ? <>{children}</> : <Navigate to="/signin" replace />;
+};
 
 const AdminGuard: React.FC<{ children: ReactNode }> = ({ children }) => {
   const session = getStoredStaffSession();

@@ -197,11 +197,24 @@ const Home: React.FC = () => {
 
     try {
       const response = await axios.post('/api/guest/signin', signinForm);
+      const profileStr = JSON.stringify(response.data);
       window.sessionStorage.setItem('guestSignedIn', 'true');
-      window.sessionStorage.setItem('guestProfile', JSON.stringify(response.data));
+      window.sessionStorage.setItem('guestAuthenticated', 'true');
+      window.sessionStorage.setItem('guestProfile', profileStr);
+      window.sessionStorage.setItem('guestUser', profileStr);
+      window.localStorage.setItem('guestSignedIn', 'true');
+      window.localStorage.setItem('guestAuthenticated', 'true');
+      window.localStorage.setItem('guestProfile', profileStr);
+      window.localStorage.setItem('guestUser', profileStr);
       setIsSignedIn(true);
       window.dispatchEvent(new Event('guestAuthChanged'));
       closeAuthPanel();
+
+      const pendingRoom = sessionStorage.getItem('pendingBookingRoom') || localStorage.getItem('pendingBookingRoom');
+      const pendingIntent = sessionStorage.getItem('pendingBookingIntent') || localStorage.getItem('pendingBookingIntent');
+      if (pendingRoom || pendingIntent) {
+        setTimeout(() => navigate('/book'), 400);
+      }
     } catch (error) {
       const message = axios.isAxiosError(error) ? error.response?.data?.error : 'Unable to sign in.';
       setSigninMessage({ type: 'error', text: message || 'Unable to sign in.' });

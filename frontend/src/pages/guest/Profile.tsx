@@ -56,7 +56,11 @@ interface Reservation {
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<GuestUser>(() => {
-    const rawProfile = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
+    const rawProfile =
+      sessionStorage.getItem('guestProfile') ||
+      sessionStorage.getItem('guestUser') ||
+      localStorage.getItem('guestProfile') ||
+      localStorage.getItem('guestUser');
     if (rawProfile) {
       try { return JSON.parse(rawProfile); } catch (e) { }
     }
@@ -242,6 +246,16 @@ const Profile: React.FC = () => {
                   sessionStorage.removeItem('guestSignedIn');
                   sessionStorage.removeItem('guestProfile');
                   sessionStorage.removeItem('guestUser');
+                  localStorage.removeItem('guestAuthenticated');
+                  localStorage.removeItem('guestSignedIn');
+                  localStorage.removeItem('guestProfile');
+                  localStorage.removeItem('guestUser');
+                  sessionStorage.removeItem('pendingBookingRoom');
+                  localStorage.removeItem('pendingBookingRoom');
+                  sessionStorage.removeItem('pendingBookingIntent');
+                  localStorage.removeItem('pendingBookingIntent');
+                  sessionStorage.removeItem('pendingBookingRedirect');
+                  localStorage.removeItem('pendingBookingRedirect');
                   window.dispatchEvent(new Event('guestAuthChanged'));
                   window.location.href = import.meta.env.BASE_URL || '/';
                 }}

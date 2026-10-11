@@ -161,6 +161,17 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
   }
 });
 
+app.get('/api/guest/:id/profile', async (req, res) => {
+  try {
+    const guestId = Number(req.params.id);
+    const [rows] = await pool.query('SELECT guest_id, first_name, last_name, email, phone_number, identity_number FROM guest WHERE guest_id = ?', [guestId]);
+    if (!rows[0]) return res.status(404).json({ error: 'Guest not found.' });
+    res.json(rows[0]);
+  } catch {
+    res.status(500).json({ error: 'Unable to load profile.' });
+  }
+});
+
 app.patch('/api/guest/:id/profile', async (req, res) => {
   try {
     const guestId = Number(req.params.id);

@@ -51,12 +51,28 @@ const GuestLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(() => window.sessionStorage.getItem('guestSignedIn') === 'true');
+  const getAuthStatus = () => {
+    const flag =
+      window.sessionStorage.getItem('guestSignedIn') === 'true' ||
+      window.localStorage.getItem('guestSignedIn') === 'true' ||
+      window.sessionStorage.getItem('guestAuthenticated') === 'true' ||
+      window.localStorage.getItem('guestAuthenticated') === 'true';
+    const profile =
+      window.sessionStorage.getItem('guestProfile') ||
+      window.localStorage.getItem('guestProfile');
+    return Boolean(flag && profile);
+  };
+
+  const [isSignedIn, setIsSignedIn] = useState(getAuthStatus);
 
   useEffect(() => {
-    const handleAuthChange = () => setIsSignedIn(window.sessionStorage.getItem('guestSignedIn') === 'true');
+    const handleAuthChange = () => setIsSignedIn(getAuthStatus());
     window.addEventListener('guestAuthChanged', handleAuthChange);
-    return () => window.removeEventListener('guestAuthChanged', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('guestAuthChanged', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -103,12 +119,7 @@ const GuestLayout: React.FC = () => {
   };
 
   const handleBookNow = () => {
-    if (isSignedIn) {
-      navigate('/rooms');
-      return;
-    }
-
-    navigate('/signup');
+    navigate('/rooms');
   };
 
   return (

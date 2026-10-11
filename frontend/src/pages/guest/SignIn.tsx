@@ -12,7 +12,13 @@ const SignIn: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isBookingRedirect = location.state?.redirectTo === '/book' || Boolean(location.state?.bookingState) || Boolean(sessionStorage.getItem('pendingBookingRoom'));
+  const isBookingRedirect =
+    location.state?.redirectTo === '/book' ||
+    Boolean(location.state?.bookingState) ||
+    Boolean(sessionStorage.getItem('pendingBookingRoom')) ||
+    Boolean(localStorage.getItem('pendingBookingRoom')) ||
+    sessionStorage.getItem('pendingBookingRedirect') === '/book' ||
+    localStorage.getItem('pendingBookingRedirect') === '/book';
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,17 +38,29 @@ const SignIn: React.FC = () => {
       });
 
       setSuccess('Login successful! Redirecting...');
+      const profileStr = JSON.stringify(res.data);
       sessionStorage.setItem('guestAuthenticated', 'true');
       sessionStorage.setItem('guestSignedIn', 'true');
-      sessionStorage.setItem('guestProfile', JSON.stringify(res.data));
-      sessionStorage.setItem('guestUser', JSON.stringify(res.data));
+      sessionStorage.setItem('guestProfile', profileStr);
+      sessionStorage.setItem('guestUser', profileStr);
+
+      localStorage.setItem('guestAuthenticated', 'true');
+      localStorage.setItem('guestSignedIn', 'true');
+      localStorage.setItem('guestProfile', profileStr);
+      localStorage.setItem('guestUser', profileStr);
+
       window.dispatchEvent(new Event('guestAuthChanged'));
       window.dispatchEvent(new Event('authChange'));
 
       // Check if there is a pending booking intent or room saved before sign-in
       const locationState = location.state as any;
-      const pendingRoomRaw = sessionStorage.getItem('pendingBookingRoom');
-      const pendingIntentRaw = sessionStorage.getItem('pendingBookingIntent');
+      const pendingRoomRaw = sessionStorage.getItem('pendingBookingRoom') || localStorage.getItem('pendingBookingRoom');
+      const pendingIntentRaw = sessionStorage.getItem('pendingBookingIntent') || localStorage.getItem('pendingBookingIntent');
+      const shouldGoToBook =
+        isBookingRedirect ||
+        locationState?.redirectTo === '/book' ||
+        sessionStorage.getItem('pendingBookingRedirect') === '/book' ||
+        localStorage.getItem('pendingBookingRedirect') === '/book';
 
       let bookingToRestore = null;
       if (locationState?.bookingState) {
@@ -86,18 +104,18 @@ const SignIn: React.FC = () => {
         } catch (_) {}
       }
 
-      if (bookingToRestore) {
-        sessionStorage.removeItem('pendingBookingRoom');
-        sessionStorage.removeItem('pendingBookingIntent');
+      if (shouldGoToBook || bookingToRestore) {
+        sessionStorage.removeItem('pendingBookingRedirect');
+        localStorage.removeItem('pendingBookingRedirect');
         setTimeout(() => {
-          navigate('/book', { state: bookingToRestore });
-        }, 600);
+          navigate('/book', { state: bookingToRestore || undefined });
+        }, 500);
         return;
       }
 
       setTimeout(() => {
         navigate('/profile');
-      }, 800);
+      }, 700);
     } catch (err: any) {
       const serverError = err.response?.data?.error || 'Unable to sign in. Please check your credentials.';
       setError(serverError);

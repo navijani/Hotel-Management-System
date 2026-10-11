@@ -103,16 +103,29 @@ const SignUp: React.FC = () => {
         password: password
       });
 
+      const profileStr = JSON.stringify(signinRes.data);
       sessionStorage.setItem('guestAuthenticated', 'true');
       sessionStorage.setItem('guestSignedIn', 'true');
-      sessionStorage.setItem('guestProfile', JSON.stringify(signinRes.data));
-      sessionStorage.setItem('guestUser', JSON.stringify(signinRes.data));
+      sessionStorage.setItem('guestProfile', profileStr);
+      sessionStorage.setItem('guestUser', profileStr);
+
+      localStorage.setItem('guestAuthenticated', 'true');
+      localStorage.setItem('guestSignedIn', 'true');
+      localStorage.setItem('guestProfile', profileStr);
+      localStorage.setItem('guestUser', profileStr);
+
       window.dispatchEvent(new Event('guestAuthChanged'));
       window.dispatchEvent(new Event('authChange'));
 
       const locationState = location.state as any;
-      const pendingRoomRaw = sessionStorage.getItem('pendingBookingRoom');
-      const pendingIntentRaw = sessionStorage.getItem('pendingBookingIntent');
+      const pendingRoomRaw = sessionStorage.getItem('pendingBookingRoom') || localStorage.getItem('pendingBookingRoom');
+      const pendingIntentRaw = sessionStorage.getItem('pendingBookingIntent') || localStorage.getItem('pendingBookingIntent');
+      const shouldGoToBook =
+        locationState?.redirectTo === '/book' ||
+        Boolean(locationState?.bookingState) ||
+        Boolean(pendingRoomRaw) ||
+        sessionStorage.getItem('pendingBookingRedirect') === '/book' ||
+        localStorage.getItem('pendingBookingRedirect') === '/book';
 
       let bookingToRestore = null;
       if (locationState?.bookingState) {
@@ -136,18 +149,18 @@ const SignUp: React.FC = () => {
         } catch (_) {}
       }
 
-      if (bookingToRestore) {
-        sessionStorage.removeItem('pendingBookingRoom');
-        sessionStorage.removeItem('pendingBookingIntent');
+      if (shouldGoToBook || bookingToRestore) {
+        sessionStorage.removeItem('pendingBookingRedirect');
+        localStorage.removeItem('pendingBookingRedirect');
         setTimeout(() => {
-          navigate('/book', { state: bookingToRestore });
-        }, 800);
+          navigate('/book', { state: bookingToRestore || undefined });
+        }, 500);
         return;
       }
 
       setTimeout(() => {
         navigate('/profile');
-      }, 1500);
+      }, 1000);
     } catch (err: any) {
       const serverMsg = err.response?.data?.error || 'Unable to create your account.';
       setError(serverMsg);
@@ -303,7 +316,7 @@ const SignUp: React.FC = () => {
 
             <Box sx={{ textAlign: 'center', mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Already have an account? <Box component="span" onClick={() => navigate('/signin')} sx={{ color: '#d4af37', fontWeight: 600, cursor: 'pointer' }}>Sign In</Box>
+                Already have an account? <Box component="span" onClick={() => navigate('/signin', { state: location.state })} sx={{ color: '#d4af37', fontWeight: 600, cursor: 'pointer' }}>Sign In</Box>
               </Typography>
             </Box>
           </Box>
