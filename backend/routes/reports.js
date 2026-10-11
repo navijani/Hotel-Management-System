@@ -15,8 +15,12 @@ export default function createReportsRouter(pool) {
       const monthAgo = new Date(today.getTime() - 29 * 86400000);
       const from = validDate(req.query.from) ? String(req.query.from) : isoDate(monthAgo);
       const to = validDate(req.query.to) ? String(req.query.to) : isoDate(today);
+      const branchId = req.query.branch_id === undefined ? null : Number(req.query.branch_id);
 
       if (from > to) return res.status(400).json({ error: 'The start date must be on or before the end date.' });
+      if (branchId !== null && (!Number.isInteger(branchId) || branchId < 1)) {
+        return res.status(400).json({ error: 'A valid branch_id is required.' });
+      }
 
       const [[totals]] = await pool.query(
         `SELECT COUNT(*) AS bookings,
@@ -24,58 +28,90 @@ export default function createReportsRouter(pool) {
                 COALESCE(SUM(service_charges), 0) AS service_revenue,
                 COALESCE(SUM(total_bill), 0) AS billed,
                 COALESCE(SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END), 0) AS outstanding,
-                COALESCE(AVG(DATEDIFF(check_out_date, check_in_date)), 0) AS avg_nights
-         FROM v_guest_billing_detail
-         WHERE booking_status <> 'Cancelled' AND check_in_date BETWEEN ? AND ?`,
-        [from, to]
+                COALESCE(AVG(DATEDIFF(detail.check_out_date, detail.check_in_date)), 0) AS avg_nights
+         FROM v_guest_billing_detail detail
+         INNER JOIN Booking booking ON booking.booking_id = detail.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE detail.booking_status <> 'Cancelled' AND detail.check_in_date BETWEEN ? AND ?
+           AND (? IS NULL OR room.branch_id = ?)`,
+        [from, to, branchId, branchId]
       );
       const [[collected]] = await pool.query(
-        `SELECT COALESCE(SUM(amount_paid), 0) AS collected FROM Payment
-         WHERE payment_date >= ? AND payment_date < DATE_ADD(?, INTERVAL 1 DAY)`,
-        [from, to]
+        `SELECT COALESCE(SUM(payment.amount_paid), 0) AS collected
+         FROM Payment payment
+         INNER JOIN Booking booking ON booking.booking_id = payment.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE payment.payment_date >= ? AND payment.payment_date < DATE_ADD(?, INTERVAL 1 DAY)
+           AND (? IS NULL OR room.branch_id = ?)`,
+        [from, to, branchId, branchId]
       );
       const [byBranch] = await pool.query(
-        `SELECT branch_name AS branch, COUNT(*) AS bookings,
-                COALESCE(SUM(room_charges), 0) AS room_charges,
-                COALESCE(SUM(service_charges), 0) AS service_charges,
-                COALESCE(SUM(total_paid), 0) AS collected,
-                COALESCE(SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END), 0) AS outstanding
-         FROM v_guest_billing_detail
-         WHERE booking_status <> 'Cancelled' AND check_in_date BETWEEN ? AND ?
-         GROUP BY branch_name ORDER BY collected DESC`,
-        [from, to]
+        `SELECT detail.branch_name AS branch, COUNT(*) AS bookings,
+                COALESCE(SUM(detail.room_charges), 0) AS room_charges,
+                COALESCE(SUM(detail.service_charges), 0) AS service_charges,
+                COALESCE(SUM(detail.total_paid), 0) AS collected,
+                COALESCE(SUM(CASE WHEN detail.balance > 0 THEN detail.balance ELSE 0 END), 0) AS outstanding
+         FROM v_guest_billing_detail detail
+         INNER JOIN Booking booking ON booking.booking_id = detail.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE detail.booking_status <> 'Cancelled' AND detail.check_in_date BETWEEN ? AND ?
+           AND (? IS NULL OR room.branch_id = ?)
+         GROUP BY detail.branch_name ORDER BY collected DESC`,
+        [from, to, branchId, branchId]
       );
       const [daily] = await pool.query(
-        `SELECT DATE_FORMAT(payment_date, '%Y-%m-%d') AS day, SUM(amount_paid) AS total
-         FROM Payment
-         WHERE payment_date >= ? AND payment_date < DATE_ADD(?, INTERVAL 1 DAY)
+        `SELECT DATE_FORMAT(payment.payment_date, '%Y-%m-%d') AS day, SUM(payment.amount_paid) AS total
+         FROM Payment payment
+         INNER JOIN Booking booking ON booking.booking_id = payment.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE payment.payment_date >= ? AND payment.payment_date < DATE_ADD(?, INTERVAL 1 DAY)
+           AND (? IS NULL OR room.branch_id = ?)
          GROUP BY day ORDER BY day`,
-        [from, to]
+        [from, to, branchId, branchId]
       );
       const [methods] = await pool.query(
-        `SELECT payment_method AS method, COUNT(*) AS payments, SUM(amount_paid) AS total FROM Payment
-         WHERE payment_date >= ? AND payment_date < DATE_ADD(?, INTERVAL 1 DAY)
+        `SELECT payment.payment_method AS method, COUNT(*) AS payments, SUM(payment.amount_paid) AS total
+         FROM Payment payment
+         INNER JOIN Booking booking ON booking.booking_id = payment.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE payment.payment_date >= ? AND payment.payment_date < DATE_ADD(?, INTERVAL 1 DAY)
+           AND (? IS NULL OR room.branch_id = ?)
          GROUP BY method ORDER BY total DESC`,
-        [from, to]
+        [from, to, branchId, branchId]
       );
       const [statuses] = await pool.query(
-        `SELECT booking_status AS status, COUNT(*) AS count FROM v_guest_billing_detail
-         WHERE check_in_date BETWEEN ? AND ? GROUP BY booking_status`,
-        [from, to]
+        `SELECT detail.booking_status AS status, COUNT(*) AS count
+         FROM v_guest_billing_detail detail
+         INNER JOIN Booking booking ON booking.booking_id = detail.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE detail.check_in_date BETWEEN ? AND ? AND (? IS NULL OR room.branch_id = ?)
+         GROUP BY detail.booking_status`,
+        [from, to, branchId, branchId]
       );
       const [services] = await pool.query(
         `SELECT sc.service_name, sc.category, SUM(su.quantity) AS quantity, SUM(su.quantity * su.unit_price_at_usage) AS revenue
          FROM ServiceUsage su INNER JOIN Service sc ON sc.service_id = su.service_id
-         WHERE su.usage_date BETWEEN ? AND ?
+         INNER JOIN Booking booking ON booking.booking_id = su.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE su.usage_date BETWEEN ? AND ? AND (? IS NULL OR room.branch_id = ?)
          GROUP BY sc.service_id, sc.service_name, sc.category ORDER BY revenue DESC LIMIT 8`,
-        [from, to]
+        [from, to, branchId, branchId]
       );
-      const [rooms] = await pool.query('SELECT status, COUNT(*) AS count FROM Room GROUP BY status');
+      const [rooms] = await pool.query(
+        `SELECT current_status AS status, COUNT(*) AS count FROM Room
+         WHERE (? IS NULL OR branch_id = ?) GROUP BY current_status`,
+        [branchId, branchId]
+      );
       const [dues] = await pool.query(
-        `SELECT booking_id, guest_name, room_number, branch_name AS branch, total_bill, total_paid, balance
-         FROM v_guest_billing_detail
-         WHERE booking_status <> 'Cancelled' AND balance > 0
-         ORDER BY balance DESC LIMIT 10`
+        `SELECT detail.booking_id, detail.guest_name, detail.room_number,
+                detail.branch_name AS branch, detail.total_bill, detail.total_paid, detail.balance
+         FROM v_guest_billing_detail detail
+         INNER JOIN Booking booking ON booking.booking_id = detail.booking_id
+         INNER JOIN Room room ON room.room_id = booking.room_id
+         WHERE detail.booking_status <> 'Cancelled' AND detail.balance > 0
+           AND (? IS NULL OR room.branch_id = ?)
+         ORDER BY detail.balance DESC LIMIT 10`,
+        [branchId, branchId]
       );
 
       const totalRooms = rooms.reduce((sum, row) => sum + num(row.count), 0);
