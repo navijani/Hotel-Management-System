@@ -5,8 +5,8 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Install dependencies
-COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm ci || npm install
 
 # Copy frontend source code and build
 COPY frontend/ ./
@@ -26,8 +26,8 @@ ENV NODE_ENV=production
 ENV PORT=5000
 
 # Install production backend dependencies
-COPY backend/package*.json ./
-RUN npm ci --only=production
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # Copy backend application source code
 COPY backend/ ./

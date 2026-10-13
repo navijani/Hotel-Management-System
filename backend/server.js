@@ -6,6 +6,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 
@@ -19,6 +20,16 @@ import createReportsRouter from './routes/reports.js';
 import createBranchRouter from './branchRoutes.js';
 
 dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is missing in .env');
+}
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '10m';
+
+const generateToken = (payload) => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -102,7 +113,7 @@ app.post('/api/admin/signin', authRateLimit, (req, res) => {
     return res.status(401).json({ error: 'Invalid administrator credentials.' });
   }
 
-  const token = Buffer.from(JSON.stringify({ username, role: 'Admin' })).toString('base64');
+  const token = generateToken({ username, role: 'Admin' });
   res.json({ message: 'Administrator login successful.', token, role: 'Admin' });
 });
 
@@ -133,7 +144,19 @@ app.post('/api/guest/signup', authRateLimit, async (req, res) => {
       'INSERT INTO guest (first_name, last_name, email, phone_number, identity_number, password) VALUES (?, ?, ?, ?, ?, ?)',
       [first_name.trim(), last_name.trim(), email.trim(), phone_number.trim(), identity_number.trim(), hash]
     );
-    res.status(201).json({ message: 'Guest account created successfully.', guest_id: result.insertId });
+
+    const token = generateToken({
+      id: result.insertId,
+      guest_id: result.insertId,
+      email: email.trim(),
+      role: 'Guest',
+    });
+
+    res.status(201).json({
+      message: 'Guest account created successfully.',
+      guest_id: result.insertId,
+      token,
+    });
   } catch {
     res.status(500).json({ error: 'Unable to create guest account.' });
   }
@@ -157,6 +180,12 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
           'INSERT INTO guest (first_name, last_name, email, phone_number, identity_number, password) VALUES (?, ?, ?, ?, ?, ?)',
           ['HMS', 'Admin', cleanEmail, '0713892928', '199012345678', hash]
         );
+        const token = generateToken({
+          id: ins.insertId,
+          guest_id: ins.insertId,
+          email: cleanEmail,
+          role: 'Guest',
+        });
         return res.json({
           guest_id: ins.insertId,
           first_name: 'HMS',
@@ -164,9 +193,16 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
           email: cleanEmail,
           phone_number: '0713892928',
           identity_number: '199012345678',
+          token,
         });
       }
       const g = existingAdmin[0];
+      const token = generateToken({
+        id: g.guest_id,
+        guest_id: g.guest_id,
+        email: g.email || cleanEmail,
+        role: 'Guest',
+      });
       return res.json({
         guest_id: g.guest_id,
         first_name: g.first_name || 'HMS',
@@ -174,6 +210,7 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
         email: g.email || cleanEmail,
         phone_number: g.phone_number || '0713892928',
         identity_number: g.identity_number || '199012345678',
+        token,
       });
     }
 
@@ -182,6 +219,12 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
     let guest = rows[0];
 
     if (guest && (await bcrypt.compare(cleanPass, guest.password))) {
+      const token = generateToken({
+        id: guest.guest_id,
+        guest_id: guest.guest_id,
+        email: guest.email,
+        role: 'Guest',
+      });
       return res.json({
         guest_id: guest.guest_id,
         first_name: guest.first_name,
@@ -189,6 +232,7 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
         email: guest.email,
         phone_number: guest.phone_number,
         identity_number: guest.identity_number,
+        token,
       });
     }
 
@@ -203,6 +247,12 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
           'INSERT INTO guest (first_name, last_name, email, phone_number, identity_number, password) VALUES (?, ?, ?, ?, ?, ?)',
           [staffMember.username.split('@')[0], 'Staff', cleanEmail, staffMember.mobile_number || '0713892928', '199012345678', hash]
         );
+        const token = generateToken({
+          id: insStaff.insertId,
+          guest_id: insStaff.insertId,
+          email: cleanEmail,
+          role: 'Guest',
+        });
         return res.json({
           guest_id: insStaff.insertId,
           first_name: staffMember.username.split('@')[0],
@@ -210,9 +260,16 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
           email: cleanEmail,
           phone_number: staffMember.mobile_number || '0713892928',
           identity_number: '199012345678',
+          token,
         });
       }
       const sg = staffAsGuest[0];
+      const token = generateToken({
+        id: sg.guest_id,
+        guest_id: sg.guest_id,
+        email: sg.email || cleanEmail,
+        role: 'Guest',
+      });
       return res.json({
         guest_id: sg.guest_id,
         first_name: sg.first_name || staffMember.username.split('@')[0],
@@ -220,6 +277,7 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
         email: sg.email || cleanEmail,
         phone_number: sg.phone_number || staffMember.mobile_number || '0713892928',
         identity_number: sg.identity_number || '199012345678',
+        token,
       });
     }
 
@@ -311,7 +369,7 @@ app.post('/api/staff/signin', authRateLimit, async (req, res) => {
     if (!staff.active) return res.status(403).json({ error: 'Account deactivated.' });
 
     const normalized = normalizeRole(staff.role);
-    const token = Buffer.from(JSON.stringify({ id: staff.id, username: staff.username, role: normalized })).toString('base64');
+    const token = generateToken({ id: staff.id, staff_id: staff.id, username: staff.username, role: normalized });
     res.json({ id: staff.id, staff_id: staff.id, username: staff.username, role: normalized, token });
   } catch {
     res.status(500).json({ error: 'Unable to sign in.' });

@@ -1,7 +1,16 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
+
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('FATAL: JWT_SECRET environment variable is not defined in .env');
+  }
+  return secret;
+};
 
 export const normalizeRole = (role = '') => {
   const r = String(role).trim().toLowerCase();
@@ -21,7 +30,13 @@ export const requireStaffAuth = (req, res, next) => {
 
   if (token) {
     try {
-      const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+      let decoded;
+      try {
+        decoded = jwt.verify(token, getJwtSecret());
+      } catch {
+        // Fallback for backward compatibility with base64 encoded sessions
+        decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+      }
       req.staff = {
         id: decoded.id || decoded.staff_id,
         username: decoded.username,
@@ -42,6 +57,24 @@ export const requireStaffAuth = (req, res, next) => {
 
   // Allow admin calls from local session
   return next();
+};
+
+// Middleware: Authenticate guest / user
+export const requireGuestAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required. No token provided.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+    req.guest = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired authentication token.' });
+  }
 };
 
 // Middleware: Role verification
@@ -67,28 +100,28 @@ export default function createAuthRouter(pool, authRateLimit) {
     typeof authRateLimit === 'function'
       ? authRateLimit
       : (() => {
-          const attempts = new Map();
-          const windowMs = 15 * 60 * 1000;
-          const max = 20;
+        const attempts = new Map();
+        const windowMs = 15 * 60 * 1000;
+        const max = 20;
 
-          return (req, res, next) => {
-            const key = req.ip || req.connection?.remoteAddress || 'unknown';
-            const now = Date.now();
-            const entry = attempts.get(key);
+        return (req, res, next) => {
+          const key = req.ip || req.connection?.remoteAddress || 'unknown';
+          const now = Date.now();
+          const entry = attempts.get(key);
 
-            if (!entry || now > entry.resetAt) {
-              attempts.set(key, { count: 1, resetAt: now + windowMs });
-              return next();
-            }
-
-            if (entry.count >= max) {
-              return res.status(429).json({ error: 'Too many sign-in attempts. Please try again later.' });
-            }
-
-            entry.count += 1;
+          if (!entry || now > entry.resetAt) {
+            attempts.set(key, { count: 1, resetAt: now + windowMs });
             return next();
-          };
-        })();
+          }
+
+          if (entry.count >= max) {
+            return res.status(429).json({ error: 'Too many sign-in attempts. Please try again later.' });
+          }
+
+          entry.count += 1;
+          return next();
+        };
+      })();
 
   const staffListRateLimit = typeof authRateLimit === 'function' ? authRateLimit : signinRateLimit;
 
@@ -120,7 +153,11 @@ export default function createAuthRouter(pool, authRateLimit) {
       }
 
       const normalized = normalizeRole(role || staff.role);
-      const token = Buffer.from(JSON.stringify({ id: staff.id, username: staff.username, role: normalized })).toString('base64');
+      const token = jwt.sign(
+        { id: staff.id, staff_id: staff.id, username: staff.username, role: normalized },
+        getJwtSecret(),
+        { expiresIn: process.env.JWT_EXPIRES_IN || '10m' }
+      );
 
       res.json({
         id: staff.id,

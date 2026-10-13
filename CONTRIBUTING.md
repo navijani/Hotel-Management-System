@@ -6,13 +6,12 @@ We are setting this up so everyone is on the same page, tasks don't clash, and o
 
 ## 1. Ground Rules on Commits & Code
 
-* **No direct pushes to `main` or `dev`.** Always create your own branch first.
+* **No direct pushes to `main` unless urgent.** Always create your own branch first.
 * **Keep commits clean and frequent:**
   * Commit small updates as you work rather than uploading a huge zip folder or a 50-file commit the night before a deadline.
   * Write normal, clear commit messages so others know what was changed (e.g., `added attendance checkin form`, not just `updates` or `fix`).
 * **Pull Requests (PRs):**
   * When your task is done, open a PR into `dev`.
-  * Post the PR link in our WhatsApp/Discord group.
   * At least one other team member needs to test and approve it before merging.
 
 ---
