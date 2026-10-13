@@ -43,7 +43,7 @@ const mockRooms = [
   {
     RoomNumber: '106',
     RoomTypeID: 'Presidential Suite',
-    Status: 'Occupied',
+    Status: 'Available',
     Price: 1200,
     image: 'https://images.unsplash.com/photo-1631049552057-403fb4f2553f?q=80&w=1000&auto=format&fit=crop',
     Description: 'The ultimate luxury experience with a private terrace and personal butler service.',
@@ -87,7 +87,7 @@ const mockRooms = [
   {
     RoomNumber: '110',
     RoomTypeID: 'Cozy Single',
-    Status: 'Occupied',
+    Status: 'Maintenance',
     Price: 90,
     image: 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?q=80&w=1000&auto=format&fit=crop',
     Description: 'A snug and comfortable space tailored for solo travelers.',
@@ -120,7 +120,7 @@ const mockRooms = [
   {
     RoomNumber: '203',
     RoomTypeID: 'Business Studio',
-    Status: 'Occupied',
+    Status: 'Maintenance',
     Price: 220,
     image: 'https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=1000&auto=format&fit=crop',
     Description: 'Modern studio equipped with a spacious work desk and high-speed internet.',
@@ -134,8 +134,8 @@ async function insertRooms() {
   for (const r of mockRooms) {
     try {
       await pool.query(
-        'INSERT INTO Room (room_number, type, capacity, price_per_night, status, image, description, bed_type, room_size, amenities, branch_id, room_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
-        [r.RoomNumber, r.RoomTypeID, 4, r.Price, r.Status, r.image, r.Description, r.BedType, r.RoomSize, r.Amenities]
+        'INSERT INTO Room (room_number, type, capacity, price_per_night, status, current_status, image, description, bed_type, room_size, amenities, branch_id, room_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
+        [r.RoomNumber, r.RoomTypeID, 4, r.Price, r.Status, r.Status === 'Maintenance' ? 'Under Maintenance' : 'Available', r.image, r.Description, r.BedType, r.RoomSize, r.Amenities]
       );
       console.log('Inserted room ' + r.RoomNumber);
     } catch (err) {

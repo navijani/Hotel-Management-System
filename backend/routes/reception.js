@@ -169,7 +169,6 @@ export default function createReceptionRouter(pool) {
 
       await connection.beginTransaction();
       await connection.query(`UPDATE Booking SET booking_status = 'Checked-In', actual_check_in = NOW() WHERE booking_id = ?`, [bookingId]);
-      await connection.query(`UPDATE Room SET status = 'Occupied', current_status = 'Occupied' WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = ?)`, [bookingId]);
       await connection.commit();
 
       res.json({ message: `Booking #${bookingId} checked in.`, booking: await loadBooking(bookingId) });
@@ -277,7 +276,6 @@ export default function createReceptionRouter(pool) {
 
       await connection.beginTransaction();
       await connection.query(`UPDATE Booking SET booking_status = 'Checked-Out', actual_check_out = NOW() WHERE booking_id = ?`, [bookingId]);
-      await connection.query(`UPDATE Room SET status = 'Available', current_status = 'Available' WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = ?)`, [bookingId]);
       await connection.commit();
 
       res.json({ message: `Booking #${bookingId} checked out.`, booking: await loadBooking(bookingId) });

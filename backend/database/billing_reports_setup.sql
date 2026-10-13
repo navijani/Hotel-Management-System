@@ -76,9 +76,6 @@ BEGIN
   SET booking_status = 'Checked-In', actual_check_in = NOW() 
   WHERE booking_id = p_booking_id;
   
-  UPDATE Room 
-  SET status = 'Occupied', current_status = 'Occupied' 
-  WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = p_booking_id);
 END //
 DELIMITER ;
 
@@ -100,9 +97,6 @@ BEGIN
   SET booking_status = 'Checked-Out', actual_check_out = NOW() 
   WHERE booking_id = p_booking_id;
 
-  UPDATE Room 
-  SET status = 'Available', current_status = 'Available' 
-  WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = p_booking_id);
 END //
 DELIMITER ;
 

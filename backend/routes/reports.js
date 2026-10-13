@@ -71,6 +71,9 @@ export default function createReportsRouter(pool) {
         [from, to]
       );
       const [rooms] = await pool.query('SELECT status, COUNT(*) AS count FROM Room GROUP BY status');
+      const [[occupancy]] = await pool.query(
+        `SELECT COUNT(DISTINCT room_id) AS occupied FROM Booking WHERE booking_status = 'Checked-In'`
+      );
       const [dues] = await pool.query(
         `SELECT booking_id, guest_name, room_number, branch_name AS branch, total_bill, total_paid, balance
          FROM v_guest_billing_detail
@@ -79,7 +82,7 @@ export default function createReportsRouter(pool) {
       );
 
       const totalRooms = rooms.reduce((sum, row) => sum + num(row.count), 0);
-      const occupied = rooms.filter((row) => row.status === 'Occupied').reduce((sum, row) => sum + num(row.count), 0);
+      const occupied = num(occupancy.occupied);
 
       res.json({
         range: { from, to },

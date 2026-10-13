@@ -108,7 +108,7 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
            FROM Room r
            LEFT JOIN RoomType rt ON rt.room_type_id = r.room_type_id
            WHERE (rt.type_name = ? OR r.type = ?)
-             AND (r.status = 'Available' OR r.current_status = 'Available')
+             AND r.status = 'Available'
              AND NOT EXISTS (
                SELECT 1 FROM Booking b
                WHERE b.room_id = r.room_id
@@ -234,11 +234,6 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
       `UPDATE Booking SET booking_status = 'Checked-In', actual_check_in = NOW() WHERE booking_id = ?`,
       [bookingId]
     );
-    await connection.query(
-      `UPDATE Room SET status = 'Occupied', current_status = 'Occupied'
-       WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = ?)`,
-      [bookingId]
-    );
   };
 
   // Check-Out helper replacing sp_check_out
@@ -254,11 +249,6 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
 
     await connection.query(
       `UPDATE Booking SET booking_status = 'Checked-Out', actual_check_out = NOW() WHERE booking_id = ?`,
-      [bookingId]
-    );
-    await connection.query(
-      `UPDATE Room SET status = 'Available', current_status = 'Available'
-       WHERE room_id = (SELECT room_id FROM Booking WHERE booking_id = ?)`,
       [bookingId]
     );
   };

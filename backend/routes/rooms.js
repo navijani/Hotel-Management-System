@@ -31,6 +31,10 @@ export default function (pool, upload) {
   router.post('/', upload.single('image'), async (req, res) => {
     try {
       const { room_number, branch, type, capacity, price_per_night, status, description, bed_type, room_size, amenities } = req.body;
+      const roomStatus = status || 'Available';
+      if (!['Available', 'Maintenance'].includes(roomStatus)) {
+        return res.status(400).json({ error: 'Room status must be Available or Maintenance.' });
+      }
       let image_url = '';
 
       if (req.file) {
@@ -40,8 +44,8 @@ export default function (pool, upload) {
       }
 
       const [result] = await pool.query(
-        'INSERT INTO Room (room_number, branch, type, capacity, price_per_night, status, image, description, bed_type, room_size, amenities, branch_id, room_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
-        [room_number, branch || 'Colombo', type, capacity, price_per_night, status || 'Available', image_url, description, bed_type, room_size, amenities]
+        'INSERT INTO Room (room_number, branch, type, capacity, price_per_night, status, current_status, image, description, bed_type, room_size, amenities, branch_id, room_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
+        [room_number, branch || 'Colombo', type, capacity, price_per_night, roomStatus, roomStatus === 'Maintenance' ? 'Under Maintenance' : 'Available', image_url, description, bed_type, room_size, amenities]
       );
 
       res.status(201).json({ message: 'Room created successfully', roomId: result.insertId, room: req.body });
@@ -55,9 +59,12 @@ export default function (pool, upload) {
   router.put('/:id', upload.single('image'), async (req, res) => {
     try {
       const { room_number, branch, type, capacity, price_per_night, status, description, bed_type, room_size, amenities } = req.body;
+      if (!['Available', 'Maintenance'].includes(status)) {
+        return res.status(400).json({ error: 'Room status must be Available or Maintenance.' });
+      }
       const roomId = req.params.id;
-      let query = 'UPDATE Room SET room_number = ?, branch = ?, type = ?, capacity = ?, price_per_night = ?, status = ?, description = ?, bed_type = ?, room_size = ?, amenities = ?';
-      const values = [room_number, branch || 'Colombo', type, capacity, price_per_night, status, description, bed_type, room_size, amenities];
+      let query = 'UPDATE Room SET room_number = ?, branch = ?, type = ?, capacity = ?, price_per_night = ?, status = ?, current_status = ?, description = ?, bed_type = ?, room_size = ?, amenities = ?';
+      const values = [room_number, branch || 'Colombo', type, capacity, price_per_night, status, status === 'Maintenance' ? 'Under Maintenance' : 'Available', description, bed_type, room_size, amenities];
 
       if (req.file) {
         query += ', image = ?';
