@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, MenuItem, IconButton, Rating, Avatar, AvatarGroup, InputAdornment, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Typography, Box, Button, Grid, Card, CardContent, Container, TextField, IconButton, Rating, Avatar, AvatarGroup, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import WifiIcon from '@mui/icons-material/Wifi';
@@ -10,7 +10,6 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
@@ -711,91 +710,71 @@ const Home: React.FC = () => {
 
           </Box>
 
-          {/* Quick Availability Search Bar */}
+          {/* Resort highlights */}
           <Box
             sx={{
-              mt: { xs: 2, md: 3 },
-              p: 2,
-              borderRadius: 4,
-              bgcolor: 'rgba(255, 255, 255, 0.1)',
+              mt: { xs: 3, md: 4 },
+              px: { xs: 2, md: 4 },
+              py: { xs: 2.5, md: 3 },
+              borderRadius: 5,
+              bgcolor: 'rgba(10, 14, 28, 0.96)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.16)',
+              boxShadow: '0 18px 50px rgba(0, 0, 0, 0.3)',
               width: '100%',
-              maxWidth: '1000px',
+              maxWidth: '1060px',
+              position: 'relative',
+              zIndex: 3,
               animation: 'fadeInUp 1s ease-out forwards',
               animationDelay: '1.1s',
               opacity: 0,
             }}
           >
-            <Grid container spacing={2} sx={{ alignItems: 'center' }}>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Location"
-                  defaultValue="colombo"
-                  variant="filled"
-                  slotProps={{
-                    input: {
-                      startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ color: 'white' }} /></InputAdornment>,
-                      sx: { color: 'white', bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 2, '&:hover': { bgcolor: 'rgba(0,0,0,0.4)' }, '&::before': { display: 'none' }, '&::after': { display: 'none' } }
-                    },
-                    inputLabel: { style: { color: 'rgba(255,255,255,0.8)' } },
-                    select: { style: { color: 'white' } }
-                  }}
-                >
-                  <MenuItem value="colombo">Colombo Branch</MenuItem>
-                  <MenuItem value="kandy">Kandy Branch</MenuItem>
-                  <MenuItem value="galle">Galle Branch</MenuItem>
-                </TextField>
+            <Grid container spacing={{ xs: 2.5, md: 4 }} sx={{ alignItems: 'center' }}>
+              <Grid size={{ xs: 12, md: 7 }}>
+                <Typography sx={{ color: '#d4af37', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', mb: 0.8 }}>
+                  The Paradise standard
+                </Typography>
+                <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, mb: 0.6 }}>
+                  More than a stay. A story worth remembering.
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.92rem', lineHeight: 1.6 }}>
+                  Thoughtful service, tranquil spaces, and memorable experiences across Sri Lanka’s most beautiful destinations.
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1.5, md: 3 }, mt: 2 }}>
+                  {['Personalised service', 'Premium comfort', 'Island escapes'].map((highlight) => (
+                    <Box key={highlight} sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                      <CheckCircleOutlineIcon sx={{ color: '#d4af37', fontSize: 18 }} />
+                      <Typography sx={{ color: 'rgba(255,255,255,0.86)', fontSize: '0.82rem', fontWeight: 600 }}>
+                        {highlight}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
               </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  label="Check-in Date"
-                  variant="filled"
-                  slotProps={{
-                    inputLabel: { shrink: true, style: { color: 'rgba(255,255,255,0.8)' } },
-                    input: { sx: { color: 'white', bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 2, '&:hover': { bgcolor: 'rgba(0,0,0,0.4)' }, '&::before': { display: 'none' }, '&::after': { display: 'none' } } }
-                  }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  label="Check-out Date"
-                  variant="filled"
-                  slotProps={{
-                    inputLabel: { shrink: true, style: { color: 'rgba(255,255,255,0.8)' } },
-                    input: { sx: { color: 'white', bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 2, '&:hover': { bgcolor: 'rgba(0,0,0,0.4)' }, '&::before': { display: 'none' }, '&::after': { display: 'none' } } }
-                  }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 <Button
-                  fullWidth
                   variant="contained"
                   onClick={() => navigate('/rooms')}
+                  endIcon={<ArrowForwardIcon />}
                   sx={{
-                    height: '56px',
-                    borderRadius: 2,
+                    borderRadius: '100px',
+                    px: 3.5,
+                    py: 1.4,
                     background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
                     color: '#1a1a1a',
-                    fontWeight: 'bold',
-                    fontSize: '1.1rem',
+                    fontWeight: 700,
                     textTransform: 'none',
-                    boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
+                    boxShadow: '0 8px 24px rgba(212, 175, 55, 0.3)',
                     '&:hover': {
                       background: 'linear-gradient(45deg, #f3e5ab 30%, #d4af37 90%)',
-                      boxShadow: '0 6px 20px rgba(212, 175, 55, 0.6)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 12px 28px rgba(212, 175, 55, 0.45)',
                     }
                   }}
                 >
-                  Check Availability
+                  Explore our rooms
                 </Button>
               </Grid>
             </Grid>

@@ -201,6 +201,19 @@ const GuestLayout: React.FC = () => {
               >
                 Rooms
               </Button>
+              <Button
+                onClick={() => navigate('/about')}
+                sx={{
+                  ...navItemStyle,
+                  color: location.pathname === '/about' ? '#d4af37' : navItemStyle.color,
+                  '&::after': {
+                    ...navItemStyle['&::after'],
+                    width: location.pathname === '/about' ? '100%' : '0%'
+                  }
+                }}
+              >
+                About
+              </Button>
               {!isSignedIn ? (
                 <Button
                   onClick={() => navigate('/signin')}
@@ -282,7 +295,12 @@ const GuestLayout: React.FC = () => {
               <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3, color: '#e2e8f0', letterSpacing: 1 }}>EXPLORE</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {['Our Story', 'Rooms & Suites', 'Dining', 'Spa & Wellness', 'Special Offers'].map((link) => (
-                  <Typography key={link} variant="body2" sx={{ opacity: 0.7, cursor: 'pointer', transition: '0.2s', '&:hover': { opacity: 1, color: '#d4af37', transform: 'translateX(4px)' } }}>
+                  <Typography
+                    key={link}
+                    variant="body2"
+                    onClick={() => link === 'Our Story' && navigate('/about')}
+                    sx={{ opacity: 0.7, cursor: 'pointer', transition: '0.2s', '&:hover': { opacity: 1, color: '#d4af37', transform: 'translateX(4px)' } }}
+                  >
                     {link}
                   </Typography>
                 ))}
