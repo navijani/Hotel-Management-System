@@ -102,6 +102,8 @@ const StaffRolePage: React.FC<{ role: StaffRole }> = ({ role }) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+  const localTimeKey = (date: Date) => [date.getHours(), date.getMinutes(), date.getSeconds()]
+    .map((value) => String(value).padStart(2, '0')).join(':');
   const [message, setMessage] = useState({ type: '', text: '' });
   const [busy, setBusy] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -140,8 +142,8 @@ const StaffRolePage: React.FC<{ role: StaffRole }> = ({ role }) => {
     try {
       const location = await getLocation();
       const payload = action === 'check-in'
-        ? { check_in_location: location, location }
-        : { check_out_location: location, location };
+        ? { check_in_location: location, location, attendance_date: localDateKey(currentTime), attendance_time: localTimeKey(new Date()) }
+        : { check_out_location: location, location, attendance_date: localDateKey(currentTime), attendance_time: localTimeKey(new Date()) };
       const response = await axios.post(`/api/staff/${staffId}/attendance/${action}`, payload);
       await loadWorkspace();
       setMessage({ type: 'success', text: response.data.message || (action === 'check-in' ? 'You are checked in.' : 'You are checked out.') });
@@ -155,7 +157,7 @@ const StaffRolePage: React.FC<{ role: StaffRole }> = ({ role }) => {
     if (!staffId || !attendanceToday) return;
     try {
       setBusy(!attendanceToday.is_busy);
-      await axios.patch(`/api/staff/${staffId}/attendance/busy`, { is_busy: !attendanceToday.is_busy });
+      await axios.patch(`/api/staff/${staffId}/attendance/busy`, { is_busy: !attendanceToday.is_busy, attendance_date: localDateKey(currentTime) });
       await loadWorkspace();
     } catch {
       setMessage({ type: 'error', text: 'Busy status could not be updated.' });

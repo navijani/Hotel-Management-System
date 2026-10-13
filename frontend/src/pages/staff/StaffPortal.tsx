@@ -59,6 +59,16 @@ const getCurrentLocation = (): Promise<string> => new Promise((resolve, reject) 
   );
 });
 
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getLocalTimeKey = (date = new Date()) => [date.getHours(), date.getMinutes(), date.getSeconds()]
+  .map((value) => String(value).padStart(2, '0')).join(':');
+
 const StaffPortal = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<StaffSession | null>(() => {
@@ -114,7 +124,7 @@ const StaffPortal = () => {
       const response = await fetch(`${API_BASE}/staff/${session.id}/attendance/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location }),
+        body: JSON.stringify({ location, attendance_date: getLocalDateKey(), attendance_time: getLocalTimeKey() }),
       });
       if (!response.ok) throw new Error(await getErrorMessage(response));
       const result = await response.json();
@@ -164,7 +174,7 @@ const StaffPortal = () => {
     );
   }
 
-  const today = workspace?.attendance.find((entry) => entry.attendance_date === new Date().toISOString().slice(0, 10));
+  const today = workspace?.attendance.find((entry) => entry.attendance_date === getLocalDateKey());
   const checkedIn = Boolean(today?.check_in_time && !today.check_out_time);
 
   return (

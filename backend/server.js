@@ -114,6 +114,43 @@ const pool = mysql.createPool({
   },
 });
 
+const ensureStaffPlatformSchema = async () => {
+  const [[mobileColumn]] = await pool.query(
+    `SELECT COUNT(*) AS count
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Staff' AND COLUMN_NAME = 'mobile_number'`
+  );
+  if (!Number(mobileColumn.count)) {
+    await pool.query('ALTER TABLE Staff ADD COLUMN mobile_number VARCHAR(30) NULL');
+  }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS staff_attendance (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      staff_id INT NOT NULL,
+      attendance_date DATE NOT NULL,
+      check_in_time TIME NOT NULL,
+      check_out_time TIME NULL,
+      check_in_location VARCHAR(255) NOT NULL,
+      check_out_location VARCHAR(255) NULL,
+      is_busy BOOLEAN DEFAULT FALSE,
+      FOREIGN KEY (staff_id) REFERENCES Staff(id) ON DELETE CASCADE,
+      UNIQUE (staff_id, attendance_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS staff_salary (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      staff_id INT NOT NULL,
+      role VARCHAR(100) NOT NULL,
+      rate DECIMAL(10, 2) DEFAULT 7.00,
+      salary_amount DECIMAL(10, 2) DEFAULT 7.00,
+      FOREIGN KEY (staff_id) REFERENCES Staff(id) ON DELETE CASCADE,
+      UNIQUE (staff_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+};
+
 // Admin Authentication
 app.post('/api/admin/signin', authRateLimit, (req, res) => {
   const username = process.env.ADMIN_USERNAME;
@@ -468,6 +505,7 @@ app.post('/api/staff/signin', authRateLimit, async (req, res) => {
 
 app.get('/api/staff/:id/workspace', async (req, res) => {
   try {
+    await ensureStaffPlatformSchema();
     const staffId = Number(req.params.id);
     const [staffRows] = await pool.query('SELECT id, username, role, active, mobile_number FROM Staff WHERE id = ?', [staffId]);
     if (!staffRows[0]) return res.status(404).json({ error: 'Staff member not found.' });
@@ -484,15 +522,52 @@ app.get('/api/staff/:id/workspace', async (req, res) => {
 });
 
 app.post('/api/staff/:id/attendance/:action', async (req, res) => {
+  await ensureStaffPlatformSchema();
   const { id, action } = req.params;
+  const staffId = Number(id);
+  const attendanceDate = String(req.body.attendance_date || '').trim();
+  const attendanceTime = String(req.body.attendance_time || '').trim();
   const location = String(req.body.location || req.body.check_in_location || req.body.check_out_location || '').trim();
 
+  if (!Number.isInteger(staffId) || staffId < 1) return res.status(400).json({ error: 'Invalid staff member.' });
+  if (!['check-in', 'check-out'].includes(action)) return res.status(400).json({ error: 'Invalid attendance action.' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate)) return res.status(400).json({ error: 'A valid attendance date is required.' });
+  if (!/^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(attendanceTime)) return res.status(400).json({ error: 'A valid local attendance time is required.' });
+  if (!location) return res.status(400).json({ error: 'Location is required to record attendance.' });
+
   if (action === 'check-in') {
-    await pool.query('INSERT INTO staff_attendance (staff_id, attendance_date, check_in_time, check_in_location) VALUES (?, CURDATE(), CURTIME(), ?)', [id, location]);
+    try {
+      await pool.query('INSERT INTO staff_attendance (staff_id, attendance_date, check_in_time, check_in_location) VALUES (?, ?, ?, ?)', [staffId, attendanceDate, attendanceTime, location]);
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'You have already checked in for this date.' });
+      throw error;
+    }
     res.json({ message: 'Checked in successfully.' });
   } else {
-    await pool.query('UPDATE staff_attendance SET check_out_time = CURTIME(), check_out_location = ? WHERE staff_id = ? AND attendance_date = CURDATE() AND check_out_time IS NULL', [location, id]);
+    const [result] = await pool.query('UPDATE staff_attendance SET check_out_time = ?, check_out_location = ? WHERE staff_id = ? AND attendance_date = ? AND check_out_time IS NULL', [attendanceTime, location, staffId, attendanceDate]);
+    if (!result.affectedRows) return res.status(409).json({ error: 'No open check-in was found for this date.' });
     res.json({ message: 'Checked out successfully.' });
+  }
+});
+
+app.patch('/api/staff/:id/attendance/busy', async (req, res) => {
+  try {
+    await ensureStaffPlatformSchema();
+    const staffId = Number(req.params.id);
+    const attendanceDate = String(req.body.attendance_date || '').trim();
+    const isBusy = req.body.is_busy ? 1 : 0;
+    if (!Number.isInteger(staffId) || staffId < 1 || !/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate)) {
+      return res.status(400).json({ error: 'A valid staff member and attendance date are required.' });
+    }
+    const [result] = await pool.query(
+      'UPDATE staff_attendance SET is_busy = ? WHERE staff_id = ? AND attendance_date = ? AND check_in_time IS NOT NULL AND check_out_time IS NULL',
+      [isBusy, staffId, attendanceDate]
+    );
+    if (!result.affectedRows) return res.status(409).json({ error: 'An open attendance record is required.' });
+    res.json({ message: `Staff marked ${isBusy ? 'busy' : 'available'}.` });
+  } catch (error) {
+    console.error('Attendance busy status error:', error);
+    res.status(500).json({ error: 'Unable to update busy status.' });
   }
 });
 
