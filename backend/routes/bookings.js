@@ -37,14 +37,19 @@ const branchFromRoomNumber = (roomNumber, storedBranch) => {
   if (prefix === 'K') return 'Kandy';
   if (prefix === 'G') return 'Galle';
 
+  // Prefer the branch saved on the booked room. Numeric room numbers are not
+  // globally unique to a branch, so room metadata is more reliable than a
+  // number-range guess.
+  const normalizedStoredBranch = String(storedBranch || '').trim().toLowerCase();
+  if (normalizedStoredBranch.includes('galle')) return 'Galle';
+  if (normalizedStoredBranch.includes('kandy')) return 'Kandy';
+  if (normalizedStoredBranch.includes('colombo')) return 'Colombo';
+
   const numericRoom = Number(value.replace(/[^0-9]/g, ''));
   if (numericRoom >= 300 && numericRoom < 400) return 'Galle';
   if (numericRoom >= 200 && numericRoom < 300) return 'Kandy';
   if (numericRoom >= 100 && numericRoom < 200) return 'Colombo';
 
-  const normalizedStoredBranch = String(storedBranch || '').trim().toLowerCase();
-  if (normalizedStoredBranch.includes('galle')) return 'Galle';
-  if (normalizedStoredBranch.includes('kandy')) return 'Kandy';
   return 'Colombo';
 };
 
@@ -58,7 +63,7 @@ const formatBillingRow = (row) => ({
   identification_no: row.id_number,
   room_number: row.room_number,
   room_type: row.room_type_name,
-  branch: branchFromRoomNumber(row.room_number, row.branch_name),
+  branch: branchFromRoomNumber(row.room_number, row.room_branch || row.branch_name),
   check_in_at: row.check_in_date,
   check_out_at: row.check_out_date,
   nights: Math.max(1, Math.ceil((new Date(row.check_out_date).getTime() - new Date(row.check_in_date).getTime()) / 86400000)),
@@ -273,10 +278,12 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
       // guest table here so the admin booking details dialog can show the
       // contact information belonging to each reservation.
       const [rows] = await pool.query(`
-        SELECT billing.*, b.guest_id, COALESCE(g.email, '') AS email, COALESCE(g.phone_number, '') AS phone_number
+        SELECT billing.*, b.guest_id, r.branch AS room_branch,
+               COALESCE(g.email, '') AS email, COALESCE(g.phone_number, '') AS phone_number
         FROM v_guest_billing_detail billing
         LEFT JOIN Booking b ON b.booking_id = billing.booking_id
         LEFT JOIN guest g ON g.guest_id = b.guest_id
+        LEFT JOIN Room r ON r.room_id = b.room_id
         ORDER BY billing.booking_id DESC
       `);
       res.json(rows.map(formatBillingRow));
