@@ -198,11 +198,13 @@ Any test card that is not listed above will result in a failed payment.
 
 ---
 
-### 3. [Team Member 3 Name] (ID: [Student ID])
-- **Primary Focus / Core Module**: [Module Name / Responsibilities]
-  - [Key Contribution 1]
-  - [Key Contribution 2]
-  - [Key Contribution 3]
+### 3. Abishan Karunakaran (ID: 240017A)
+- **Primary Focus / Core Module**: Branch management for hotels/ make convenience for the user who lives in a different city]
+  - **Backend API & Database Development: Implemented comprehensive RESTful CRUD endpoints for branch management using Node.js, Express, and MySQL2, incorporating strict input validation and relational database error handling.
+
+- **Frontend UI Implementation: Built functional, interactive management screens using React 19, TypeScript, and Material UI to facilitate the seamless addition, viewing, and deletion of hotel branches.
+
+- **System Integration & Query Optimization: Integrated branch routing into the main Express server and optimized SQL queries to accurately join and filter available rooms specific to each hotel branch location.
 
 ---
 
