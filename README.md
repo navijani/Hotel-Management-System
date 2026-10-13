@@ -182,7 +182,17 @@ Any test card that is not listed above will result in a failed payment.
 
 ---
 
-### 2. Nandun Jayasekara (ID: 240271U)
+### 2. Hewanadugala N.j. (ID: 240235N)
+- <strong>Primary Focus / Core Module: Guest Website, Rooms, Booking, Login &amp; Admin Panel</strong>
+  - <strong>Website Foundation &amp; Navigation:</strong> Created the basic structure of the guest-facing website, including page routing, shared layout, navigation, and the home page experience.
+  - <strong>Rooms Experience:</strong> Developed the room browsing interface with room details, search and filtering, and a clear path from room selection to booking.
+  - <strong>Guest Booking Flow:</strong> Built the booking interface for selecting stay dates, checking room availability, reviewing reservation details, and submitting a booking after payment confirmation.
+  - <strong>Guest Login &amp; Registration:</strong> Implemented sign-in and sign-up pages, session handling, and protected booking navigation so guests can return to their selected room after authentication.
+  - <strong>Admin Panel Interface:</strong> Contributed to the administrative dashboard structure and navigation for managing rooms, bookings, users, and other hotel operations.
+
+---
+
+### 3. Nandun Jayasekara (ID: 240271U)
 
 - **Primary Focus / Core Module: Reception Desk, Guest Billing & Financial Reports**
 
@@ -198,21 +208,13 @@ Any test card that is not listed above will result in a failed payment.
 
 ---
 
-### 3. Abishan Karunakaran (ID: 240017A)
+### 4. Abishan Karunakaran (ID: 240017A)
 - **Primary Focus / Core Module**: Branch management for hotels/ make convenience for the user who lives in a different city]
   - **Backend API & Database Development: Implemented comprehensive RESTful CRUD endpoints for branch management using Node.js, Express, and MySQL2, incorporating strict input validation and relational database error handling.
 
 - **Frontend UI Implementation: Built functional, interactive management screens using React 19, TypeScript, and Material UI to facilitate the seamless addition, viewing, and deletion of hotel branches.
 
 - **System Integration & Query Optimization: Integrated branch routing into the main Express server and optimized SQL queries to accurately join and filter available rooms specific to each hotel branch location.
-
----
-
-### 4. [Team Member 4 Name] (ID: [Student ID])
-- **Primary Focus / Core Module**: [Module Name / Responsibilities]
-  - [Key Contribution 1]
-  - [Key Contribution 2]
-  - [Key Contribution 3]
 
 ---
 
