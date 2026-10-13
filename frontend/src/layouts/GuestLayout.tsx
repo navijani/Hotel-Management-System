@@ -176,6 +176,19 @@ const GuestLayout: React.FC = () => {
             <Box sx={{ display: 'flex', gap: { xs: 2, md: 5 }, alignItems: 'center' }}>
 
               <Button
+                onClick={() => navigate('/')}
+                sx={{
+                  ...navItemStyle,
+                  color: location.pathname === '/' ? '#d4af37' : navItemStyle.color,
+                  '&::after': {
+                    ...navItemStyle['&::after'],
+                    width: location.pathname === '/' ? '100%' : '0%'
+                  }
+                }}
+              >
+                Home
+              </Button>
+              <Button
                 onClick={() => navigate('/rooms')}
                 sx={{
                   ...navItemStyle,

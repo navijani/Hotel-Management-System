@@ -338,7 +338,7 @@ const Home: React.FC = () => {
           {/* YouTube iframe background - streams reliably on GitHub Pages */}
           <iframe
             ref={iframeRef}
-            src="https://www.youtube-nocookie.com/embed/2qKfnhNlFKk?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&playsinline=1&disablekb=1&fs=0&playlist=2qKfnhNlFKk&enablejsapi=1"
+            src="https://www.youtube-nocookie.com/embed/bJ9UWhQrZdo?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&playsinline=1&disablekb=1&fs=0&playlist=bJ9UWhQrZdo&enablejsapi=1"
             allow="autoplay; encrypted-media"
             allowFullScreen
             title="Hero background video"
