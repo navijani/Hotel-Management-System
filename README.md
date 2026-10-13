@@ -182,11 +182,19 @@ Any test card that is not listed above will result in a failed payment.
 
 ---
 
-### 2. [Team Member 2 Name] (ID: [Student ID])
-- **Primary Focus / Core Module**: [Module Name / Responsibilities]
-  - [Key Contribution 1]
-  - [Key Contribution 2]
-  - [Key Contribution 3]
+### 2. Nandun Jayasinghe (ID: 240323G)
+
+- **Primary Focus / Core Module: Reception Desk, Guest Billing & Financial Reports**
+
+  - **Reception Desk Workspace & Walk-in Bookings**: Designed and implemented the complete front-desk workspace, featuring real-time occupancy monitoring (today’s arrivals, in-house guests, and departures), walk-in booking creation with availability checks, and booking search/lookup functionality.
+
+  - **Guest Billing & Lifecycle Operations**: Developed itemized guest invoice management, service charge posting (spa, restaurant, and minibar), payment recording with overpayment validation, printable invoice views, and transactional check-in/check-out controls.
+
+  - **Financial Analytics & Admin Reporting**: Built the admin financial dashboard with KPI tracking (collections, revenue mix, occupancy, and average stay), Recharts visual analytics for daily collections, top services analysis, and branch performance comparison tables with CSV exports.
+
+  - **Backend Architecture & Database Optimization**: Engineered native Node.js transactional workflows (`beginTransaction`, `commit`, and `rollback`) for 100% TiDB Cloud compatibility without stored procedures, and created optimized SQL database views (`v_guest_billing_detail`, `service_catalogue`).
+
+  - **Secondary / Supporting Contributions**: Created an authentication and role normalization bridge (`normalizeRole` middleware) to handle role conversions transparently, established dual-path API routes (`/api/staff` and `/api/auth/staff`) for seamless teammate integration, and added client-side staff route guards with session management helpers.
 
 ---
 
