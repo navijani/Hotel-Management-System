@@ -390,7 +390,6 @@ const Rooms: React.FC = () => {
                   <MenuItem value="All">All Statuses</MenuItem>
                   <MenuItem value="Available">Available</MenuItem>
                   <MenuItem value="Maintenance">Maintenance</MenuItem>
-                  <MenuItem value="Occupied">Occupied</MenuItem>
                 </TextField>
               </Grid>
 

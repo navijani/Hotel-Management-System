@@ -25,24 +25,25 @@ import {
   MenuRounded,
   CloseRounded
 } from '@mui/icons-material';
-import { keyframes } from '@mui/system';
+import GuestLoadingScreen from './GuestLoadingScreen';
 
-const slideDown = keyframes`
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-`;
+let welcomeScreenShown = false;
 
 const GuestLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(() => !welcomeScreenShown);
+
+  useEffect(() => {
+    if (!showWelcomeScreen) return;
+    const timer = window.setTimeout(() => {
+      welcomeScreenShown = true;
+      setShowWelcomeScreen(false);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [showWelcomeScreen]);
   const getAuthStatus = () => {
     const flag =
       window.sessionStorage.getItem('guestSignedIn') === 'true' ||
@@ -96,6 +97,7 @@ const GuestLayout: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#ffffff' }}>
+      {showWelcomeScreen && <GuestLoadingScreen />}
       <CssBaseline />
       <AppBar
         position="fixed"
@@ -108,8 +110,7 @@ const GuestLayout: React.FC = () => {
           boxShadow: scrolled ? '0 12px 34px rgba(17, 24, 39, 0.1)' : '0 6px 24px rgba(17, 24, 39, 0.04)',
           top: 0,
           zIndex: 1100,
-          transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
-          animation: `${slideDown} 0.6s ease-out`
+          transition: 'background-color 0.3s ease, box-shadow 0.3s ease'
         }}
       >
         <Container maxWidth="xl">
