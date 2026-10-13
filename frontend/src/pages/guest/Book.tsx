@@ -19,6 +19,7 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { PickerDay } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
+import { formatLkr, formatUsd, useBookingQuote } from '../../hooks/useBookingQuote';
 
 declare global {
   interface Window {
@@ -112,6 +113,9 @@ const Book: React.FC = () => {
     roomType: selectedRoomType,
     roomId: selectedRoomId,
   });
+  const checkInKey = formData.checkInDate?.format('YYYY-MM-DD') || '';
+  const checkOutKey = formData.checkOutDate?.format('YYYY-MM-DD') || '';
+  const { quote, quoteLoading, quoteError, refreshQuote } = useBookingQuote(selectedRoomId ? Number(selectedRoomId) : null, checkInKey, checkOutKey);
 
   const checkIsSignedIn = () => {
     const authFlag =
@@ -232,16 +236,10 @@ const Book: React.FC = () => {
     );
   };
 
-  const calculateTotal = () => {
-    if (formData.checkInDate && formData.checkOutDate) {
-      const days = formData.checkOutDate.diff(formData.checkInDate, 'day');
-      return days > 0 ? days * selectedPrice : 0;
-    }
-    return 0;
-  };
+  const calculateTotal = () => quote?.amountLkr || 0;
 
   // Confirm booking ONLY after PayHere payment passes
-  const confirmBookingWithPayment = async (orderId: string) => {
+  const confirmBookingWithPayment = async (orderId: string, quoteToken: string) => {
     setLoading(true);
     setError('');
     try {
@@ -250,6 +248,8 @@ const Book: React.FC = () => {
         checkInDate: formData.checkInDate ? formData.checkInDate.format('YYYY-MM-DD') : '',
         checkOutDate: formData.checkOutDate ? formData.checkOutDate.format('YYYY-MM-DD') : '',
         paymentStatus: 'PAID',
+        paymentMethod: 'Online',
+        quoteToken,
         payhereOrderId: orderId
       };
 
@@ -277,6 +277,10 @@ const Book: React.FC = () => {
   // Trigger Official PayHere Sandbox SDK Popup
   const handlePayHereCheckout = async () => {
     setError('');
+    if (!quote) {
+      setError('A live currency quote is required before payment. Please select valid dates and try again.');
+      return;
+    }
     const totalAmount = calculateTotal();
     if (totalAmount <= 0) {
       setError('Please select valid check-in and check-out stay dates first.');
@@ -290,8 +294,7 @@ const Book: React.FC = () => {
       // Request PayHere Hash from backend
       const hashRes = await axios.post('/api/bookings/payhere-hash', {
         order_id: orderId,
-        amount: totalAmount,
-        currency: 'LKR'
+        quoteToken: quote.quoteToken,
       });
 
       if (!window.payhere) {
@@ -326,7 +329,7 @@ const Book: React.FC = () => {
       // Official PayHere Callbacks
       window.payhere.onCompleted = function onCompleted(completedOrderId: string) {
         console.log('PayHere payment completed successfully. OrderID:', completedOrderId);
-        confirmBookingWithPayment(completedOrderId || orderId);
+        confirmBookingWithPayment(completedOrderId || orderId, quote.quoteToken);
       };
 
       window.payhere.onDismissed = function onDismissed() {
@@ -396,12 +399,12 @@ const Book: React.FC = () => {
                       {room?.OriginalPrice && room.OriginalPrice > selectedPrice ? (
                         <>
                           <Typography component="span" sx={{ textDecoration: 'line-through', color: '#888', fontSize: '0.85em', mr: 1 }}>
-                            ${room.OriginalPrice}
+                            {formatUsd(Number(room.OriginalPrice))}
                           </Typography>
-                          ${selectedPrice}
+                          {formatUsd(quote?.nightlyUsd ?? Number(selectedPrice))}
                         </>
                       ) : (
-                        `$${selectedPrice}`
+                        formatUsd(quote?.nightlyUsd ?? Number(selectedPrice))
                       )}
                     </Typography>
                   </Box>
@@ -415,10 +418,16 @@ const Book: React.FC = () => {
                         </Typography>
                       </Box>
                       <Typography variant="h5" sx={{ fontWeight: 800, color: '#d4af37' }}>
-                        LKR {calculateTotal().toLocaleString()}
+                        {formatLkr(calculateTotal())}
                       </Typography>
                     </Box>
                   )}
+                  {quoteLoading && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>Fetching the latest USD/LKR rate…</Typography>}
+                  {quoteError && <Alert severity="warning" sx={{ mt: 1.5 }} action={<Button color="inherit" size="small" onClick={refreshQuote}>Retry</Button>}>{quoteError}</Alert>}
+                  {quote && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+                    {formatUsd(quote.subtotalUsd)} × {quote.fxRate.toFixed(2)} LKR/USD · {quote.source} rate dated {quote.rateDate}. Quote valid for 30 minutes.
+                  </Typography>}
+                  {quote && <Button size="small" onClick={refreshQuote} disabled={quoteLoading} sx={{ mt: 0.5, p: 0, textTransform: 'none' }}>Refresh quote</Button>}
                 </Box>
               </Paper>
             </Grid>
@@ -534,10 +543,10 @@ const Book: React.FC = () => {
                     {calculateTotal() > 0 && (
                       <Paper elevation={0} sx={{ p: 2.5, mb: 4, bgcolor: '#fff8e7', border: '1px solid #ffe0b2', borderRadius: 3 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#e65100', mb: 0.5 }}>
-                          Total Amount: LKR {calculateTotal().toLocaleString()}
+                          Total Amount: {formatLkr(calculateTotal())}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          ({formData.checkOutDate?.diff(formData.checkInDate, 'day')} Nights &times; ${selectedPrice} / night)
+                          ({quote?.nights} Nights &times; {formatUsd(quote?.nightlyUsd ?? Number(selectedPrice))} / night at {quote?.fxRate.toFixed(2)} LKR/USD)
                         </Typography>
                       </Paper>
                     )}
@@ -548,7 +557,7 @@ const Book: React.FC = () => {
                         variant="contained"
                         onClick={handleNext}
                         size="large"
-                        disabled={!formData.checkInDate || !formData.checkOutDate || calculateTotal() <= 0}
+                        disabled={!formData.checkInDate || !formData.checkOutDate || !quote || quoteLoading}
                         sx={{
                           background: 'linear-gradient(45deg, #d4af37 30%, #f3e5ab 90%)',
                           color: '#1a1a2e',
@@ -602,7 +611,7 @@ const Book: React.FC = () => {
                               Amount Payable:
                             </Typography>
                             <Typography variant="h5" sx={{ fontWeight: 900, color: '#d4af37' }}>
-                              LKR {calculateTotal().toLocaleString()}
+                              {formatLkr(calculateTotal())}
                             </Typography>
                           </Box>
                         </Grid>

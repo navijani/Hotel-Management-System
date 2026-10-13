@@ -449,7 +449,7 @@ const Rooms: React.FC = () => {
               .map((room) => {
                 const isAvailable = room.Status === 'Available';
                 const discountPercent = room.Discount || 0;
-                const discountedPrice = discountPercent > 0 ? Math.round(room.Price * (1 - discountPercent / 100)) : room.Price;
+                const discountedPrice = discountPercent > 0 ? Math.round(room.Price * (1 - discountPercent / 100) * 100) / 100 : Number(room.Price);
 
                 return (
                   <Grid key={room.RoomID} size={{ xs: 12, md: 4 }}>
@@ -521,7 +521,7 @@ const Rooms: React.FC = () => {
                                 <Typography component="span" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.85em', mr: 1 }}>
                                   ${room.Price}
                                 </Typography>
-                                ${discountedPrice}
+                                ${discountedPrice.toFixed(2)}
                                 <Typography component="span" variant="caption" sx={{ color: '#e65100', display: 'block', fontWeight: 'bold' }}>
                                   / night ({discountPercent}% off)
                                 </Typography>

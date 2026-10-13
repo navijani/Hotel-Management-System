@@ -1,6 +1,8 @@
 import express from 'express';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
+import { getUsdLkrRate, quoteRoomCharge } from '../exchangeRate.js';
 
 const router = express.Router();
 const bookingWriteLimiter = rateLimit({
@@ -9,6 +11,24 @@ const bookingWriteLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const stayNights = (checkInDate, checkOutDate) => {
+  const valid = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+  if (!valid(checkInDate) || !valid(checkOutDate)) throw new Error('Valid check-in and check-out dates are required.');
+  const nights = (Date.parse(checkOutDate) - Date.parse(checkInDate)) / 86400000;
+  if (!Number.isInteger(nights) || nights < 1) throw new Error('Check-out must be after check-in.');
+  return nights;
+};
+
+const readQuoteToken = (token) => {
+  try {
+    const quote = jwt.verify(String(token || ''), process.env.JWT_SECRET, { algorithms: ['HS256'] });
+    if (quote.kind !== 'room-quote' || quote.currency !== 'LKR' || !Number.isInteger(quote.roomId) || !Number.isFinite(quote.amountLkr) || quote.amountLkr <= 0) throw new Error();
+    return quote;
+  } catch {
+    throw new Error('Price quote expired or invalid. Please refresh the booking price.');
+  }
+};
 
 const formatBillingRow = (row) => ({
   booking_id: row.booking_id,
@@ -33,17 +53,46 @@ const formatBillingRow = (row) => ({
 });
 
 export default function createBookingsRouter(pool, bookingRateLimit) {
+  router.get('/quote', async (req, res) => {
+    try {
+      const roomId = Number(req.query.roomId);
+      const checkInDate = String(req.query.checkInDate || '');
+      const checkOutDate = String(req.query.checkOutDate || '');
+      const nights = stayNights(checkInDate, checkOutDate);
+      if (!Number.isInteger(roomId) || roomId < 1) return res.status(400).json({ error: 'Select a room first.' });
+
+      const [[room]] = await pool.query('SELECT room_id, price_per_night, discount, status FROM Room WHERE room_id = ? LIMIT 1', [roomId]);
+      if (!room || room.status !== 'Available') return res.status(400).json({ error: 'This room is not available.' });
+
+      const [overlaps] = await pool.query(
+        `SELECT 1 FROM Booking WHERE room_id = ? AND booking_status IN ('Booked', 'Checked-In') AND check_in_date < ? AND check_out_date > ? LIMIT 1`,
+        [roomId, checkOutDate, checkInDate]
+      );
+      if (overlaps.length) return res.status(409).json({ error: 'This room is already booked for the selected dates.' });
+
+      const fx = await getUsdLkrRate();
+      const charge = quoteRoomCharge(room.price_per_night, room.discount, nights, fx.rate);
+      const quote = { kind: 'room-quote', roomId, checkInDate, checkOutDate, nights, nightlyUsd: charge.nightlyUsd, subtotalUsd: charge.subtotalUsd, amountLkr: charge.amountLkr, fxRate: fx.rate, rateDate: fx.date, currency: 'LKR' };
+      const quoteToken = jwt.sign(quote, process.env.JWT_SECRET, { expiresIn: '30m' });
+      res.json({ ...quote, quoteToken, source: fx.source });
+    } catch (error) {
+      console.error('Booking quote error:', error);
+      res.status(error.message?.includes('Exchange-rate') || error.message?.includes('fetch') ? 503 : 400).json({ error: error.message || 'Unable to quote room price.' });
+    }
+  });
+
   // PayHere hash generator
   router.post('/payhere-hash', (req, res) => {
     try {
-      const { order_id, amount, currency } = req.body;
+      const { order_id, quoteToken } = req.body;
+      const quote = readQuoteToken(quoteToken);
       const merchant_id = String(process.env.PAYHERE_MERCHANT_ID || '').trim();
       const merchant_key = String(process.env.PAYHERE_MERCHANT_KEY || '').trim();
       const isSandbox = process.env.PAYHERE_SANDBOX ? process.env.PAYHERE_SANDBOX !== 'false' : true;
 
       const orderIdStr = String(order_id || `RESORT_${Date.now()}`);
-      const currStr = String(currency || 'LKR').trim();
-      const amountFormatted = Number(amount || 0).toFixed(2);
+      const currStr = 'LKR';
+      const amountFormatted = quote.amountLkr.toFixed(2);
 
       const hashedKey = crypto.createHash('md5').update(merchant_key).digest('hex').toUpperCase();
       const hashData = merchant_id + orderIdStr + amountFormatted + currStr + hashedKey;
@@ -77,6 +126,7 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
       const checkOutDate = String(req.body.checkOutDate || '').trim();
       const roomId = req.body.roomId ? Number(req.body.roomId) : null;
       const roomType = String(req.body.roomType || '').trim();
+      const quote = readQuoteToken(req.body.quoteToken);
       
       // Read payment attributes sent from frontend
       const paymentStatus = String(req.body.paymentStatus || 'PAID').trim().toUpperCase();
@@ -84,6 +134,9 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
 
       if ([firstName, lastName, email, phone, identificationNo, checkInDate, checkOutDate].some((value) => !value)) {
         return res.status(400).json({ error: 'All booking fields are required.' });
+      }
+      if (quote.checkInDate !== checkInDate || quote.checkOutDate !== checkOutDate || quote.nights !== stayNights(checkInDate, checkOutDate)) {
+        return res.status(400).json({ error: 'Booking dates changed. Please refresh the price quote.' });
       }
 
       await connection.beginTransaction();
@@ -129,6 +182,10 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
       if (!assignedRoomId) {
         throw new Error('roomType or roomId must be provided.');
       }
+      if (assignedRoomId !== quote.roomId) throw new Error('Selected room changed. Please refresh the price quote.');
+
+      const [[selectedRoom]] = await connection.query('SELECT status FROM Room WHERE room_id = ? LIMIT 1', [assignedRoomId]);
+      if (!selectedRoom || selectedRoom.status !== 'Available') throw new Error('This room is not available.');
 
       const [overlapRows] = await connection.query(
         `SELECT 1
@@ -149,32 +206,19 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
 
       // Create Booking record
       const [bookingResult] = await connection.query(
-        `INSERT INTO Booking (guest_id, room_id, check_in_date, check_out_date, booking_status, preferred_payment_method)
-         VALUES (?, ?, ?, ?, 'Booked', ?)`,
-        [guestId, assignedRoomId, checkInDate, checkOutDate, normalizedMethod]
+        `INSERT INTO Booking (guest_id, room_id, check_in_date, check_out_date, booking_status, preferred_payment_method, usd_nightly_rate, usd_lkr_rate, room_charge_lkr)
+         VALUES (?, ?, ?, ?, 'Booked', ?, ?, ?, ?)`,
+        [guestId, assignedRoomId, checkInDate, checkOutDate, normalizedMethod, quote.nightlyUsd, quote.fxRate, quote.amountLkr]
       );
 
       const bookingId = bookingResult.insertId;
 
       // Automatically insert a Payment record if paid directly at Reception (Cash/Card/Verified Online)
       if (paymentStatus === 'PAID') {
-        const [roomData] = await connection.query('SELECT price_per_night, discount FROM Room WHERE room_id = ? LIMIT 1', [assignedRoomId]);
-        
-        if (roomData.length > 0) {
-          const pricePerNight = Number(roomData[0].price_per_night || 0);
-          const discount = Number(roomData[0].discount || 0);
-          const effectivePrice = Math.round(pricePerNight * (100 - discount) / 100);
-          
-          const nights = Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000));
-          const totalPaid = nights * effectivePrice;
-
-          if (totalPaid > 0) {
-            await connection.query(
-              'INSERT INTO Payment (booking_id, payment_date, amount_paid, payment_method) VALUES (?, NOW(), ?, ?)',
-              [bookingId, totalPaid, normalizedMethod]
-            );
-          }
-        }
+        await connection.query(
+          'INSERT INTO Payment (booking_id, payment_date, amount_paid, payment_method) VALUES (?, NOW(), ?, ?)',
+          [bookingId, quote.amountLkr, normalizedMethod]
+        );
       }
 
       await connection.commit();

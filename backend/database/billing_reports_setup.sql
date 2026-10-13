@@ -20,26 +20,26 @@ SELECT
   COALESCE(br.branch_name, r.branch, 'Colombo') AS branch_name,
   b.check_in_date,
   b.check_out_date,
-  COALESCE(rt.daily_rate, r.price_per_night, 0) AS daily_rate,
-  GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0) AS room_charges,
+  COALESCE(b.room_charge_lkr / GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)), rt.daily_rate, r.price_per_night, 0) AS daily_rate,
+  COALESCE(b.room_charge_lkr, GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0)) AS room_charges,
   COALESCE((
     SELECT SUM(su.quantity * su.unit_price_at_usage)
     FROM ServiceUsage su WHERE su.booking_id = b.booking_id
   ), 0) AS service_charges,
   (
-    (GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0)) +
+    COALESCE(b.room_charge_lkr, GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0)) +
     COALESCE((SELECT SUM(su.quantity * su.unit_price_at_usage) FROM ServiceUsage su WHERE su.booking_id = b.booking_id), 0)
   ) AS total_bill,
   COALESCE((
     SELECT SUM(p.amount_paid) FROM Payment p WHERE p.booking_id = b.booking_id
   ), 0) AS total_paid,
   GREATEST(0, (
-    (GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0)) +
+    COALESCE(b.room_charge_lkr, GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0)) +
     COALESCE((SELECT SUM(su.quantity * su.unit_price_at_usage) FROM ServiceUsage su WHERE su.booking_id = b.booking_id), 0)
   ) - COALESCE((SELECT SUM(p.amount_paid) FROM Payment p WHERE p.booking_id = b.booking_id), 0)) AS balance,
   CASE
     WHEN COALESCE((SELECT SUM(p.amount_paid) FROM Payment p WHERE p.booking_id = b.booking_id), 0) >= (
-      (GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0)) +
+      COALESCE(b.room_charge_lkr, GREATEST(1, DATEDIFF(b.check_out_date, b.check_in_date)) * COALESCE(rt.daily_rate, r.price_per_night, 0)) +
       COALESCE((SELECT SUM(su.quantity * su.unit_price_at_usage) FROM ServiceUsage su WHERE su.booking_id = b.booking_id), 0)
     ) THEN 'CLEARED'
     ELSE 'PENDING'
