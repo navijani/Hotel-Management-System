@@ -182,7 +182,7 @@ Any test card that is not listed above will result in a failed payment.
 
 ---
 
-### 2. Nandun Jayasinghe (ID: 240323G)
+### 2. Nandun Jayasekara (ID: 240271U)
 
 - **Primary Focus / Core Module: Reception Desk, Guest Billing & Financial Reports**
 
