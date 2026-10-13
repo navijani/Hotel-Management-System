@@ -9,7 +9,6 @@ import {
   CheckCircle as CheckCircleIcon,
   Payment as PaymentIcon,
   CreditCard as CreditCardIcon,
-  Security as SecurityIcon,
   VerifiedUser as VerifiedUserIcon,
   LocalAtm as LocalAtmIcon,
   PointOfSale as PointOfSaleIcon,
@@ -669,32 +668,6 @@ const NewBooking: React.FC = () => {
                     </Paper>
                   </RadioGroup>
                 </FormControl>
-
-                {/* Optional guidance box when PayHere is selected */}
-                {paymentMethod === 'PAYHERE' && (
-                  <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: '#f0f7ff', border: '1px solid #b3d7ff', borderRadius: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                      <SecurityIcon sx={{ color: '#0066cc' }} />
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#004085' }}>
-                        PayHere Official Sandbox Test Cards:
-                      </Typography>
-                    </Box>
-                    <Grid container spacing={2}>
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Visa Test Card</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>4532 0000 0000 0000</Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6, sm: 3 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Expiry Date</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>12 / 28</Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6, sm: 3 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>CVV / OTP</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#004085' }}>123 / 123456</Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                )}
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4 }}>
                   <Button onClick={handleBack} disabled={loading} size="large" sx={{ color: '#64748b', fontWeight: 600 }}>

@@ -9,6 +9,19 @@ CREATE TABLE `guest` (
   PRIMARY KEY (`guest_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `system_settings` (
+  `settings_id` tinyint unsigned NOT NULL,
+  `hotel_name` varchar(120) NOT NULL,
+  `contact_email` varchar(160) NOT NULL,
+  `phone_number` varchar(50) NOT NULL,
+  `address` varchar(255) NOT NULL,
+  `online_bookings_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `email_notifications_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `maintenance_mode` tinyint(1) NOT NULL DEFAULT 0,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`settings_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `Room` (
   `room_id` int NOT NULL AUTO_INCREMENT,
   `branch_id` int NOT NULL,

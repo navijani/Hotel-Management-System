@@ -61,6 +61,16 @@ const bookingRateLimit = rateLimit({
   message: { error: 'Too many booking attempts. Please try again later.' },
 });
 
+const defaultSystemSettings = {
+  hotel_name: 'HRGSMS Grand Hotel',
+  contact_email: 'admin@hrgsms.com',
+  phone_number: '+94 11 234 5678',
+  address: '123 Ocean Drive, Colombo',
+  online_bookings_enabled: 1,
+  email_notifications_enabled: 1,
+  maintenance_mode: 0,
+};
+
 app.use('/api/', globalRateLimit);
 
 if (!fs.existsSync('uploads')) {
@@ -313,6 +323,86 @@ app.patch('/api/guest/:id/profile', async (req, res) => {
     res.json({ message: 'Profile updated successfully.', guest: rows[0] });
   } catch {
     res.status(500).json({ error: 'Unable to update profile.' });
+  }
+});
+
+// System settings are stored as one editable hotel configuration record.
+const ensureSystemSettings = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      settings_id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+      hotel_name VARCHAR(120) NOT NULL,
+      contact_email VARCHAR(160) NOT NULL,
+      phone_number VARCHAR(50) NOT NULL,
+      address VARCHAR(255) NOT NULL,
+      online_bookings_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      email_notifications_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      maintenance_mode TINYINT(1) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await pool.query(
+    `INSERT IGNORE INTO system_settings
+      (settings_id, hotel_name, contact_email, phone_number, address, online_bookings_enabled, email_notifications_enabled, maintenance_mode)
+     VALUES (1, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      defaultSystemSettings.hotel_name,
+      defaultSystemSettings.contact_email,
+      defaultSystemSettings.phone_number,
+      defaultSystemSettings.address,
+      defaultSystemSettings.online_bookings_enabled,
+      defaultSystemSettings.email_notifications_enabled,
+      defaultSystemSettings.maintenance_mode,
+    ]
+  );
+};
+
+app.get('/api/system-settings', async (req, res) => {
+  try {
+    await ensureSystemSettings();
+    const [rows] = await pool.query('SELECT * FROM system_settings WHERE settings_id = 1 LIMIT 1');
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('System settings load error:', error);
+    res.status(500).json({ error: 'Unable to load system settings.' });
+  }
+});
+
+app.put('/api/system-settings', async (req, res) => {
+  try {
+    const hotelName = String(req.body.hotel_name || '').trim();
+    const contactEmail = String(req.body.contact_email || '').trim();
+    const phoneNumber = String(req.body.phone_number || '').trim();
+    const address = String(req.body.address || '').trim();
+
+    if (!hotelName || !contactEmail || !phoneNumber || !address) {
+      return res.status(400).json({ error: 'Hotel name, email, phone number, and address are required.' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+      return res.status(400).json({ error: 'Enter a valid contact email address.' });
+    }
+
+    await ensureSystemSettings();
+    await pool.query(
+      `UPDATE system_settings
+       SET hotel_name = ?, contact_email = ?, phone_number = ?, address = ?,
+           online_bookings_enabled = ?, email_notifications_enabled = ?, maintenance_mode = ?
+       WHERE settings_id = 1`,
+      [
+        hotelName,
+        contactEmail,
+        phoneNumber,
+        address,
+        req.body.online_bookings_enabled ? 1 : 0,
+        req.body.email_notifications_enabled ? 1 : 0,
+        req.body.maintenance_mode ? 1 : 0,
+      ]
+    );
+    const [rows] = await pool.query('SELECT * FROM system_settings WHERE settings_id = 1 LIMIT 1');
+    res.json({ message: 'System settings saved successfully.', settings: rows[0] });
+  } catch (error) {
+    console.error('System settings save error:', error);
+    res.status(500).json({ error: 'Unable to save system settings.' });
   }
 });
 
