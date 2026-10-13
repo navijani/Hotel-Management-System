@@ -169,3 +169,47 @@ Use the sandbox payment cards below to simulate different payment outcomes durin
 | Network Error | AMEX | <code>373433500205887</code> | <button onclick="navigator.clipboard.writeText('373433500205887'); this.textContent='Copied'; setTimeout(() => this.textContent='Copy', 1200)">Copy</button> |
 
 Any test card that is not listed above will result in a failed payment.
+
+
+## Individual Contributions
+
+### 1. Chamath Jayasinghe (ID: 240278X)
+- **Primary Focus / Core Module: Payment Gateway Integration (PayHere)**
+  - **Payment Gateway Architecture & Processing**: Implemented the end-to-end payment gateway workflow using the **PayHere Sandbox API**, including secure payment hash generation, merchant credentials management, and checkout parameters.
+  - **Backend Payment Handling**: Developed server-side payment verification, transaction status tracking, and error handling for payment flows.(sandbox will do the most)
+  - **Security & Rate Limiting**: Implemented rate limiting and authentication safeguards on payment and booking-related endpoints to ensure transaction integrity.
+  - *Secondary / Supporting Contributions*: Assisted with backend deployment configuration (Docker setup, containerization) and minor frontend integration support for checkout routing and guest profiles with JWT token handling.
+
+---
+
+### 2. [Team Member 2 Name] (ID: [Student ID])
+- **Primary Focus / Core Module**: [Module Name / Responsibilities]
+  - [Key Contribution 1]
+  - [Key Contribution 2]
+  - [Key Contribution 3]
+
+---
+
+### 3. [Team Member 3 Name] (ID: [Student ID])
+- **Primary Focus / Core Module**: [Module Name / Responsibilities]
+  - [Key Contribution 1]
+  - [Key Contribution 2]
+  - [Key Contribution 3]
+
+---
+
+### 4. [Team Member 4 Name] (ID: [Student ID])
+- **Primary Focus / Core Module**: [Module Name / Responsibilities]
+  - [Key Contribution 1]
+  - [Key Contribution 2]
+  - [Key Contribution 3]
+
+---
+
+### 5. [Team Member 5 Name] (ID: [Student ID])
+- **Primary Focus / Core Module**: [Module Name / Responsibilities]
+  - [Key Contribution 1]
+  - [Key Contribution 2]
+  - [Key Contribution 3]
+
+
