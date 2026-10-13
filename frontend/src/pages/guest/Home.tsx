@@ -299,11 +299,11 @@ const Home: React.FC = () => {
           position: 'relative',
           color: 'white',
           pt: { xs: 12, md: 14 },
-          pb: { xs: 8, md: 6 },
-          px: 2,
+          pb: 0,
           textAlign: 'center',
           overflow: 'hidden',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '100vh',
@@ -710,27 +710,23 @@ const Home: React.FC = () => {
 
           </Box>
 
-          {/* Resort highlights */}
-          <Box
-            sx={{
-              mt: { xs: 3, md: 4 },
-              px: { xs: 2, md: 4 },
-              py: { xs: 2.5, md: 3 },
-              borderRadius: 5,
-              bgcolor: 'rgba(10, 14, 28, 0.96)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.16)',
-              boxShadow: '0 18px 50px rgba(0, 0, 0, 0.3)',
-              width: '100%',
-              maxWidth: '1060px',
-              position: 'relative',
-              zIndex: 3,
-              animation: 'fadeInUp 1s ease-out forwards',
-              animationDelay: '1.1s',
-              opacity: 0,
-            }}
-          >
+        </Container>
+
+        {/* Solid lower hero section keeps video captions out of view. */}
+        <Box
+          sx={{
+            mt: { xs: 3, md: 4 },
+            width: '100%',
+            position: 'relative',
+            zIndex: 3,
+            bgcolor: '#0b1020',
+            borderRadius: { xs: '22px 22px 0 0', md: '30px 30px 0 0' },
+            borderTop: '1px solid rgba(255, 255, 255, 0.16)',
+            boxShadow: '0 -18px 45px rgba(0, 0, 0, 0.28)',
+            py: { xs: 3, md: 4 },
+          }}
+        >
+          <Container maxWidth="lg">
             <Grid container spacing={{ xs: 2.5, md: 4 }} sx={{ alignItems: 'center' }}>
               <Grid size={{ xs: 12, md: 7 }}>
                 <Typography sx={{ color: '#d4af37', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', mb: 0.8 }}>
@@ -778,8 +774,8 @@ const Home: React.FC = () => {
                 </Button>
               </Grid>
             </Grid>
-          </Box>
-        </Container>
+          </Container>
+        </Box>
 
         {/* Video Control */}
         <Box

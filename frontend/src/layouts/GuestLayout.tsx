@@ -10,6 +10,7 @@ import {
   Container,
   Grid,
   IconButton,
+  Drawer,
   Divider,
   TextField
 } from '@mui/material';
@@ -20,21 +21,11 @@ import {
   Instagram,
   Email,
   Phone,
-  LocationOn
+  LocationOn,
+  MenuRounded,
+  CloseRounded
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
-
-const pulse = keyframes`
-  0% {
-    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 15px rgba(212, 175, 55, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
-  }
-`;
 
 const slideDown = keyframes`
   from {
@@ -51,6 +42,7 @@ const GuestLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const getAuthStatus = () => {
     const flag =
       window.sessionStorage.getItem('guestSignedIn') === 'true' ||
@@ -64,6 +56,8 @@ const GuestLayout: React.FC = () => {
   };
 
   const [isSignedIn, setIsSignedIn] = useState(getAuthStatus);
+
+  useEffect(() => setMobileMenuOpen(false), [location.pathname]);
 
   useEffect(() => {
     const handleAuthChange = () => setIsSignedIn(getAuthStatus());
@@ -89,34 +83,12 @@ const GuestLayout: React.FC = () => {
     };
   }, [scrolled]);
 
-  const navItemStyle = {
-    color: scrolled ? '#333333' : '#1a1a1a',
-    fontWeight: 500,
-    fontSize: '0.95rem',
-    letterSpacing: '1px',
-    textTransform: 'uppercase',
-    fontFamily: '"Montserrat", "Helvetica", "Arial", sans-serif',
-    position: 'relative',
-    px: 1,
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      width: '0%',
-      height: '2px',
-      bottom: '0px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      backgroundColor: '#d4af37',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    },
-    '&:hover': {
-      color: '#d4af37',
-      bgcolor: 'transparent',
-      '&::after': {
-        width: '100%',
-      }
-    }
-  };
+  const navLinks = [
+    { label: 'Home', path: '/' },
+    { label: 'Rooms', path: '/rooms' },
+    { label: 'About', path: '/about' },
+    { label: isSignedIn ? 'Profile' : 'Sign In', path: isSignedIn ? '/profile' : '/signin' },
+  ];
 
   const handleBookNow = () => {
     navigate('/rooms');
@@ -127,145 +99,149 @@ const GuestLayout: React.FC = () => {
       <CssBaseline />
       <AppBar
         position="fixed"
-        elevation={scrolled ? 8 : 0}
+        elevation={0}
         sx={{
-          bgcolor: scrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.8)',
-          backdropFilter: 'blur(25px)',
+          bgcolor: scrolled ? 'rgba(255, 255, 255, 0.97)' : 'rgba(255, 255, 255, 0.91)',
+          backdropFilter: 'blur(20px)',
           color: 'text.primary',
-          borderBottom: scrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+          borderBottom: '1px solid rgba(26, 26, 26, 0.08)',
+          boxShadow: scrolled ? '0 12px 34px rgba(17, 24, 39, 0.1)' : '0 6px 24px rgba(17, 24, 39, 0.04)',
           top: 0,
           zIndex: 1100,
-          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          animation: `${slideDown} 0.8s cubic-bezier(0.4, 0, 0.2, 1)`
+          transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
+          animation: `${slideDown} 0.6s ease-out`
         }}
       >
         <Container maxWidth="xl">
           <Toolbar sx={{
-            minHeight: scrolled ? '65px' : '80px',
-            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            px: { xs: 0, md: 2 }
+            minHeight: { xs: 68, lg: scrolled ? 74 : 84 },
+            transition: 'min-height 0.3s ease',
+            px: { xs: 0, md: 1 },
+            gap: 2,
           }}>
             <Typography
-              variant="h4"
-              component="div"
+              component="a"
+              href={import.meta.env.BASE_URL || '/'}
+              aria-label="Paradise Resorts home"
               sx={{
-                flexGrow: 1,
+                mr: 'auto',
                 cursor: 'pointer',
-                fontWeight: 800,
                 fontFamily: '"Playfair Display", serif',
-                letterSpacing: '1.5px',
-                color: '#1a1a1a',
+                fontSize: { xs: '1.55rem', sm: '1.9rem', md: '2.1rem' },
+                letterSpacing: '0.02em',
+                color: '#202020',
                 display: 'flex',
                 alignItems: 'center',
-                transform: scrolled ? 'scale(0.9)' : 'scale(1)',
-                transformOrigin: 'left center',
-                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
               }}
-              onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }}
             >
               <Box component="span" sx={{
-                color: '#d4af37',
-                mr: 1,
-                textShadow: scrolled ? 'none' : '1px 1px 2px rgba(0,0,0,0.05)'
+                color: '#b58b21',
+                fontWeight: 800,
+                mr: 0.8,
               }}>
                 Paradise
               </Box>
-              <Box component="span" sx={{ fontWeight: 400 }}>Resorts</Box>
+              <Box component="span" sx={{ fontWeight: 500 }}>Resorts</Box>
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: { xs: 2, md: 5 }, alignItems: 'center' }}>
-
-              <Button
-                onClick={() => navigate('/')}
-                sx={{
-                  ...navItemStyle,
-                  color: location.pathname === '/' ? '#d4af37' : navItemStyle.color,
-                  '&::after': {
-                    ...navItemStyle['&::after'],
-                    width: location.pathname === '/' ? '100%' : '0%'
-                  }
-                }}
-              >
-                Home
-              </Button>
-              <Button
-                onClick={() => navigate('/rooms')}
-                sx={{
-                  ...navItemStyle,
-                  color: location.pathname === '/rooms' ? '#d4af37' : navItemStyle.color,
-                  '&::after': {
-                    ...navItemStyle['&::after'],
-                    width: location.pathname === '/rooms' ? '100%' : '0%'
-                  }
-                }}
-              >
-                Rooms
-              </Button>
-              <Button
-                onClick={() => navigate('/about')}
-                sx={{
-                  ...navItemStyle,
-                  color: location.pathname === '/about' ? '#d4af37' : navItemStyle.color,
-                  '&::after': {
-                    ...navItemStyle['&::after'],
-                    width: location.pathname === '/about' ? '100%' : '0%'
-                  }
-                }}
-              >
-                About
-              </Button>
-              {!isSignedIn ? (
-                <Button
-                  onClick={() => navigate('/signin')}
-                  sx={navItemStyle}
-                >
-                  Sign In
-                </Button>
-              ) : (
-                <>
+            <Box component="nav" aria-label="Guest navigation" sx={{ display: { xs: 'none', lg: 'flex' }, alignItems: 'center', gap: 0.5, p: 0.6, borderRadius: '100px', bgcolor: 'rgba(246, 242, 233, 0.78)', border: '1px solid rgba(181, 139, 33, 0.12)' }}>
+              {navLinks.map(({ label, path }) => {
+                const active = location.pathname === path;
+                return (
                   <Button
-                    onClick={() => navigate('/profile')}
-                    sx={navItemStyle}
+                    key={path}
+                    onClick={() => navigate(path)}
+                    aria-current={active ? 'page' : undefined}
+                    sx={{
+                      minWidth: 0,
+                      px: { md: 1.6, lg: 2.4 },
+                      py: 1,
+                      borderRadius: '100px',
+                      color: active ? '#6f5211' : '#383838',
+                      bgcolor: active ? 'rgba(212, 175, 55, 0.19)' : 'transparent',
+                      fontFamily: '"Montserrat", sans-serif',
+                      fontWeight: active ? 700 : 600,
+                      fontSize: '0.76rem',
+                      letterSpacing: '0.08em',
+                      whiteSpace: 'nowrap',
+                      '&:hover': { bgcolor: 'rgba(212, 175, 55, 0.22)', color: '#6f5211' },
+                    }}
                   >
-                    Profile
+                    {label}
                   </Button>
-                </>
-              )}
+                );
+              })}
+            </Box>
+            <Box sx={{ display: { xs: 'none', lg: 'block' }, ml: 1 }}>
               <Button
                 variant="contained"
                 onClick={handleBookNow}
-                endIcon={<ArrowRightAlt sx={{ transition: 'transform 0.3s', ml: 0.5 }} />}
+                endIcon={<ArrowRightAlt sx={{ transition: 'transform 0.25s ease' }} />}
                 sx={{
-                  background: 'linear-gradient(45deg, #111111 30%, #333333 90%)',
-                  color: 'white',
-                  borderRadius: '0px',
-                  px: { xs: 3, md: 5 },
-                  py: scrolled ? 1.2 : 1.5,
-                  fontWeight: 600,
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase',
-                  fontSize: '0.9rem',
-                  fontFamily: '"Montserrat", "Helvetica", "Arial", sans-serif',
-                  boxShadow: '0 8px 20px -6px rgba(0,0,0,0.3)',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  animation: `${pulse} 2.5s infinite`,
-                  ml: { xs: 0, md: 2 },
+                  background: '#202020',
+                  color: '#fff',
+                  borderRadius: '100px',
+                  px: { md: 2.5, lg: 3.5 },
+                  py: 1.35,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  fontSize: '0.78rem',
+                  fontFamily: '"Montserrat", sans-serif',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.14)',
+                  whiteSpace: 'nowrap',
                   '&:hover': {
-                    background: 'linear-gradient(45deg, #d4af37 30%, #e5c158 90%)',
-                    boxShadow: '0 12px 25px -8px rgba(212, 175, 55, 0.6)',
-                    transform: 'translateY(-3px)',
-                    '& .MuiButton-endIcon': {
-                      transform: 'translateX(4px)'
-                    }
+                    background: '#b58b21',
+                    boxShadow: '0 12px 24px rgba(181, 139, 33, 0.26)',
+                    '& .MuiButton-endIcon': { transform: 'translateX(4px)' },
                   }
                 }}
               >
                 Book Now
               </Button>
             </Box>
+            <IconButton
+              aria-label="Open navigation menu"
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{ display: { xs: 'inline-flex', lg: 'none' }, color: '#202020', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 2 }}
+            >
+              <MenuRounded />
+            </IconButton>
           </Toolbar>
         </Container>
       </AppBar>
+
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        slotProps={{ paper: { sx: { width: { xs: 'min(86vw, 340px)', sm: 360 }, p: 3, bgcolor: '#faf9f6' } } }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+          <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: '1.35rem', fontWeight: 700, color: '#202020' }}>Paradise <Box component="span" sx={{ color: '#b58b21' }}>Resorts</Box></Typography>
+          <IconButton aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)}><CloseRounded /></IconButton>
+        </Box>
+        <Box component="nav" aria-label="Mobile guest navigation" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {navLinks.map(({ label, path }) => {
+            const active = location.pathname === path;
+            return (
+              <Button
+                key={path}
+                onClick={() => { setMobileMenuOpen(false); navigate(path); }}
+                aria-current={active ? 'page' : undefined}
+                sx={{ justifyContent: 'flex-start', px: 2, py: 1.5, borderRadius: 2, color: active ? '#6f5211' : '#202020', bgcolor: active ? 'rgba(212,175,55,0.16)' : 'transparent', fontWeight: active ? 700 : 600, '&:hover': { bgcolor: 'rgba(212,175,55,0.2)' } }}
+              >
+                {label}
+              </Button>
+            );
+          })}
+          <Divider sx={{ my: 2 }} />
+          <Button onClick={() => { setMobileMenuOpen(false); handleBookNow(); }} endIcon={<ArrowRightAlt />} sx={{ bgcolor: '#202020', color: '#fff', borderRadius: '100px', py: 1.5, fontWeight: 700, '&:hover': { bgcolor: '#b58b21' } }}>
+            Book Now
+          </Button>
+        </Box>
+      </Drawer>
 
       <Box component="main" sx={{ flexGrow: 1 }}>
         <Outlet />
