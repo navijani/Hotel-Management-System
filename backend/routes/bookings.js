@@ -251,19 +251,26 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
   // GET /api/bookings/guest/:guestId (Required for guest profile)
   router.get('/guest/:guestId', async (req, res) => {
     try {
-      const guestId = req.params.guestId;
+      const guestId = Number(req.params.guestId || 0);
       const identityNo = String(req.query.identity_number || '').trim();
       const email = String(req.query.email || '').trim();
 
+      if (!guestId && !identityNo && !email) {
+        return res.status(400).json({ error: 'A guest account identifier is required.' });
+      }
+
       const [bookings] = await pool.query(
         `SELECT b.booking_id, b.check_in_date, b.check_out_date, b.booking_status, b.created_at,
-                r.room_number, r.type AS room_type, r.price_per_night, r.image AS room_image
+                r.room_number, r.type AS room_type, r.price_per_night, r.image AS room_image,
+                b.room_charge_lkr, b.usd_nightly_rate, b.usd_lkr_rate
          FROM Booking b
          LEFT JOIN Room r ON b.room_id = r.room_id
          LEFT JOIN guest g ON b.guest_id = g.guest_id
-         WHERE b.guest_id = ? OR (g.identity_number IS NOT NULL AND g.identity_number = ?) OR (g.email IS NOT NULL AND g.email = ?)
+         WHERE (? > 0 AND b.guest_id = ?)
+            OR (g.identity_number IS NOT NULL AND g.identity_number = ?)
+            OR (g.email IS NOT NULL AND LOWER(g.email) = LOWER(?))
          ORDER BY b.booking_id DESC`,
-        [guestId, identityNo, email]
+        [guestId, guestId, identityNo, email]
       );
       res.json(bookings);
     } catch (error) {

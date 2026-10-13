@@ -50,6 +50,9 @@ interface Reservation {
   room_number?: string;
   room_type?: string;
   price_per_night?: number;
+  room_charge_lkr?: number;
+  usd_nightly_rate?: number;
+  usd_lkr_rate?: number;
   room_image?: string;
 }
 
@@ -86,7 +89,11 @@ const Profile: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    const rawProfile = sessionStorage.getItem('guestProfile') || sessionStorage.getItem('guestUser');
+    const rawProfile =
+      sessionStorage.getItem('guestProfile') ||
+      sessionStorage.getItem('guestUser') ||
+      localStorage.getItem('guestProfile') ||
+      localStorage.getItem('guestUser');
     let currentUser = user;
     if (rawProfile) {
       try {
@@ -98,7 +105,7 @@ const Profile: React.FC = () => {
     const fetchReservations = async () => {
       setLoadingReservations(true);
       try {
-        const guestId = currentUser.guest_id || 0;
+        const guestId = Number(currentUser.guest_id || 0);
         const identityNo = currentUser.identity_number || currentUser.identityNumber || '';
         const email = currentUser.email || '';
 
@@ -110,6 +117,9 @@ const Profile: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           setReservations(Array.isArray(data) ? data : []);
+        } else {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error || 'Unable to load reservations.');
         }
       } catch (err) {
         console.error('Error fetching reservations:', err);
@@ -351,8 +361,7 @@ const Profile: React.FC = () => {
                     const checkInDate = new Date(res.check_in_date);
                     const checkOutDate = new Date(res.check_out_date);
                     const diffDays = Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24)));
-                    const rate = Number(res.price_per_night || 150);
-                    const totalCost = diffDays * rate;
+                    const totalCost = Number(res.room_charge_lkr || 0);
 
                     let statusColor = '#10b981';
                     if (res.booking_status === 'Checked-Out') statusColor = '#64748b';
@@ -388,7 +397,7 @@ const Profile: React.FC = () => {
                           <Grid size={{ xs: 12, sm: 4 }} sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Total Reservation Amount</Typography>
                             <Typography variant="h6" sx={{ fontWeight: 800, color: '#d4af37' }}>
-                              ${totalCost.toLocaleString()}
+                              {totalCost > 0 ? `LKR ${totalCost.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Amount unavailable'}
                             </Typography>
                           </Grid>
                         </Grid>
