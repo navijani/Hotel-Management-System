@@ -32,8 +32,11 @@ const readQuoteToken = (token) => {
 
 const formatBillingRow = (row) => ({
   booking_id: row.booking_id,
+  guest_id: row.guest_id || null,
   booking_status: row.booking_status,
   guest_name: row.guest_name,
+  email: row.email || '',
+  phone_number: row.phone_number || '',
   identification_no: row.id_number,
   room_number: row.room_number,
   room_type: row.room_type_name,
@@ -240,7 +243,16 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
   // GET /api/bookings (All bookings)
   router.get('/', async (req, res) => {
     try {
-      const [rows] = await pool.query(`SELECT * FROM v_guest_billing_detail ORDER BY booking_id DESC`);
+      // The billing view intentionally contains billing fields only. Join the
+      // guest table here so the admin booking details dialog can show the
+      // contact information belonging to each reservation.
+      const [rows] = await pool.query(`
+        SELECT billing.*, b.guest_id, COALESCE(g.email, '') AS email, COALESCE(g.phone_number, '') AS phone_number
+        FROM v_guest_billing_detail billing
+        LEFT JOIN Booking b ON b.booking_id = billing.booking_id
+        LEFT JOIN guest g ON g.guest_id = b.guest_id
+        ORDER BY billing.booking_id DESC
+      `);
       res.json(rows.map(formatBillingRow));
     } catch (error) {
       console.error('Error fetching bookings:', error);

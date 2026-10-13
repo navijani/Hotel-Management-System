@@ -11,16 +11,19 @@ import dayjs from 'dayjs';
 
 interface Booking {
   booking_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone_number: string;
-  identity_number: string;
-  room_number: string;
-  room_type: string;
-  price_per_night: number;
-  check_in_date: string;
-  check_out_date: string;
+  guest_id?: number | null;
+  guest_name?: string;
+  email?: string;
+  phone_number?: string;
+  identification_no?: string;
+  room_number?: string;
+  room_type?: string;
+  room_daily_rate?: number;
+  room_total?: number;
+  net_total?: number;
+  check_in_at?: string;
+  check_out_at?: string;
+  nights?: number;
   booking_status: string;
 }
 
@@ -49,9 +52,28 @@ const Bookings: React.FC = () => {
     }
   };
 
-  const handleView = (booking: Booking) => {
+  const handleView = async (booking: Booking) => {
     setSelectedBooking(booking);
     setViewOpen(true);
+
+    // Keep the dialog useful for older booking records/API responses that do
+    // not contain the guest contact fields yet. The profile endpoint is the
+    // source of truth for the guest's current email and phone number.
+    if (booking.guest_id && (!booking.email || !booking.phone_number)) {
+      try {
+        const response = await axios.get(`/api/guest/${booking.guest_id}/profile`);
+        const profile = response.data;
+        setSelectedBooking((current) => current?.booking_id === booking.booking_id
+          ? {
+              ...current,
+              email: current.email || profile.email || '',
+              phone_number: current.phone_number || profile.phone_number || '',
+            }
+          : current);
+      } catch (error) {
+        console.error('Failed to load guest contact details:', error);
+      }
+    }
   };
 
   const handleEdit = (booking: Booking) => {
@@ -82,6 +104,15 @@ const Bookings: React.FC = () => {
       default: return 'warning';
     }
   };
+
+  const formatDate = (date?: string) => date && dayjs(date).isValid()
+    ? dayjs(date).format('MMM DD, YYYY')
+    : 'N/A';
+
+  const formatCurrency = (amount?: number) => `LKR ${Number(amount || 0).toLocaleString('en-LK', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
   return (
     <Box>
@@ -121,16 +152,16 @@ const Bookings: React.FC = () => {
                     #{b.booking_id}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>
-                    {b.first_name} {b.last_name}
+                    {b.guest_name || 'Guest'}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>
                     {b.room_number || 'TBD'}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{dayjs(b.check_in_date).format('MMM DD, YYYY')}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatDate(b.check_in_at)}</Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{dayjs(b.check_out_date).format('MMM DD, YYYY')}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatDate(b.check_out_at)}</Typography>
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -165,16 +196,16 @@ const Bookings: React.FC = () => {
                 <Typography variant="subtitle2" color="text.secondary">Guest Information</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="body2"><strong>Name:</strong> {selectedBooking.first_name} {selectedBooking.last_name}</Typography>
+                <Typography variant="body2"><strong>Name:</strong> {selectedBooking.guest_name || 'Not available'}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="body2"><strong>Email:</strong> {selectedBooking.email}</Typography>
+                <Typography variant="body2"><strong>Email:</strong> {selectedBooking.email || 'Not available'}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="body2"><strong>Phone:</strong> {selectedBooking.phone_number}</Typography>
+                <Typography variant="body2"><strong>Phone:</strong> {selectedBooking.phone_number || 'Not available'}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="body2"><strong>ID:</strong> {selectedBooking.identity_number}</Typography>
+                <Typography variant="body2"><strong>ID:</strong> {selectedBooking.identification_no || 'Not available'}</Typography>
               </Grid>
 
               <Grid size={{ xs: 12 }}><Divider sx={{ my: 1 }} /></Grid>
@@ -189,19 +220,19 @@ const Bookings: React.FC = () => {
                 <Typography variant="body2"><strong>Type:</strong> {selectedBooking.room_type || 'N/A'}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="body2"><strong>Check-In:</strong> {dayjs(selectedBooking.check_in_date).format('MMM DD, YYYY')}</Typography>
+                <Typography variant="body2"><strong>Check-In:</strong> {formatDate(selectedBooking.check_in_at)}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="body2"><strong>Check-Out:</strong> {dayjs(selectedBooking.check_out_date).format('MMM DD, YYYY')}</Typography>
+                <Typography variant="body2"><strong>Check-Out:</strong> {formatDate(selectedBooking.check_out_at)}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="body2">
-                  <strong>Total Nights:</strong> {dayjs(selectedBooking.check_out_date).diff(dayjs(selectedBooking.check_in_date), 'day')}
+                  <strong>Total Nights:</strong> {Math.max(1, Number(selectedBooking.nights || 0))}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="body2">
-                  <strong>Total Price:</strong> ${dayjs(selectedBooking.check_out_date).diff(dayjs(selectedBooking.check_in_date), 'day') * selectedBooking.price_per_night}
+                  <strong>Total Price:</strong> {formatCurrency(selectedBooking.net_total ?? selectedBooking.room_total)}
                 </Typography>
               </Grid>
             </Grid>
