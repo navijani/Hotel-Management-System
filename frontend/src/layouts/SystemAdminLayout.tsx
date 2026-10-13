@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
+  Alert,
   AppBar,
   Box,
   CssBaseline,
@@ -16,11 +17,14 @@ import {
   Typography,
   Avatar,
   Fade,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
-  Desk as DeskIcon,
   MeetingRoom as RoomIcon,
   People as PeopleIcon,
   EventNote as BookingIcon,
@@ -30,6 +34,8 @@ import {
   ExitToApp as LogoutIcon,
   Assessment as AssessmentIcon,
 } from '@mui/icons-material';
+import { fetchBranches } from '../api/branches';
+import type { HotelBranch } from '../api/branches';
 
 const drawerWidth = 260;
 
@@ -37,33 +43,47 @@ const SystemAdminLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [branches, setBranches] = useState<HotelBranch[]>([]);
+  const [branchError, setBranchError] = useState('');
+  const selectedBranchId = searchParams.get('branch_id') || '';
+
+  useEffect(() => {
+    let active = true;
+    fetchBranches()
+      .then((loadedBranches) => {
+        if (active) setBranches(loadedBranches);
+      })
+      .catch((error: unknown) => {
+        if (active) setBranchError(error instanceof Error ? error.message : 'Unable to load hotel branches.');
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
   const menuItems = [
-<<<<<<< HEAD
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
     { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
-    { text: 'Bookings', icon: <BookingIcon />, path: '/system-admin/bookings' },
+    { text: 'Bookings Management', icon: <BookingIcon />, path: '/system-admin/bookings' },
     { text: 'Bar & Beverages', icon: <BarIcon />, path: '/system-admin/bar' },
-    { text: 'Users & Staff', icon: <PeopleIcon />, path: '/system-admin/users' },
+    { text: 'Staff Management', icon: <PeopleIcon />, path: '/system-admin/users' },
+    { text: 'Income Management', icon: <AssessmentIcon />, path: '/system-admin/reports' },
     { text: 'Exclusive Offers', icon: <OfferIcon />, path: '/system-admin/offers' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/system-admin/settings' },
   ];
-=======
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/system-admin' },
-  { text: 'Reception Desk', icon: <DeskIcon />, path: '/reception' },
-  { text: 'Rooms Management', icon: <RoomIcon />, path: '/system-admin/rooms' },
-  { text: 'Bookings', icon: <BookingIcon />, path: '/system-admin/bookings' },
-  { text: 'Bar & Beverages', icon: <BarIcon />, path: '/system-admin/bar' },
-  { text: 'Users & Staff', icon: <PeopleIcon />, path: '/system-admin/users' },
-  { text: 'Exclusive Offers', icon: <OfferIcon />, path: '/system-admin/offers' },
-  { text: 'Financial Reports', icon: <AssessmentIcon />, path: '/system-admin/reports' }, // <-- Added
-  { text: 'Settings', icon: <SettingsIcon />, path: '/system-admin/settings' },
-];
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
+
+  const handleBranchChange = (branchId: string) => {
+    setSearchParams((current) => {
+      if (branchId) current.set('branch_id', branchId);
+      else current.delete('branch_id');
+      return current;
+    });
+  };
 
   const drawer = (
     <Box sx={{ height: '100%', bgcolor: '#1e1e2f', color: '#fff' }}>
@@ -79,7 +99,10 @@ const SystemAdminLayout: React.FC = () => {
           return (
             <ListItem disablePadding sx={{ mb: 1 }} key={item.text}>
               <ListItemButton
-                onClick={() => navigate(item.path)}
+                onClick={() => navigate({
+                  pathname: item.path,
+                  search: selectedBranchId ? `?branch_id=${encodeURIComponent(selectedBranchId)}` : '',
+                })}
                 sx={{
                   borderRadius: 2,
                   bgcolor: isActive ? 'rgba(79, 172, 254, 0.15)' : 'transparent',
@@ -109,11 +132,7 @@ const SystemAdminLayout: React.FC = () => {
       <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2 }}>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mb: 2 }} />
         <ListItemButton
-<<<<<<< HEAD
           onClick={() => navigate('/')}
-=======
-          onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }}
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
           sx={{ borderRadius: 2, color: '#a0a0b0', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: '#fff' } }}
         >
           <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><LogoutIcon /></ListItemIcon>
@@ -148,6 +167,23 @@ const SystemAdminLayout: React.FC = () => {
           </IconButton>
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 190 }}>
+              <InputLabel id="admin-branch-label">Location</InputLabel>
+              <Select
+                labelId="admin-branch-label"
+                label="Location"
+                value={selectedBranchId}
+                onChange={(event) => handleBranchChange(event.target.value)}
+                sx={{ bgcolor: '#fff' }}
+              >
+                <MenuItem value="">All locations</MenuItem>
+                {branches.map((branch) => (
+                  <MenuItem key={branch.branch_id} value={String(branch.branch_id)}>
+                    {branch.city} - {branch.branch_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               Super Admin
             </Typography>
@@ -195,6 +231,7 @@ const SystemAdminLayout: React.FC = () => {
       >
         <Fade in={true} timeout={500}>
           <Box>
+            {branchError && <Alert severity="error" sx={{ mb: 2 }}>{branchError}</Alert>}
             <Outlet />
           </Box>
         </Fade>

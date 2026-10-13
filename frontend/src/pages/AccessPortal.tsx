@@ -5,10 +5,9 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-type StaffRole = 'cleaning' | 'bar' | 'therapist' | 'waiter' | 'receptionist';
+type StaffRole = 'cleaning' | 'bar' | 'therapist' | 'waiter';
 
-const staffRoles = [
-  { value: 'receptionist', label: 'Front Desk / Reception' },
+const staffRoles: { value: StaffRole; label: string }[] = [
   { value: 'cleaning', label: 'Cleaning Staff' },
   { value: 'bar', label: 'Bar Keeping Staff' },
   { value: 'therapist', label: 'Therapist Staff' },
@@ -17,11 +16,7 @@ const staffRoles = [
 
 const AccessPortal: React.FC = () => {
   const navigate = useNavigate();
-<<<<<<< HEAD
   const [role, setRole] = useState<StaffRole>('cleaning');
-=======
-  const [role, setRole] = useState<StaffRole>('receptionist');
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -39,29 +34,11 @@ const AccessPortal: React.FC = () => {
     setLoading(true);
 
     try {
-<<<<<<< HEAD
       const response = await axios.post('/api/staff/signin', { username: email.trim(), password, role });
-=======
-      // 1. Authenticate with backend
-      const response = await axios.post('/api/staff/signin', { 
-        username: email.trim(), 
-        password, 
-        role 
-      });
-
-      // 2. Save session data
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
       sessionStorage.setItem('staffRole', role);
       sessionStorage.setItem('staffId', String(response.data.staff_id || response.data.id));
-      sessionStorage.setItem('hmsStaffSession', JSON.stringify(response.data));
       sessionStorage.setItem('staffProfile', JSON.stringify(response.data));
-
-      // 3. Navigate to correct workspace after successful sign in
-      if (role === 'receptionist') {
-        navigate('/reception');
-      } else {
-        navigate(`/staff/${role}`);
-      }
+      navigate(`/staff/${role}`);
     } catch (requestError) {
       if (axios.isAxiosError(requestError)) {
         setError(requestError.response?.data?.error || 'Unable to connect to the staff authentication service.');

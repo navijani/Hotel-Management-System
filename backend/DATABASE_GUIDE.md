@@ -57,6 +57,12 @@ All of these routes use the `pool` created in [server.js](server.js#L34-L46):
 | `POST /api/rooms`, [server.js](server.js#L165-L198) | Inserts a room into `Room`, including its uploaded image URL. Database errors are returned to the caller. |
 | `POST /api/bookings`, [server.js](server.js#L200-L256) | Gets a dedicated connection, starts a transaction, checks/inserts a `GUEST`, inserts a `BOOKING`, commits on success, and rolls back on failure. |
 
+## Hotel branch management setup
+
+Select the database configured by `DB_NAME` in `backend/.env`, then run [database/branch_management_setup.sql](database/branch_management_setup.sql) once before starting the branch-aware admin pages. It creates the three location records (Galle, Colombo, and Kandy) with address/contact fields marked `To be updated`, and adds a nullable `Staff.branch_id` foreign key. Update the placeholder branch addresses and contact details when they are available. New staff accounts must be assigned to a branch; existing staff with no branch remain visible under **All locations**. Income reports also depend on the billing tables and `v_guest_billing_detail` view created by [database/billing_reports_setup.sql](database/billing_reports_setup.sql), if that setup has not already been applied.
+
+The system-admin location selector filters bookings, staff, and income reports by branch. The selected branch is kept in the URL so it remains selected when navigating between those pages.
+
 ## Pool queries versus transactions
 
 Most routes use `await pool.query(...)`. The pool automatically borrows a connection, runs the SQL, and returns the connection to the pool.

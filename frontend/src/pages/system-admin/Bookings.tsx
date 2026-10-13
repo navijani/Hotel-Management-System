@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Chip, IconButton, CircularProgress,
@@ -25,6 +26,8 @@ interface Booking {
 }
 
 const Bookings: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const branchId = searchParams.get('branch_id') || '';
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,21 +36,23 @@ const Bookings: React.FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [editStatus, setEditStatus] = useState('');
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/bookings');
+      const res = await axios.get('/api/bookings', {
+        params: branchId ? { branch_id: branchId } : undefined,
+      });
       setBookings(res.data);
     } catch (error) {
       console.error('Failed to fetch bookings:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [branchId]);
+
+  useEffect(() => {
+    void fetchBookings();
+  }, [fetchBookings]);
 
   const handleView = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -66,7 +71,7 @@ const Bookings: React.FC = () => {
       await axios.put(`/api/bookings/${selectedBooking.booking_id}/status`, {
         status: editStatus
       });
-      fetchBookings();
+      await fetchBookings();
       setEditOpen(false);
     } catch (error) {
       console.error('Failed to update status', error);
@@ -88,7 +93,7 @@ const Bookings: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, bgcolor: '#fff', p: 3, borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a1a2e', mb: 0.5, fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-            Bookings
+            Bookings Management
           </Typography>
           <Typography variant="body2" color="text.secondary">
             View and manage all customer reservations.

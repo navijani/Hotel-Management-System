@@ -142,5 +142,8 @@ export const recordPayment = (bookingId: number, payload: { amount_paid: number;
 export const checkOutBooking = (bookingId: number) =>
   request<{ message: string; booking: DeskBooking }>(`/reception/bookings/${bookingId}/checkout`, { method: 'POST' });
 
-export const fetchReportSummary = (from: string, to: string) =>
-  request<ReportSummary>(`/reports/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+export const fetchReportSummary = (from: string, to: string, branchId?: string) => {
+  const params = new URLSearchParams({ from, to });
+  if (branchId) params.set('branch_id', branchId);
+  return request<ReportSummary>(`/reports/summary?${params.toString()}`);
+};

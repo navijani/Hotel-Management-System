@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Grid, Paper, Stack, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
@@ -55,6 +56,8 @@ const presets = [
 ];
 
 const Reports: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const branchId = searchParams.get('branch_id') || '';
   const [from, setFrom] = useState(daysAgo(29));
   const [to, setTo] = useState(iso(new Date()));
   const [report, setReport] = useState<ReportSummary | null>(null);
@@ -69,13 +72,13 @@ const Reports: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      setReport(await fetchReportSummary(from, to));
+      setReport(await fetchReportSummary(from, to, branchId));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to load the report.');
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, branchId]);
 
   useEffect(() => {
     void load();
@@ -99,7 +102,7 @@ const Reports: React.FC = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4, flexDirection: { xs: 'column', md: 'row' } }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a1a2e' }}>Reports</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a1a2e' }}>Income Management</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Revenue, occupancy and outstanding dues from the front desk billing records.
           </Typography>

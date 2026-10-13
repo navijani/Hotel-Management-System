@@ -7,6 +7,9 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import axios from 'axios';
+import { useSearchParams } from 'react-router-dom';
+import { fetchBranches } from '../../api/branches';
+import type { HotelBranch } from '../../api/branches';
 
 type StaffUser = {
   id: number;
@@ -14,29 +17,24 @@ type StaffUser = {
   role: string;
   active: boolean;
   created_at: string;
+  branch_id: number | null;
+  branch_city: string | null;
+  branch_name: string | null;
 };
 
 const roleOptions = [
-<<<<<<< HEAD
-=======
-  { value: 'receptionist', label: 'Front Desk / Reception' },
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
+  { value: 'receptionist', label: 'Receptionist' },
   { value: 'cleaning', label: 'Cleaning Staff' },
   { value: 'bar', label: 'Bar Keeping Staff' },
   { value: 'therapist', label: 'Therapist Staff' },
   { value: 'waiter', label: 'Waiter Staff' },
   { value: 'admin', label: 'Administrator' },
 ];
-<<<<<<< HEAD
-=======
-
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem('staffToken') || '';
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
 const Users: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const selectedBranchId = searchParams.get('branch_id') || '';
+  const [branches, setBranches] = useState<HotelBranch[]>([]);
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +45,7 @@ const Users: React.FC = () => {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('cleaning');
+  const [newBranchId, setNewBranchId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addError, setAddError] = useState('');
 
@@ -55,37 +54,37 @@ const Users: React.FC = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
-<<<<<<< HEAD
     try {
-      const response = await axios.get<StaffUser[]>('/api/staff');
-      setUsers(response.data);
-    } catch {
-      setError('Unable to load users from database.');
-=======
-    setError('');
-    try {
-      // Calls standard /api/staff with optional auth headers to prevent 401
-      const response = await axios.get<StaffUser[]>('/api/staff', {
-        headers: getAuthHeaders(),
+      const response = await axios.get<StaffUser[]>('/api/admin/staff', {
+        params: selectedBranchId ? { branch_id: selectedBranchId } : undefined,
       });
-      setUsers(Array.isArray(response.data) ? response.data : []);
-    } catch (err: any) {
-      console.error('Fetch users error:', err);
-      setError(err.response?.data?.error || 'Unable to load users from database.');
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
+      setUsers(response.data);
+    } catch (requestError) {
+      setError(axios.isAxiosError(requestError)
+        ? requestError.response?.data?.error || 'Unable to load staff accounts.'
+        : 'Unable to load staff accounts.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    void fetchUsers();
+    fetchBranches()
+      .then(setBranches)
+      .catch((requestError: unknown) => {
+        setError(requestError instanceof Error ? requestError.message : 'Unable to load hotel branches.');
+      });
   }, []);
+
+  useEffect(() => {
+    void fetchUsers();
+  }, [selectedBranchId]);
 
   const handleOpenAddModal = () => {
     setNewUsername('');
     setNewPassword('');
     setNewRole('cleaning');
+    setNewBranchId(selectedBranchId || (branches[0] ? String(branches[0].branch_id) : ''));
     setAddError('');
     setOpenAddModal(true);
   };
@@ -105,38 +104,22 @@ const Users: React.FC = () => {
     setAddError('');
 
     try {
-<<<<<<< HEAD
-      await axios.post('/api/staff', {
+      await axios.post('/api/admin/staff', {
         username: newUsername.trim(),
         password: newPassword,
         role: newRole,
+        branch_id: Number(newBranchId),
       });
-=======
-      await axios.post(
-        '/api/staff',
-        {
-          username: newUsername.trim(),
-          password: newPassword,
-          role: newRole,
-        },
-        { headers: getAuthHeaders() }
-      );
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
 
       setSuccess(`User "${newUsername.trim()}" added successfully.`);
       handleCloseAddModal();
       await fetchUsers();
-<<<<<<< HEAD
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setAddError(err.response?.data?.error || 'Failed to create user.');
       } else {
         setAddError('Failed to create user.');
       }
-=======
-    } catch (err: any) {
-      setAddError(err.response?.data?.error || 'Failed to create user.');
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     } finally {
       setIsSubmitting(false);
     }
@@ -146,8 +129,7 @@ const Users: React.FC = () => {
     if (!deleteTarget) return;
 
     try {
-<<<<<<< HEAD
-      await axios.delete(`/api/staff/${deleteTarget.id}`);
+      await axios.delete(`/api/admin/staff/${deleteTarget.id}`);
       setSuccess(`User "${deleteTarget.username}" removed successfully.`);
       setDeleteTarget(null);
       await fetchUsers();
@@ -157,16 +139,6 @@ const Users: React.FC = () => {
       } else {
         setError('Failed to remove user.');
       }
-=======
-      await axios.delete(`/api/staff/${deleteTarget.id}`, {
-        headers: getAuthHeaders(),
-      });
-      setSuccess(`User "${deleteTarget.username}" removed successfully.`);
-      setDeleteTarget(null);
-      await fetchUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to remove user.');
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
     }
   };
 
@@ -175,10 +147,10 @@ const Users: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a1a2e' }}>
-            Users & Staff Management
+            Staff Management
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Directly add or remove user accounts across all resort departments.
+            Manage staff accounts by hotel location.
           </Typography>
         </Box>
         <Button 
@@ -201,6 +173,7 @@ const Users: React.FC = () => {
               <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Username / Email</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Role</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 'bold', align: 'center' }}>Actions</TableCell>
             </TableRow>
@@ -208,13 +181,13 @@ const Users: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                   <CircularProgress size={32} />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                   No users found. Click "Add New User" to create one.
                 </TableCell>
               </TableRow>
@@ -232,6 +205,7 @@ const Users: React.FC = () => {
                       sx={{ textTransform: 'capitalize' }}
                     />
                   </TableCell>
+                  <TableCell>{user.branch_city ? `${user.branch_city} - ${user.branch_name}` : 'Unassigned'}</TableCell>
                   <TableCell>
                     <Chip 
                       label={user.active ? 'Active' : 'Inactive'} 
@@ -267,11 +241,7 @@ const Users: React.FC = () => {
           <DialogContent dividers>
             <Stack spacing={2.5}>
               <Typography variant="body2" color="text.secondary">
-<<<<<<< HEAD
                 Directly create a staff or user account. No approval required; the user can log in immediately.
-=======
-                Directly create a staff or user account. The user will be able to log in immediately.
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
               </Typography>
               {addError && <Alert severity="error">{addError}</Alert>}
               <TextField
@@ -285,6 +255,20 @@ const Users: React.FC = () => {
                 {roleOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Hotel Location"
+                value={newBranchId}
+                onChange={(e) => setNewBranchId(e.target.value)}
+                fullWidth
+                required
+              >
+                {branches.map((branch) => (
+                  <MenuItem key={branch.branch_id} value={String(branch.branch_id)}>
+                    {branch.city} - {branch.branch_name}
                   </MenuItem>
                 ))}
               </TextField>
@@ -308,18 +292,14 @@ const Users: React.FC = () => {
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={handleCloseAddModal} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ bgcolor: '#4facfe' }}>
+            <Button type="submit" variant="contained" disabled={isSubmitting || !newBranchId} sx={{ bgcolor: '#4facfe' }}>
               {isSubmitting ? 'Creating...' : 'Create User'}
             </Button>
           </DialogActions>
         </Box>
       </Dialog>
 
-<<<<<<< HEAD
       {/* Delete User Confirmation Dialog */}
-=======
-      {/* Delete Confirmation Dialog */}
->>>>>>> d17e6599bd50ba6d5893d0baf57fb5700d660028
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>Confirm Remove User</DialogTitle>
         <DialogContent>
