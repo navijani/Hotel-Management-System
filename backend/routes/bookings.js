@@ -30,6 +30,24 @@ const readQuoteToken = (token) => {
   }
 };
 
+const branchFromRoomNumber = (roomNumber, storedBranch) => {
+  const value = String(roomNumber || '').trim().toUpperCase();
+  const prefix = value.match(/^([CKG])(?:[-\s]|$)/)?.[1];
+  if (prefix === 'C') return 'Colombo';
+  if (prefix === 'K') return 'Kandy';
+  if (prefix === 'G') return 'Galle';
+
+  const numericRoom = Number(value.replace(/[^0-9]/g, ''));
+  if (numericRoom >= 300 && numericRoom < 400) return 'Galle';
+  if (numericRoom >= 200 && numericRoom < 300) return 'Kandy';
+  if (numericRoom >= 100 && numericRoom < 200) return 'Colombo';
+
+  const normalizedStoredBranch = String(storedBranch || '').trim().toLowerCase();
+  if (normalizedStoredBranch.includes('galle')) return 'Galle';
+  if (normalizedStoredBranch.includes('kandy')) return 'Kandy';
+  return 'Colombo';
+};
+
 const formatBillingRow = (row) => ({
   booking_id: row.booking_id,
   guest_id: row.guest_id || null,
@@ -40,7 +58,7 @@ const formatBillingRow = (row) => ({
   identification_no: row.id_number,
   room_number: row.room_number,
   room_type: row.room_type_name,
-  branch: row.branch_name,
+  branch: branchFromRoomNumber(row.room_number, row.branch_name),
   check_in_at: row.check_in_date,
   check_out_at: row.check_out_date,
   nights: Math.max(1, Math.ceil((new Date(row.check_out_date).getTime() - new Date(row.check_in_date).getTime()) / 86400000)),

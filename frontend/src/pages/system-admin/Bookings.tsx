@@ -16,6 +16,7 @@ interface Booking {
   email?: string;
   phone_number?: string;
   identification_no?: string;
+  branch?: string;
   room_number?: string;
   room_type?: string;
   room_daily_rate?: number;
@@ -35,6 +36,7 @@ const Bookings: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [editStatus, setEditStatus] = useState('');
+  const [branchFilter, setBranchFilter] = useState('All');
 
   useEffect(() => {
     fetchBookings();
@@ -114,6 +116,11 @@ const Bookings: React.FC = () => {
     maximumFractionDigits: 2,
   })}`;
 
+  const branches = Array.from(new Set(bookings.map((booking) => booking.branch).filter(Boolean))).sort();
+  const filteredBookings = branchFilter === 'All'
+    ? bookings
+    : bookings.filter((booking) => booking.branch === branchFilter);
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, bgcolor: '#fff', p: 3, borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
@@ -127,12 +134,28 @@ const Bookings: React.FC = () => {
         </Box>
       </Box>
 
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <FormControl size="small" sx={{ minWidth: 220, bgcolor: '#fff' }}>
+          <InputLabel id="booking-branch-filter-label">Branch</InputLabel>
+          <Select
+            labelId="booking-branch-filter-label"
+            value={branchFilter}
+            label="Branch"
+            onChange={(event) => setBranchFilter(event.target.value)}
+          >
+            <MenuItem value="All">All Branches</MenuItem>
+            {branches.map((branch) => <MenuItem key={branch} value={branch}>{branch}</MenuItem>)}
+          </Select>
+        </FormControl>
+      </Box>
+
       <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 8px 30px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-        <Table sx={{ minWidth: 700 }}>
+        <Table sx={{ minWidth: 850 }}>
           <TableHead sx={{ bgcolor: 'rgba(248, 249, 250, 0.8)', backdropFilter: 'blur(8px)' }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1, py: 3 }}>Booking Ref</TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Guest Name</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Branch</TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Room Number</TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Check In</TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#64748b', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>Check Out</TableCell>
@@ -142,17 +165,22 @@ const Bookings: React.FC = () => {
           </TableHead>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} align="center"><CircularProgress size={30} sx={{ my: 4, color: '#4facfe' }} /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} align="center"><CircularProgress size={30} sx={{ my: 4, color: '#4facfe' }} /></TableCell></TableRow>
             ) : bookings.length === 0 ? (
-              <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No customer bookings found.</Typography></TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No customer bookings found.</Typography></TableCell></TableRow>
+            ) : filteredBookings.length === 0 ? (
+              <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No bookings found for this branch.</Typography></TableCell></TableRow>
             ) : (
-              bookings.map((b) => (
+              filteredBookings.map((b) => (
                 <TableRow key={b.booking_id} hover sx={{ transition: 'background-color 0.2s' }}>
                   <TableCell sx={{ fontWeight: 800, color: '#1e293b' }}>
                     #{b.booking_id}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>
                     {b.guest_name || 'Guest'}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#475569' }}>
+                    {b.branch || 'Unassigned'}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#475569' }}>
                     {b.room_number || 'TBD'}
@@ -218,6 +246,9 @@ const Bookings: React.FC = () => {
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Type:</strong> {selectedBooking.room_type || 'N/A'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <Typography variant="body2"><strong>Branch:</strong> {selectedBooking.branch || 'Unassigned'}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="body2"><strong>Check-In:</strong> {formatDate(selectedBooking.check_in_at)}</Typography>
