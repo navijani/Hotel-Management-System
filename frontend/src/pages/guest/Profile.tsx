@@ -28,6 +28,8 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 interface GuestUser {
   guest_id?: number;
   first_name?: string;
@@ -78,6 +80,8 @@ const Profile: React.FC = () => {
 
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loadingReservations, setLoadingReservations] = useState<boolean>(true);
+  const [reservationsError, setReservationsError] = useState<string | null>(null);
+  const [reservationRetry, setReservationRetry] = useState(0);
 
   // Edit Modal State
   const [openEdit, setOpenEdit] = useState(false);
@@ -104,6 +108,7 @@ const Profile: React.FC = () => {
 
     const fetchReservations = async () => {
       setLoadingReservations(true);
+      setReservationsError(null);
       try {
         const guestId = Number(currentUser.guest_id || 0);
         const identityNo = currentUser.identity_number || currentUser.identityNumber || '';
@@ -113,23 +118,27 @@ const Profile: React.FC = () => {
         if (identityNo) params.append('identity_number', identityNo);
         if (email) params.append('email', email);
 
-        const res = await fetch(`/api/bookings/guest/${guestId}?${params.toString()}`);
+        const res = await fetch(`${API_BASE}/api/bookings/guest/${guestId}?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
-          setReservations(Array.isArray(data) ? data : []);
+          if (!Array.isArray(data)) {
+            throw new Error('Unable to load reservations. Please try again.');
+          }
+          setReservations(data);
         } else {
           const data = await res.json().catch(() => null);
           throw new Error(data?.error || 'Unable to load reservations.');
         }
       } catch (err) {
         console.error('Error fetching reservations:', err);
+        setReservationsError('Unable to load your reservations. Please try again in a moment.');
       } finally {
         setLoadingReservations(false);
       }
     };
 
     fetchReservations();
-  }, []);
+  }, [reservationRetry]);
 
   const getFirstName = () => user.first_name || user.firstName || 'Guest';
   const getLastName = () => user.last_name || user.lastName || 'Member';
@@ -159,7 +168,7 @@ const Profile: React.FC = () => {
     const guestId = user.guest_id || 1;
 
     try {
-      const res = await fetch(`/api/guest/${guestId}/profile`, {
+      const res = await fetch(`${API_BASE}/api/guest/${guestId}/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -355,6 +364,17 @@ const Profile: React.FC = () => {
                   <CircularProgress size={32} sx={{ color: '#d4af37' }} />
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Loading your reservations...</Typography>
                 </Box>
+              ) : reservationsError ? (
+                <Alert
+                  severity="error"
+                  action={
+                    <Button color="inherit" size="small" onClick={() => setReservationRetry((value) => value + 1)}>
+                      Retry
+                    </Button>
+                  }
+                >
+                  {reservationsError}
+                </Alert>
               ) : reservations.length > 0 ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                   {reservations.map((res) => {
