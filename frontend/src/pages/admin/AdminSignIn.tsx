@@ -22,6 +22,7 @@ const AdminSignIn = () => {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'Invalid administrator credentials.');
+      window.sessionStorage.setItem('adminToken', body.token);
       window.sessionStorage.setItem('hmsAdminSignedIn', 'true');
       navigate('/admin', { replace: true });
     } catch (requestError) {

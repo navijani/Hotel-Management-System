@@ -15,9 +15,6 @@ CREATE TABLE `system_settings` (
   `contact_email` varchar(160) NOT NULL,
   `phone_number` varchar(50) NOT NULL,
   `address` varchar(255) NOT NULL,
-  `online_bookings_enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `email_notifications_enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `maintenance_mode` tinyint(1) NOT NULL DEFAULT 0,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`settings_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -59,4 +56,10 @@ CREATE TABLE `Booking` (
   KEY `fk_2` (`room_id`),
   CONSTRAINT `fk_1` FOREIGN KEY (`guest_id`) REFERENCES `Guest` (`guest_id`),
   CONSTRAINT `fk_2` FOREIGN KEY (`room_id`) REFERENCES `Room` (`room_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `admin_account` (
+  `username` varchar(160) NOT NULL PRIMARY KEY,
+  `password_hash` varchar(255) NOT NULL,
+  `token_version` int NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

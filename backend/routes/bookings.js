@@ -81,9 +81,6 @@ const formatBillingRow = (row) => ({
 export default function createBookingsRouter(pool, bookingRateLimit) {
   router.get('/quote', async (req, res) => {
     try {
-      const [[settings]] = await pool.query('SELECT online_bookings_enabled, maintenance_mode FROM system_settings WHERE settings_id = 1 LIMIT 1').catch(() => [[]]);
-      if (settings?.maintenance_mode) return res.status(503).json({ error: 'Online bookings are temporarily unavailable while maintenance mode is active.' });
-      if (settings && !settings.online_bookings_enabled) return res.status(403).json({ error: 'Online bookings are currently disabled.' });
 
       const roomId = Number(req.query.roomId);
       const checkInDate = String(req.query.checkInDate || '');
@@ -147,9 +144,6 @@ export default function createBookingsRouter(pool, bookingRateLimit) {
     const connection = await pool.getConnection();
 
     try {
-      const [[settings]] = await connection.query('SELECT online_bookings_enabled, maintenance_mode FROM system_settings WHERE settings_id = 1 LIMIT 1').catch(() => [[]]);
-      if (settings?.maintenance_mode) throw new Error('Online bookings are temporarily unavailable while maintenance mode is active.');
-      if (settings && !settings.online_bookings_enabled) throw new Error('Online bookings are currently disabled.');
 
       const firstName = String(req.body.firstName || '').trim();
       const lastName = String(req.body.lastName || '').trim();

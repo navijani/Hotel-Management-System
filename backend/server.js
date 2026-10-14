@@ -1,4 +1,6 @@
 import express from 'express';
+import { ensureAdminAccount, createAdminRouter } from './adminAccount.js';
+import { removeLegacySettings } from './database/removeLegacySettings.js';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -66,9 +68,6 @@ const defaultSystemSettings = {
   contact_email: 'admin@hrgsms.com',
   phone_number: '+94 11 234 5678',
   address: '123 Ocean Drive, Colombo',
-  online_bookings_enabled: 1,
-  email_notifications_enabled: 1,
-  maintenance_mode: 0,
 };
 
 app.use('/api/', globalRateLimit);
@@ -151,18 +150,8 @@ const ensureStaffPlatformSchema = async () => {
   `);
 };
 
-// Admin Authentication
-app.post('/api/admin/signin', authRateLimit, (req, res) => {
-  const username = process.env.ADMIN_USERNAME;
-  const password = process.env.ADMIN_PASSWORD;
-
-  if (req.body.username?.trim() !== username || req.body.password !== password) {
-    return res.status(401).json({ error: 'Invalid administrator credentials.' });
-  }
-
-  const token = generateToken({ username, role: 'Admin' });
-  res.json({ message: 'Administrator login successful.', token, role: 'Admin' });
-});
+// Admin credentials are persisted as hashes in the database.
+app.use('/api/admin', createAdminRouter(pool, authRateLimit));
 
 // Guest Endpoints
 app.get('/api/guest/check-id', async (req, res) => {
@@ -215,53 +204,7 @@ app.post('/api/guest/signin', authRateLimit, async (req, res) => {
     const cleanEmail = String(email || '').trim();
     const cleanPass = String(password || '');
 
-    // 1. Check if login matches admin account (e.g. hms@gmail.com)
-    const adminUser = String(process.env.ADMIN_USERNAME || 'hms@gmail.com').toLowerCase();
-    const adminPass = String(process.env.ADMIN_PASSWORD || 'qwertyuiop');
-
-    if (cleanEmail.toLowerCase() === adminUser && (cleanPass === adminPass || cleanPass === 'qwertyuiop')) {
-      let [existingAdmin] = await pool.query('SELECT * FROM guest WHERE LOWER(email) = ? LIMIT 1', [adminUser]);
-      if (existingAdmin.length === 0) {
-        const hash = await bcrypt.hash(adminPass, 12);
-        const [ins] = await pool.query(
-          'INSERT INTO guest (first_name, last_name, email, phone_number, identity_number, password) VALUES (?, ?, ?, ?, ?, ?)',
-          ['HMS', 'Admin', cleanEmail, '0713892928', '199012345678', hash]
-        );
-        const token = generateToken({
-          id: ins.insertId,
-          guest_id: ins.insertId,
-          email: cleanEmail,
-          role: 'Guest',
-        });
-        return res.json({
-          guest_id: ins.insertId,
-          first_name: 'HMS',
-          last_name: 'Admin',
-          email: cleanEmail,
-          phone_number: '0713892928',
-          identity_number: '199012345678',
-          token,
-        });
-      }
-      const g = existingAdmin[0];
-      const token = generateToken({
-        id: g.guest_id,
-        guest_id: g.guest_id,
-        email: g.email || cleanEmail,
-        role: 'Guest',
-      });
-      return res.json({
-        guest_id: g.guest_id,
-        first_name: g.first_name || 'HMS',
-        last_name: g.last_name || 'Admin',
-        email: g.email || cleanEmail,
-        phone_number: g.phone_number || '0713892928',
-        identity_number: g.identity_number || '199012345678',
-        token,
-      });
-    }
-
-    // 2. Query normal guest table
+    // Guest accounts authenticate with their own stored password.
     const [rows] = await pool.query('SELECT * FROM guest WHERE LOWER(email) = ? LIMIT 1', [cleanEmail.toLowerCase()]);
     let guest = rows[0];
 
@@ -372,24 +315,18 @@ const ensureSystemSettings = async () => {
       contact_email VARCHAR(160) NOT NULL,
       phone_number VARCHAR(50) NOT NULL,
       address VARCHAR(255) NOT NULL,
-      online_bookings_enabled TINYINT(1) NOT NULL DEFAULT 1,
-      email_notifications_enabled TINYINT(1) NOT NULL DEFAULT 1,
-      maintenance_mode TINYINT(1) NOT NULL DEFAULT 0,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(
     `INSERT IGNORE INTO system_settings
-      (settings_id, hotel_name, contact_email, phone_number, address, online_bookings_enabled, email_notifications_enabled, maintenance_mode)
-     VALUES (1, ?, ?, ?, ?, ?, ?, ?)`,
+      (settings_id, hotel_name, contact_email, phone_number, address)
+     VALUES (1, ?, ?, ?, ?)`,
     [
       defaultSystemSettings.hotel_name,
       defaultSystemSettings.contact_email,
       defaultSystemSettings.phone_number,
       defaultSystemSettings.address,
-      defaultSystemSettings.online_bookings_enabled,
-      defaultSystemSettings.email_notifications_enabled,
-      defaultSystemSettings.maintenance_mode,
     ]
   );
 };
@@ -422,17 +359,13 @@ app.put('/api/system-settings', async (req, res) => {
     await ensureSystemSettings();
     await pool.query(
       `UPDATE system_settings
-       SET hotel_name = ?, contact_email = ?, phone_number = ?, address = ?,
-           online_bookings_enabled = ?, email_notifications_enabled = ?, maintenance_mode = ?
+       SET hotel_name = ?, contact_email = ?, phone_number = ?, address = ?
        WHERE settings_id = 1`,
       [
         hotelName,
         contactEmail,
         phoneNumber,
         address,
-        req.body.online_bookings_enabled ? 1 : 0,
-        req.body.email_notifications_enabled ? 1 : 0,
-        req.body.maintenance_mode ? 1 : 0,
       ]
     );
     const [rows] = await pool.query('SELECT * FROM system_settings WHERE settings_id = 1 LIMIT 1');
@@ -592,9 +525,14 @@ if (staticPath) {
   });
 }
 
-// Connection test on server boot
-pool.query('SELECT 1 + 1 AS solution')
-  .then(() => console.log('✅ Successfully connected to TiDB Cloud database!'))
-  .catch((err) => console.error('❌ Failed to connect to TiDB Cloud database:', err.message));
-
-app.listen(port, () => console.log(`Server running on port ${port}`));
+// Finish schema changes before accepting requests.
+try {
+  await ensureSystemSettings();
+  await removeLegacySettings(pool);
+  await ensureAdminAccount(pool);
+  app.listen(port, () => console.log(`Server running on port ${port}`));
+} catch (error) {
+  console.error('Database initialization failed:', error.message);
+  await pool.end();
+  process.exitCode = 1;
+}

@@ -24,6 +24,7 @@ const AdminLogin: React.FC = () => {
       const res = await axios.post('/api/admin/signin', { username: email.trim(), password });
 
       if (res.status === 200 || res.data?.message) {
+        sessionStorage.setItem('adminToken', res.data.token);
         sessionStorage.setItem('adminAuthenticated', 'true');
         sessionStorage.setItem('hmsAdminSignedIn', 'true');
         navigate('/system-admin');

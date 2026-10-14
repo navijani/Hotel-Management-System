@@ -7,9 +7,6 @@ interface SystemSettings {
   contact_email: string;
   phone_number: string;
   address: string;
-  online_bookings_enabled: boolean;
-  email_notifications_enabled: boolean;
-  maintenance_mode: boolean;
 }
 
 const defaults: SystemSettings = {
@@ -17,15 +14,17 @@ const defaults: SystemSettings = {
   contact_email: 'admin@hrgsms.com',
   phone_number: '+94 11 234 5678',
   address: '123 Ocean Drive, Colombo',
-  online_bookings_enabled: true,
-  email_notifications_enabled: true,
-  maintenance_mode: false,
 };
 
 const Settings: React.FC = () => {
   const [settings, setSettings] = useState<SystemSettings>(defaults);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -33,15 +32,12 @@ const Settings: React.FC = () => {
       .then(({ data }) => setSettings({
         ...defaults,
         ...data,
-        online_bookings_enabled: Boolean(data.online_bookings_enabled),
-        email_notifications_enabled: Boolean(data.email_notifications_enabled),
-        maintenance_mode: Boolean(data.maintenance_mode),
       }))
       .catch(() => setMessage({ type: 'error', text: 'Unable to load saved settings.' }))
       .finally(() => setLoading(false));
   }, []);
 
-  const update = (field: keyof SystemSettings, value: string | boolean) => {
+  const update = (field: keyof SystemSettings, value: string) => {
     setSettings((current) => ({ ...current, [field]: value }));
     setMessage(null);
   };
@@ -51,12 +47,47 @@ const Settings: React.FC = () => {
     setMessage(null);
     try {
       const { data } = await axios.put('/api/system-settings', settings);
-      setSettings({ ...data.settings, online_bookings_enabled: Boolean(data.settings.online_bookings_enabled), email_notifications_enabled: Boolean(data.settings.email_notifications_enabled), maintenance_mode: Boolean(data.settings.maintenance_mode) });
+      setSettings(data.settings);
       setMessage({ type: 'success', text: 'System settings saved successfully.' });
     } catch (error: any) {
       setMessage({ type: 'error', text: error.response?.data?.error || 'Unable to save settings.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const changePassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordMessage(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'New passwords do not match.' });
+      return;
+    }
+    if (newPassword.length < 8 || new TextEncoder().encode(newPassword).length > 72) {
+      setPasswordMessage({ type: 'error', text: 'Use at least 8 characters and no more than 72 UTF-8 bytes.' });
+      return;
+    }
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      setPasswordMessage({ type: 'error', text: 'Please sign in as administrator again before changing your password.' });
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { data } = await axios.post('/api/admin/change-password', { currentPassword, newPassword }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      sessionStorage.setItem('adminToken', data.token);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMessage({ type: 'success', text: 'Password changed successfully. Use your new password next time you sign in.' });
+    } catch (error) {
+      setPasswordMessage({ type: 'error', text: axios.isAxiosError(error)
+        ? error.response?.data?.error || 'Unable to change password. Please try again.'
+        : 'Unable to change password. Please try again.' });
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -80,6 +111,18 @@ const Settings: React.FC = () => {
               <TextField label="Phone Number" value={settings.phone_number} onChange={(e) => update('phone_number', e.target.value)} fullWidth />
               <TextField label="Address" value={settings.address} onChange={(e) => update('address', e.target.value)} fullWidth multiline rows={3} />
               <Button variant="contained" onClick={saveSettings} disabled={saving} sx={{ alignSelf: 'flex-start', bgcolor: '#4facfe' }}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+            </Box>
+          </Paper>
+          <Paper sx={{ p: 4, mt: 4, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>Change Admin Password</Typography>
+            <Box component="form" onSubmit={changePassword} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {passwordMessage && <Alert severity={passwordMessage.type}>{passwordMessage.text}</Alert>}
+              <TextField label="Current Password" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required disabled={changingPassword} fullWidth />
+              <TextField label="New Password" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} helperText="Use at least 8 characters." required disabled={changingPassword} fullWidth />
+              <TextField label="Confirm New Password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required disabled={changingPassword} fullWidth />
+              <Button type="submit" variant="contained" disabled={changingPassword} sx={{ alignSelf: 'flex-start', bgcolor: '#4facfe' }}>
+                {changingPassword ? 'Changing Password...' : 'Change Password'}
+              </Button>
             </Box>
           </Paper>
         </Grid>
